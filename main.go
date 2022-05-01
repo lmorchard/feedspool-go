@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	FEED_QUEUE_CONCURRENCY := 256
+	fetchQueueConcurrency := 32
 	baseFeedsPath := "data/feeds"
 
 	mkdirpIfNotExist(baseFeedsPath)
@@ -31,7 +31,7 @@ func main() {
 	}
 
 	rets := make(chan string)
-	q := queue.NewPool(FEED_QUEUE_CONCURRENCY)
+	q := queue.NewPool(fetchQueueConcurrency)
 	defer q.Release()
 
 	for i := 0; i < len(feedUrls); i++ {
