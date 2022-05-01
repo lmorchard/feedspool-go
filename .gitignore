@@ -25,9 +25,8 @@ _testmain.go
 
 .DS_STORE
 
-cmd/ftest/ftest
-
 # Goland specific files
 .idea
 
 feedspool-go
+data
