@@ -55,6 +55,10 @@ func runExport(_ *cobra.Command, args []string) error {
 	}
 	defer database.Close()
 
+	if err := database.IsInitialized(); err != nil {
+		return err
+	}
+
 	// Get all feeds from database
 	feeds, err := database.GetAllFeeds()
 	if err != nil {

@@ -4,12 +4,15 @@ A CLI tool for managing RSS/Atom feeds with SQLite storage.
 
 ## Features
 
-- Fetch and store RSS/Atom feeds from OPML files
+- Unified feed fetching from single URLs, OPML files, or text lists
+- Feed subscription management (subscribe/unsubscribe)
+- Export database feeds to OPML or text formats
 - Concurrent feed fetching with HTTP caching
 - SQLite database storage with feed history
 - Multiple output formats (table, JSON, CSV)
-- Automatic archival of removed items
-- Configurable via YAML files
+- Automatic archival of removed items and feed list cleanup
+- RSS/Atom feed autodiscovery from HTML pages
+- Configurable via YAML files with default feed list support
 
 ## Installation
 
@@ -40,14 +43,39 @@ make build
 ./feedspool init
 ```
 
-### Fetch feeds from OPML
+### Unified Feed Fetching
+
 ```bash
-./feedspool update feeds.opml
+# Fetch a single feed
+./feedspool fetch https://example.com/feed.xml
+
+# Fetch all feeds from OPML file
+./feedspool fetch --format opml --filename feeds.opml
+
+# Fetch all feeds from text list
+./feedspool fetch --format text --filename feeds.txt
+
+# Fetch all feeds in database
+./feedspool fetch
 ```
 
-### Fetch a single feed
+### Subscription Management
+
 ```bash
-./feedspool fetch https://example.com/feed.xml
+# Subscribe to a feed (adds to your default feed list)
+./feedspool subscribe https://example.com/feed.xml
+
+# Subscribe with autodiscovery from HTML page
+./feedspool subscribe --discover https://example.com/blog
+
+# Unsubscribe from a feed
+./feedspool unsubscribe https://example.com/feed.xml
+
+# Export database feeds to OPML
+./feedspool export --format opml feeds.opml
+
+# Export database feeds to text list
+./feedspool export --format text feeds.txt
 ```
 
 ### Show items from a feed
@@ -55,9 +83,14 @@ make build
 ./feedspool show https://example.com/feed.xml
 ```
 
-### Clean up old archived items
+### Cleanup Operations
+
 ```bash
+# Clean up old archived items
 ./feedspool purge --age 30d
+
+# Remove unauthorized feeds (keep only those in feed list)
+./feedspool purge --format opml --filename feeds.opml
 ```
 
 ### Show version information
@@ -69,10 +102,25 @@ make build
 
 Create a `feedspool.yaml` file (see `feedspool.yaml.example`) or use command-line flags:
 
+### Global Options
 - `--database` - Database file path (default: ./feeds.db)
+- `--json` - Output in JSON format
+
+### Default Feed List Configuration
+```yaml
+feedlist:
+  format: "opml"        # or "text"
+  filename: "feeds.opml" # or "feeds.txt"
+```
+
+### Command Options
 - `--concurrency` - Max concurrent fetches (default: 32)
 - `--timeout` - Per-feed timeout (default: 30s)
 - `--max-items` - Max items per feed (default: 100)
+- `--force` - Ignore cache headers and fetch anyway
+- `--max-age` - Skip feeds fetched within this duration
+- `--format` - Feed list format (opml or text)
+- `--filename` - Feed list filename
 
 ## Development
 
@@ -137,15 +185,18 @@ make lint
 
 ## TODO
 
-- [ ] rework fetch command to take both single feed and feed list
-- [ ] rework update command to fetch all feeds in DB without a list
-- [ ] support plain text list of feed URLs alongside OPML
-- [ ] feed "subscription" commands to add / remove feeds from OPML & text
-- [ ] commands to export feeds in DB to OPML & text
+### Completed ✅
+- [x] rework fetch command to take both single feed and feed list
+- [x] rework update command to fetch all feeds in DB without a list (unified into fetch)
+- [x] support plain text list of feed URLs alongside OPML
+- [x] feed "subscription" commands to add / remove feeds from OPML & text
+- [x] commands to export feeds in DB to OPML & text
+- [x] command to autodiscover feed URL from HTML URL
+
+### Future Enhancements
 - [ ] add per feed fetch history log table
 - [ ] implement a static site generator to render HTML from feeds
 - [ ] implement a simple REST API server to access feeds data
 - [ ] implement a simple HTTP server to serve up static site and feeds API
-- [ ] command to autodiscover feed URL from HTML URL
 - [ ] enhance `init` command to create database, default config, and default feed list files
 - [ ] `init` can also dump static site generation templates to a directory for customization

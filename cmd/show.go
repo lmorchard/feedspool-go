@@ -57,6 +57,10 @@ func runShow(_ *cobra.Command, args []string) error {
 	}
 	defer database.Close()
 
+	if err := database.IsInitialized(); err != nil {
+		return err
+	}
+
 	since, until, err := parseDateFilters()
 	if err != nil {
 		return err

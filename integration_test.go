@@ -92,14 +92,14 @@ func TestIntegrationEndToEnd(t *testing.T) {
 		}
 	})
 
-	t.Run("update_from_opml", func(t *testing.T) {
-		output, err := runCommand(binaryPath, "--database", dbPath, "update", opmlPath)
+	t.Run("fetch_from_opml", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "fetch", "--format", "opml", "--filename", opmlPath)
 		if err != nil {
-			t.Errorf("Update failed: %v, output: %s", err, output)
+			t.Errorf("Fetch from OPML failed: %v, output: %s", err, output)
 		}
 
-		if !strings.Contains(output, "Found") && !strings.Contains(output, "Update Summary") {
-			t.Errorf("Update output should show results, got: %s", output)
+		if !strings.Contains(output, "Found") && !strings.Contains(output, "Summary") {
+			t.Errorf("Fetch output should show results, got: %s", output)
 		}
 	})
 
@@ -331,30 +331,30 @@ func TestIntegrationConcurrency(t *testing.T) {
 	// Initialize database
 	runCommand(binaryPath, "--database", dbPath, "init")
 
-	// Measure time for concurrent update
+	// Measure time for concurrent fetch
 	start := time.Now()
-	output, err := runCommand(binaryPath, "--database", dbPath, "update", "--concurrency", "3", opmlPath)
+	output, err := runCommand(binaryPath, "--database", dbPath, "fetch", "--format", "opml", "--filename", opmlPath, "--concurrency", "3")
 	duration := time.Since(start)
 
 	if err != nil {
-		t.Errorf("Concurrent update failed: %v, output: %s", err, output)
+		t.Errorf("Concurrent fetch failed: %v, output: %s", err, output)
 	}
 
 	// Should complete in less than 500ms if truly concurrent (3 * 100ms + overhead)
 	// If sequential it would take 3 * 100ms + more overhead = ~400ms+
 	if duration > 500*time.Millisecond {
-		t.Errorf("Concurrent update took too long: %v (should be concurrent)", duration)
+		t.Errorf("Concurrent fetch took too long: %v (should be concurrent)", duration)
 	}
 
 	// Verify all feeds were processed
 	for _, server := range servers {
 		showOutput, err := runCommand(binaryPath, "--database", dbPath, "show", server.URL)
 		if err != nil {
-			t.Errorf("Failed to show feed after concurrent update: %v", err)
+			t.Errorf("Failed to show feed after concurrent fetch: %v", err)
 		}
 
 		if !strings.Contains(showOutput, "Integration Test Item") {
-			t.Errorf("Feed should be present after concurrent update, got: %s", showOutput)
+			t.Errorf("Feed should be present after concurrent fetch, got: %s", showOutput)
 		}
 	}
 }

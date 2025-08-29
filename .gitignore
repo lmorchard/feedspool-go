@@ -44,4 +44,5 @@ test*.opml
 dist/
 
 coverage.out
-
+tmp/
+feedspool.yaml
