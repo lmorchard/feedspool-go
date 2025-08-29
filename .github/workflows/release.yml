@@ -31,9 +31,10 @@ jobs:
           - os: macos-latest
             goos: darwin
             goarch: arm64
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
+          # TODO: Fix Windows build archive creation issue
+          # - os: windows-latest
+          #   goos: windows
+          #   goarch: amd64
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
