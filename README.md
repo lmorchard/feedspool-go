@@ -147,3 +147,5 @@ make lint
 - [ ] implement a simple REST API server to access feeds data
 - [ ] implement a simple HTTP server to serve up static site and feeds API
 - [ ] command to autodiscover feed URL from HTML URL
+- [ ] enhance `init` command to create database, default config, and default feed list files
+- [ ] `init` can also dump static site generation templates to a directory for customization
