@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "post-edit": "make format && make lint && make test",
+    "post-multi-edit": "make format && make lint && make test"
+  }
+}
