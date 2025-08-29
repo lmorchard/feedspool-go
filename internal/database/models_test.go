@@ -1,0 +1,226 @@
+package database
+
+import (
+	"encoding/json"
+	"testing"
+	"time"
+
+	"github.com/mmcdole/gofeed"
+)
+
+func TestJSONValue(t *testing.T) {
+	tests := []struct {
+		name string
+		j    JSON
+		want string
+	}{
+		{
+			name: "nil JSON",
+			j:    nil,
+			want: "",
+		},
+		{
+			name: "valid JSON",
+			j:    JSON(`{"test": "value"}`),
+			want: `{"test": "value"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.j.Value()
+			if err != nil {
+				t.Errorf("JSON.Value() error = %v", err)
+				return
+			}
+			if tt.j == nil {
+				if got != nil {
+					t.Errorf("JSON.Value() = %v, want nil", got)
+				}
+			} else {
+				gotStr := string(got.([]byte))
+				if gotStr != tt.want {
+					t.Errorf("JSON.Value() = %v, want %v", gotStr, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestJSONScan(t *testing.T) {
+	tests := []struct {
+		name  string
+		value interface{}
+		want  string
+	}{
+		{
+			name:  "nil value",
+			value: nil,
+			want:  "null",
+		},
+		{
+			name:  "byte slice",
+			value: []byte(`{"test": "value"}`),
+			want:  `{"test": "value"}`,
+		},
+		{
+			name:  "string value",
+			value: `{"test": "value"}`,
+			want:  `{"test": "value"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var j JSON
+			err := j.Scan(tt.value)
+			if err != nil {
+				t.Errorf("JSON.Scan() error = %v", err)
+				return
+			}
+			if string(j) != tt.want {
+				t.Errorf("JSON.Scan() = %v, want %v", string(j), tt.want)
+			}
+		})
+	}
+}
+
+func TestJSONScanError(t *testing.T) {
+	var j JSON
+	err := j.Scan(123) // invalid type
+	if err == nil {
+		t.Errorf("JSON.Scan() should have returned an error for invalid type")
+	}
+}
+
+func TestFeedFromGofeed(t *testing.T) {
+	const (
+		testFeedTitle       = "Test Feed"
+		testFeedURL         = "https://example.com/feed.xml"
+		testFeedDescription = "Test Description"
+	)
+
+	now := time.Now()
+	gofeedData := &gofeed.Feed{
+		Title:         testFeedTitle,
+		Description:   testFeedDescription,
+		UpdatedParsed: &now,
+	}
+
+	feed, err := FeedFromGofeed(gofeedData, testFeedURL)
+	if err != nil {
+		t.Errorf("FeedFromGofeed() error = %v", err)
+		return
+	}
+
+	if feed.URL != testFeedURL {
+		t.Errorf("Feed.URL = %v, want %v", feed.URL, testFeedURL)
+	}
+
+	if feed.Title != testFeedTitle {
+		t.Errorf("Feed.Title = %v, want %v", feed.Title, testFeedTitle)
+	}
+
+	if feed.Description != testFeedDescription {
+		t.Errorf("Feed.Description = %v, want %v", feed.Description, testFeedDescription)
+	}
+
+	if !feed.LastUpdated.Equal(now) {
+		t.Errorf("Feed.LastUpdated = %v, want %v", feed.LastUpdated, now)
+	}
+
+	// Check that JSON was properly marshaled
+	var feedData gofeed.Feed
+	err = json.Unmarshal(feed.FeedJSON, &feedData)
+	if err != nil {
+		t.Errorf("Failed to unmarshal FeedJSON: %v", err)
+	}
+	if feedData.Title != testFeedTitle {
+		t.Errorf("FeedJSON.Title = %v, want %v", feedData.Title, testFeedTitle)
+	}
+}
+
+func TestItemFromGofeed(t *testing.T) {
+	const (
+		testItemTitle = "Test Item"
+		testItemURL   = "https://example.com/feed.xml"
+	)
+
+	now := time.Now()
+	gofeedItem := &gofeed.Item{
+		GUID:            "test-guid",
+		Title:           testItemTitle,
+		Link:            "https://example.com/item",
+		Content:         "Test content",
+		Description:     "Test summary",
+		PublishedParsed: &now,
+	}
+
+	item, err := ItemFromGofeed(gofeedItem, testItemURL)
+	if err != nil {
+		t.Errorf("ItemFromGofeed() error = %v", err)
+		return
+	}
+
+	if item.FeedURL != testItemURL {
+		t.Errorf("Item.FeedURL = %v, want %v", item.FeedURL, testItemURL)
+	}
+
+	if item.GUID != "test-guid" {
+		t.Errorf("Item.GUID = %v, want %v", item.GUID, "test-guid")
+	}
+
+	if item.Title != testItemTitle {
+		t.Errorf("Item.Title = %v, want %v", item.Title, testItemTitle)
+	}
+
+	if !item.PublishedDate.Equal(now) {
+		t.Errorf("Item.PublishedDate = %v, want %v", item.PublishedDate, now)
+	}
+}
+
+func TestItemFromGofeedNoGUID(t *testing.T) {
+	gofeedItem := &gofeed.Item{
+		Title: "Test Item",
+		Link:  "https://example.com/item",
+	}
+
+	item, err := ItemFromGofeed(gofeedItem, "https://example.com/feed.xml")
+	if err != nil {
+		t.Errorf("ItemFromGofeed() error = %v", err)
+		return
+	}
+
+	// Should generate GUID from link+title
+	if item.GUID == "" {
+		t.Errorf("Item.GUID should not be empty when no GUID provided")
+	}
+
+	// Should be consistent
+	item2, _ := ItemFromGofeed(gofeedItem, "https://example.com/feed.xml")
+	if item.GUID != item2.GUID {
+		t.Errorf("Generated GUID should be consistent: %v != %v", item.GUID, item2.GUID)
+	}
+}
+
+func TestGenerateGUID(t *testing.T) {
+	link := "https://example.com/item"
+	title := "Test Item"
+
+	guid1 := generateGUID(link, title)
+	guid2 := generateGUID(link, title)
+
+	if guid1 != guid2 {
+		t.Errorf("generateGUID should be deterministic: %v != %v", guid1, guid2)
+	}
+
+	if len(guid1) != 64 { // SHA256 hex string length
+		t.Errorf("generateGUID should return 64-char hex string, got %d chars", len(guid1))
+	}
+
+	// Different inputs should produce different GUIDs
+	guid3 := generateGUID("different-link", title)
+	if guid1 == guid3 {
+		t.Errorf("Different inputs should produce different GUIDs")
+	}
+}
