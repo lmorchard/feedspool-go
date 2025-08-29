@@ -15,11 +15,11 @@ import (
 )
 
 var (
-	upgradeFlag        bool
-	extractTemplates   bool
-	extractAssets      bool
-	templatesDir       string
-	assetsDir          string
+	upgradeFlag      bool
+	extractTemplates bool
+	extractAssets    bool
+	templatesDir     string
+	assetsDir        string
 )
 
 var initCmd = &cobra.Command{

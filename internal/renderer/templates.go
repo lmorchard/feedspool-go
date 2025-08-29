@@ -9,7 +9,7 @@ import (
 //go:embed templates
 var embeddedTemplates embed.FS
 
-//go:embed assets  
+//go:embed assets
 var embeddedAssets embed.FS
 
 // GetEmbeddedTemplates returns the embedded templates filesystem
@@ -37,12 +37,12 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 			return template.HTML(s)
 		},
 	})
-	
+
 	content, err := fs.ReadFile(fsys, name)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return tmpl.Parse(string(content))
 }
 

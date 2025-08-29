@@ -325,7 +325,7 @@ func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Fe
 
 	feeds := []Feed{}
 	feedURLMap := make(map[string]bool)
-	
+
 	for rows.Next() {
 		feed := Feed{}
 		err := rows.Scan(
@@ -377,7 +377,7 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 
 	placeholders := make([]string, len(feedURLs))
 	args := make([]interface{}, 0, len(feedURLs)+2)
-	
+
 	for i, url := range feedURLs {
 		placeholders[i] = "?"
 		args = append(args, url)

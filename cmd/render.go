@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	renderMaxAge     string
-	renderStart      string
-	renderEnd        string
-	renderOutput     string
-	renderTemplates  string
-	renderAssets     string
-	renderFeeds      string
-	renderFormat     string
+	renderMaxAge    string
+	renderStart     string
+	renderEnd       string
+	renderOutput    string
+	renderTemplates string
+	renderAssets    string
+	renderFeeds     string
+	renderFormat    string
 )
 
 var renderCmd = &cobra.Command{
@@ -143,7 +143,7 @@ func runRender(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create output directory
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 

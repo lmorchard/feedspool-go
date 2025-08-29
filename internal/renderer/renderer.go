@@ -60,7 +60,7 @@ func (r *Renderer) Render(writer io.Writer, templateName string, context *Templa
 // CopyAssets copies static assets to the output directory
 func (r *Renderer) CopyAssets(outputDir string) error {
 	var sourceFS fs.FS
-	
+
 	// Use custom assets directory if specified, otherwise use embedded
 	if r.assetsDir != "" {
 		sourceFS = fsFromDirImpl(r.assetsDir)
@@ -88,8 +88,8 @@ func (r *Renderer) CopyAssets(outputDir string) error {
 		// Create destination file
 		destPath := filepath.Join(outputDir, path)
 		destDir := filepath.Dir(destPath)
-		
-		if err := os.MkdirAll(destDir, 0755); err != nil {
+
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create asset directory %s: %w", destDir, err)
 		}
 
@@ -113,7 +113,7 @@ func ExtractTemplates(outputDir string) error {
 	return extractFromFS(GetEmbeddedTemplates(), outputDir, "templates")
 }
 
-// ExtractAssets extracts embedded assets to filesystem  
+// ExtractAssets extracts embedded assets to filesystem
 func ExtractAssets(outputDir string) error {
 	return extractFromFS(GetEmbeddedAssets(), outputDir, "assets")
 }
@@ -140,8 +140,8 @@ func extractFromFS(sourceFS fs.FS, outputDir, name string) error {
 		// Create destination file
 		destPath := filepath.Join(outputDir, path)
 		destDir := filepath.Dir(destPath)
-		
-		if err := os.MkdirAll(destDir, 0755); err != nil {
+
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create %s directory %s: %w", name, destDir, err)
 		}
 
