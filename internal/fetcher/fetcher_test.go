@@ -90,7 +90,6 @@ func TestFetchFeedSuccess(t *testing.T) {
 	const testETag = "test-etag"
 
 	db := setupTestDatabase(t)
-	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -184,7 +183,6 @@ func TestFetchFeedNotModified(t *testing.T) {
 
 func TestFetchFeedHTTPError(t *testing.T) {
 	db := setupTestDatabase(t)
-	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server that returns 404
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -206,7 +204,6 @@ func TestFetchFeedHTTPError(t *testing.T) {
 
 func TestFetchFeedInvalidXML(t *testing.T) {
 	db := setupTestDatabase(t)
-	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server that returns invalid XML
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -230,7 +227,6 @@ func TestFetchFeedInvalidXML(t *testing.T) {
 
 func TestFetchFeedMaxItems(t *testing.T) {
 	db := setupTestDatabase(t)
-	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -304,7 +300,6 @@ func TestFetchFeedForce(t *testing.T) {
 
 func TestFetchConcurrent(t *testing.T) {
 	db := setupTestDatabase(t)
-	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test servers
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

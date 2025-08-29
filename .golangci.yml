@@ -165,6 +165,11 @@ issues:
       linters:
         - nestif
 
+    # Allow complex nested blocks in initialization logic
+    - path: internal/initialize/initialize\.go
+      linters:
+        - nestif
+
     # Allow complex test functions
     - path: _test\.go
       linters:

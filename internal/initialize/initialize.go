@@ -11,6 +11,8 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 )
 
+const unknownVersion = "unknown"
+
 // Config holds all configuration for initialization operations.
 type Config struct {
 	Database         string
@@ -27,11 +29,15 @@ func Execute(config *Config) error {
 	// Determine what operations to perform
 	databaseInit := !config.ExtractTemplates && !config.ExtractAssets
 
+	var db *database.DB
 	// Database initialization
 	if databaseInit {
-		if err := initializeDatabase(config); err != nil {
+		var err error
+		db, err = initializeDatabase(config)
+		if err != nil {
 			return err
 		}
+		defer db.Close()
 	}
 
 	// Template extraction
@@ -50,32 +56,32 @@ func Execute(config *Config) error {
 
 	// JSON output for extraction results
 	if config.JSONOutput {
-		return outputJSON(config, databaseInit)
+		outputJSON(config, db, databaseInit)
 	}
 
 	return nil
 }
 
-func initializeDatabase(config *Config) error {
+func initializeDatabase(config *Config) (*database.DB, error) {
 	if _, err := os.Stat(config.Database); err == nil && !config.Upgrade {
-		return fmt.Errorf("database already exists at %s. Use --upgrade to upgrade existing database", config.Database)
+		return nil, fmt.Errorf("database already exists at %s. Use --upgrade to upgrade existing database", config.Database)
 	}
 
 	db, err := database.New(config.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
 
 	if err := db.InitSchema(); err != nil {
-		return fmt.Errorf("failed to initialize schema: %w", err)
+		db.Close()
+		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
 	if !config.JSONOutput {
 		printDatabaseResult(db, config.Upgrade)
 	}
 
-	return nil
+	return db, nil
 }
 
 func extractTemplateFiles(targetDir string, jsonOutput bool) error {
@@ -156,7 +162,7 @@ func printDatabaseResult(db *database.DB, upgrade bool) {
 	}
 }
 
-func outputJSON(config *Config, databaseInit bool) error {
+func outputJSON(config *Config, db *database.DB, databaseInit bool) {
 	result := map[string]any{
 		"success": true,
 	}
@@ -164,11 +170,13 @@ func outputJSON(config *Config, databaseInit bool) error {
 	if databaseInit {
 		result["database"] = config.Database
 		if config.Upgrade {
-			// For JSON output, we'd need to pass the db instance here,
-			// but since this is for JSON output and the db is already closed,
-			// we'll skip the version for now
 			result["action"] = "upgrade"
-			result["version"] = "unknown"
+			result["version"] = getVersionForJSON(db)
+			if result["version"] == unknownVersion && db != nil {
+				if _, err := db.GetMigrationVersion(); err != nil {
+					result["version_error"] = err.Error()
+				}
+			}
 		} else {
 			result["action"] = "initialize"
 		}
@@ -183,5 +191,15 @@ func outputJSON(config *Config, databaseInit bool) error {
 
 	jsonData, _ := json.Marshal(result)
 	fmt.Println(string(jsonData)) //nolint:forbidigo // JSON output to stdout
-	return nil
+}
+
+func getVersionForJSON(db *database.DB) any {
+	if db == nil {
+		return unknownVersion
+	}
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		return unknownVersion
+	}
+	return version
 }
