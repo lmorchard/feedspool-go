@@ -12,7 +12,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 )
 
-// TemplateContext contains all data passed to templates
+// TemplateContext contains all data passed to templates.
 type TemplateContext struct {
 	Feeds       []database.Feed
 	Items       map[string][]database.Item
@@ -20,13 +20,13 @@ type TemplateContext struct {
 	TimeWindow  string
 }
 
-// Renderer handles template loading and rendering
+// Renderer handles template loading and rendering.
 type Renderer struct {
 	templateDir string
 	assetsDir   string
 }
 
-// NewRenderer creates a new Renderer instance
+// NewRenderer creates a new Renderer instance.
 func NewRenderer(templateDir, assetsDir string) *Renderer {
 	return &Renderer{
 		templateDir: templateDir,
@@ -34,7 +34,7 @@ func NewRenderer(templateDir, assetsDir string) *Renderer {
 	}
 }
 
-// Render generates HTML output using the specified template and context
+// Render generates HTML output using the specified template and context.
 func (r *Renderer) Render(writer io.Writer, templateName string, context *TemplateContext) error {
 	var tmpl *template.Template
 	var err error
@@ -57,7 +57,7 @@ func (r *Renderer) Render(writer io.Writer, templateName string, context *Templa
 	return tmpl.Execute(writer, context)
 }
 
-// CopyAssets copies static assets to the output directory
+// CopyAssets copies static assets to the output directory.
 func (r *Renderer) CopyAssets(outputDir string) error {
 	var sourceFS fs.FS
 

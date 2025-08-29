@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// fsFromDirImpl implements fs.FS for a directory path
+// fsFromDirImpl implements fs.FS for a directory path.
 type fsFromDirImpl string
 
 func (dir fsFromDirImpl) Open(name string) (fs.File, error) {

@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultPort      = 8080
+	defaultOutputDir = "./build"
+)
+
 type Config struct {
 	Database    string
 	Verbose     bool
@@ -95,8 +100,8 @@ func GetDefault() *Config {
 			DefaultMaxAge: "24h",
 		},
 		Serve: ServeConfig{
-			Port: 8080,
-			Dir:  "./build",
+			Port: defaultPort,
+			Dir:  defaultOutputDir,
 		},
 		Init: InitConfig{
 			TemplatesDir: "./templates",

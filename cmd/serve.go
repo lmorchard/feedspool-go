@@ -45,8 +45,8 @@ consider using a dedicated web server like nginx or Apache.`,
 }
 
 func init() {
-	serveCmd.Flags().IntVar(&servePort, "port", 8080, "HTTP server port")
-	serveCmd.Flags().StringVar(&serveDir, "dir", "./build", "Directory to serve")
+	serveCmd.Flags().IntVar(&servePort, "port", defaultPort, "HTTP server port")
+	serveCmd.Flags().StringVar(&serveDir, "dir", defaultOutputDir, "Directory to serve")
 
 	// Bind flags to viper for config file support
 	_ = viper.BindPFlag("serve.port", serveCmd.Flags().Lookup("port"))
@@ -63,10 +63,10 @@ func runServe(_ *cobra.Command, _ []string) error {
 	dir := viper.GetString("serve.dir")
 
 	// Override with command line flags if provided
-	if servePort != 8080 {
+	if servePort != defaultPort {
 		port = servePort
 	}
-	if serveDir != "./build" {
+	if serveDir != defaultOutputDir {
 		dir = serveDir
 	}
 
@@ -86,8 +86,8 @@ func runServe(_ *cobra.Command, _ []string) error {
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      handler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  serverReadTimeout * time.Second,
+		WriteTimeout: serverWriteTimeout * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
@@ -110,7 +110,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 	fmt.Println("\nShutting down server...")
 
 	// Graceful shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {

@@ -12,6 +12,19 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultOutputDir   = "./build"
+	defaultFormat      = "text"
+	formatOPML         = "opml"
+	formatText         = "text"
+	actionUpgrade      = "upgrade"
+	actionInitialize   = "initialize"
+	defaultPort        = 8080
+	shutdownTimeout    = 5
+	serverReadTimeout  = 15
+	serverWriteTimeout = 15
+)
+
 var (
 	renderMaxAge    string
 	renderStart     string
@@ -53,11 +66,11 @@ func init() {
 	renderCmd.Flags().StringVar(&renderMaxAge, "max-age", "", "Show feeds updated within duration (e.g., 24h, 7d)")
 	renderCmd.Flags().StringVar(&renderStart, "start", "", "Start time (RFC3339 format)")
 	renderCmd.Flags().StringVar(&renderEnd, "end", "", "End time (RFC3339 format)")
-	renderCmd.Flags().StringVar(&renderOutput, "output", "./build", "Output directory")
+	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
 	renderCmd.Flags().StringVar(&renderFeeds, "feeds", "", "Feed list file")
-	renderCmd.Flags().StringVar(&renderFormat, "format", "text", "Feed list format (opml or text)")
+	renderCmd.Flags().StringVar(&renderFormat, "format", defaultFormat, "Feed list format (opml or text)")
 
 	// Bind flags to viper for config file support
 	_ = viper.BindPFlag("render.max_age", renderCmd.Flags().Lookup("max-age"))
@@ -95,7 +108,7 @@ func runRender(_ *cobra.Command, _ []string) error {
 	if renderEnd != "" {
 		end = renderEnd
 	}
-	if renderOutput != "./build" {
+	if renderOutput != defaultOutputDir {
 		outputDir = renderOutput
 	}
 	if renderTemplates != "" {
@@ -107,7 +120,7 @@ func runRender(_ *cobra.Command, _ []string) error {
 	if renderFeeds != "" {
 		feedsFile = renderFeeds
 	}
-	if renderFormat != "text" {
+	if renderFormat != defaultFormat {
 		format = renderFormat
 	}
 
@@ -127,9 +140,9 @@ func runRender(_ *cobra.Command, _ []string) error {
 	if feedsFile != "" {
 		var feedFormat feedlist.Format
 		switch format {
-		case "opml":
+		case formatOPML:
 			feedFormat = feedlist.FormatOPML
-		case "text":
+		case formatText:
 			feedFormat = feedlist.FormatText
 		default:
 			return fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
@@ -157,7 +170,8 @@ func runRender(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("database not initialized: %w", err)
 	}
 
-	fmt.Printf("Rendering feeds from %s to %s...\n", startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
+	fmt.Printf("Rendering feeds from %s to %s...\n",
+		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
 	if len(feedURLs) > 0 {
 		fmt.Printf("Using %d feeds from %s\n", len(feedURLs), feedsFile)
 	}

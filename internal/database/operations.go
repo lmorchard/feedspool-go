@@ -420,33 +420,30 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 }
 
 // ParseTimeWindow parses CLI time arguments and returns start and end times
-func ParseTimeWindow(maxAge string, startStr, endStr string) (time.Time, time.Time, error) {
-	var start, end time.Time
-	var err error
-
+func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.Time, err error) {
 	// Parse explicit time range first
 	if startStr != "" || endStr != "" {
 		if startStr != "" {
-			start, err = time.Parse(time.RFC3339, startStr)
+			startTime, err = time.Parse(time.RFC3339, startStr)
 			if err != nil {
 				return time.Time{}, time.Time{}, fmt.Errorf("invalid start time format: %w", err)
 			}
 		}
 
 		if endStr != "" {
-			end, err = time.Parse(time.RFC3339, endStr)
+			endTime, err = time.Parse(time.RFC3339, endStr)
 			if err != nil {
 				return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
 			}
 		} else {
-			end = time.Now()
+			endTime = time.Now()
 		}
 
-		if !start.IsZero() && !end.IsZero() && start.After(end) {
+		if !startTime.IsZero() && !endTime.IsZero() && startTime.After(endTime) {
 			return time.Time{}, time.Time{}, fmt.Errorf("start time cannot be after end time")
 		}
 
-		return start, end, nil
+		return startTime, endTime, nil
 	}
 
 	// Parse max age duration
@@ -456,13 +453,13 @@ func ParseTimeWindow(maxAge string, startStr, endStr string) (time.Time, time.Ti
 			return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
 		}
 
-		end = time.Now()
-		start = end.Add(-duration)
-		return start, end, nil
+		endTime = time.Now()
+		startTime = endTime.Add(-duration)
+		return startTime, endTime, nil
 	}
 
 	// Default to 24 hours if nothing specified
-	end = time.Now()
-	start = end.Add(-24 * time.Hour)
-	return start, end, nil
+	endTime = time.Now()
+	startTime = endTime.Add(-24 * time.Hour)
+	return startTime, endTime, nil
 }

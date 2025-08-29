@@ -71,14 +71,14 @@ func initConfig() {
 	viper.SetDefault("max_items", 100)
 
 	// Render command defaults
-	viper.SetDefault("render.output_dir", "./build")
+	viper.SetDefault("render.output_dir", defaultOutputDir)
 	viper.SetDefault("render.templates_dir", "")
 	viper.SetDefault("render.assets_dir", "")
 	viper.SetDefault("render.default_max_age", "24h")
 
 	// Serve command defaults
-	viper.SetDefault("serve.port", 8080)
-	viper.SetDefault("serve.dir", "./build")
+	viper.SetDefault("serve.port", defaultPort)
+	viper.SetDefault("serve.dir", defaultOutputDir)
 
 	// Init command defaults
 	viper.SetDefault("init.templates_dir", "./templates")

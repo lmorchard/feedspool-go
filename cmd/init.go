@@ -131,10 +131,10 @@ func runInit(_ *cobra.Command, _ []string) error {
 			result["database"] = cfg.Database
 			if upgradeFlag {
 				version, _ := database.GetMigrationVersion()
-				result["action"] = "upgrade"
+				result["action"] = actionUpgrade
 				result["version"] = version
 			} else {
-				result["action"] = "initialize"
+				result["action"] = actionInitialize
 			}
 		}
 		if extractTemplates {
@@ -152,10 +152,10 @@ func runInit(_ *cobra.Command, _ []string) error {
 		}
 		if upgradeFlag {
 			version, _ := database.GetMigrationVersion()
-			result["action"] = "upgrade"
+			result["action"] = actionUpgrade
 			result["version"] = version
 		} else {
-			result["action"] = "initialize"
+			result["action"] = actionInitialize
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
@@ -170,7 +170,7 @@ func extractTemplateFiles(targetDir string, jsonOutput bool) error {
 		if !jsonOutput {
 			fmt.Printf("Directory %s already exists. Files may be overwritten.\n", targetDir)
 			if !confirmExtraction() {
-				fmt.Println("Template extraction cancelled")
+				fmt.Println("Template extraction canceled")
 				return nil
 			}
 		}
@@ -195,7 +195,7 @@ func extractAssetFiles(targetDir string, jsonOutput bool) error {
 		if !jsonOutput {
 			fmt.Printf("Directory %s already exists. Files may be overwritten.\n", targetDir)
 			if !confirmExtraction() {
-				fmt.Println("Asset extraction cancelled")
+				fmt.Println("Asset extraction canceled")
 				return nil
 			}
 		}
