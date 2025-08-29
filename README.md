@@ -134,3 +134,16 @@ make test
 # Check linting
 make lint
 ```
+
+## TODO
+
+- [ ] rework fetch command to take both single feed and feed list
+- [ ] rework update command to fetch all feeds in DB without a list
+- [ ] support plain text list of feed URLs alongside OPML
+- [ ] feed "subscription" commands to add / remove feeds from OPML & text
+- [ ] commands to export feeds in DB to OPML & text
+- [ ] add per feed fetch history log table
+- [ ] implement a static site generator to render HTML from feeds
+- [ ] implement a simple REST API server to access feeds data
+- [ ] implement a simple HTTP server to serve up static site and feeds API
+- [ ] command to autodiscover feed URL from HTML URL
