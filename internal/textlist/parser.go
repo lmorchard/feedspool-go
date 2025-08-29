@@ -58,7 +58,7 @@ func WriteTextList(writer io.Writer, urls []string) error {
 	// Write header comment with timestamp
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	header := fmt.Sprintf("# Feed list generated on %s\n# One feed URL per line, comments start with #\n\n", timestamp)
-	
+
 	if _, err := writer.Write([]byte(header)); err != nil {
 		return fmt.Errorf("failed to write header: %w", err)
 	}

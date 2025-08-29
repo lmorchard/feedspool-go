@@ -88,11 +88,11 @@ func TestGetDefaultFeedList(t *testing.T) {
 	}
 
 	format, filename := config.GetDefaultFeedList()
-	
+
 	if format != "opml" {
 		t.Errorf("GetDefaultFeedList() format = %v, want %v", format, "opml")
 	}
-	
+
 	if filename != "my-feeds.opml" {
 		t.Errorf("GetDefaultFeedList() filename = %v, want %v", filename, "my-feeds.opml")
 	}

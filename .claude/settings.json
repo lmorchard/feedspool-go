@@ -1,4 +1,14 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(make format:*)",
+      "Bash(make lint:*)",
+      "Bash(make test:*)",
+      "Bash(go test:*)",
+      "Bash(./feedspool --help)",
+      "Bash(go build:*)"
+    ]
+  },
   "hooks": {
     "post-edit": "make format && make lint && make test",
     "post-multi-edit": "make format && make lint && make test"

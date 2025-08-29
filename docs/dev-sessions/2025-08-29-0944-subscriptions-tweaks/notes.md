@@ -36,6 +36,28 @@
   - Updated tests to cover new functionality
   - All tests passing
 
+### Phase 2: New Commands Implementation - COMPLETED ✅
+- **Step 4 COMPLETED**: Subscribe Command
+  - Created `cmd/subscribe.go` with full subscription functionality
+  - Supports both direct URL addition and HTML autodiscovery with `--discover` flag
+  - Uses config defaults when format/filename not specified
+  - Includes RSS/Atom link autodiscovery from HTML pages
+  - All functionality tested and working
+
+- **Step 5 COMPLETED**: Unsubscribe Command  
+  - Created `cmd/unsubscribe.go` for removing feeds from lists
+  - Uses config defaults when format/filename not specified
+  - Proper error handling and user feedback
+  - All functionality tested and working
+
+- **Step 6 COMPLETED**: Export Command
+  - Created `cmd/export.go` for exporting database feeds to lists
+  - Supports both OPML and text format export
+  - Requires explicit format specification (no defaults)
+  - All functionality tested and working
+
+**All linting issues resolved, all tests passing**
+
 ## Issues Encountered
 [Document any problems that came up]
 

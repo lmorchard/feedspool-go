@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+const (
+	testURL1 = "https://example.com/feed.xml"
+	testURL2 = "https://another.com/rss"
+	testURL3 = "https://third.com/atom.xml"
+)
+
 func TestDetectFormat(t *testing.T) {
 	tests := []struct {
 		filename string
@@ -62,12 +68,12 @@ func TestTextFeedListOperations(t *testing.T) {
 	list := NewFeedList(FormatText)
 
 	// Test adding URLs
-	err := list.AddURL("https://example.com/feed.xml")
+	err := list.AddURL(testURL1)
 	if err != nil {
 		t.Errorf("AddURL() error = %v", err)
 	}
 
-	err = list.AddURL("https://another.com/rss")
+	err = list.AddURL(testURL2)
 	if err != nil {
 		t.Errorf("AddURL() error = %v", err)
 	}
@@ -78,7 +84,7 @@ func TestTextFeedListOperations(t *testing.T) {
 	}
 
 	// Test adding duplicate URL (should not error, just ignore)
-	err = list.AddURL("https://example.com/feed.xml")
+	err = list.AddURL(testURL1)
 	if err != nil {
 		t.Errorf("AddURL() duplicate should not error, got %v", err)
 	}
@@ -89,7 +95,7 @@ func TestTextFeedListOperations(t *testing.T) {
 	}
 
 	// Test removing URL
-	err = list.RemoveURL("https://example.com/feed.xml")
+	err = list.RemoveURL(testURL1)
 	if err != nil {
 		t.Errorf("RemoveURL() error = %v", err)
 	}
@@ -99,8 +105,8 @@ func TestTextFeedListOperations(t *testing.T) {
 		t.Errorf("Expected 1 URL after removal, got %d", len(urls))
 	}
 
-	if urls[0] != "https://another.com/rss" {
-		t.Errorf("Expected remaining URL to be 'https://another.com/rss', got %s", urls[0])
+	if urls[0] != testURL2 {
+		t.Errorf("Expected remaining URL to be '%s', got %s", testURL2, urls[0])
 	}
 
 	// Test removing non-existent URL (should not error)
@@ -114,12 +120,12 @@ func TestOPMLFeedListOperations(t *testing.T) {
 	list := NewFeedList(FormatOPML)
 
 	// Test adding URLs
-	err := list.AddURL("https://example.com/feed.xml")
+	err := list.AddURL(testURL1)
 	if err != nil {
 		t.Errorf("AddURL() error = %v", err)
 	}
 
-	err = list.AddURL("https://another.com/rss")
+	err = list.AddURL(testURL2)
 	if err != nil {
 		t.Errorf("AddURL() error = %v", err)
 	}
@@ -130,7 +136,7 @@ func TestOPMLFeedListOperations(t *testing.T) {
 	}
 
 	// Test adding duplicate URL (should not error, just ignore)
-	err = list.AddURL("https://example.com/feed.xml")
+	err = list.AddURL(testURL1)
 	if err != nil {
 		t.Errorf("AddURL() duplicate should not error, got %v", err)
 	}
@@ -141,7 +147,7 @@ func TestOPMLFeedListOperations(t *testing.T) {
 	}
 
 	// Test removing URL
-	err = list.RemoveURL("https://example.com/feed.xml")
+	err = list.RemoveURL(testURL1)
 	if err != nil {
 		t.Errorf("RemoveURL() error = %v", err)
 	}
@@ -151,8 +157,8 @@ func TestOPMLFeedListOperations(t *testing.T) {
 		t.Errorf("Expected 1 URL after removal, got %d", len(urls))
 	}
 
-	if urls[0] != "https://another.com/rss" {
-		t.Errorf("Expected remaining URL to be 'https://another.com/rss', got %s", urls[0])
+	if urls[0] != testURL2 {
+		t.Errorf("Expected remaining URL to be '%s', got %s", testURL2, urls[0])
 	}
 }
 
@@ -163,8 +169,8 @@ func TestTextFeedListSaveAndLoad(t *testing.T) {
 
 	// Create list with some URLs
 	list := NewFeedList(FormatText)
-	list.AddURL("https://example.com/feed.xml")
-	list.AddURL("https://another.com/rss")
+	list.AddURL(testURL1)
+	list.AddURL(testURL2)
 
 	// Save to file
 	err := list.Save(filename)
@@ -200,8 +206,8 @@ func TestOPMLFeedListSaveAndLoad(t *testing.T) {
 
 	// Create list with some URLs
 	list := NewFeedList(FormatOPML)
-	list.AddURL("https://example.com/feed.xml")
-	list.AddURL("https://another.com/rss")
+	list.AddURL(testURL1)
+	list.AddURL(testURL2)
 
 	// Save to file
 	err := list.Save(filename)
@@ -224,11 +230,11 @@ func TestOPMLFeedListSaveAndLoad(t *testing.T) {
 		t.Error("Saved OPML file should contain OPML declaration")
 	}
 
-	if !strings.Contains(contentStr, "https://example.com/feed.xml") {
+	if !strings.Contains(contentStr, testURL1) {
 		t.Error("Saved OPML file should contain first URL")
 	}
 
-	if !strings.Contains(contentStr, "https://another.com/rss") {
+	if !strings.Contains(contentStr, testURL2) {
 		t.Error("Saved OPML file should contain second URL")
 	}
 
@@ -265,7 +271,7 @@ func TestLoadInvalidFormat(t *testing.T) {
 	filename := filepath.Join(tmpDir, "test.txt")
 
 	// Create empty file
-	os.WriteFile(filename, []byte(""), 0644)
+	os.WriteFile(filename, []byte(""), 0o644)
 
 	_, err := LoadFeedList("invalid", filename)
 	if err == nil {

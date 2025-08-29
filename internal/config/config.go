@@ -57,12 +57,12 @@ func GetDefault() *Config {
 	}
 }
 
-// HasDefaultFeedList returns true if both format and filename are configured
+// HasDefaultFeedList returns true if both format and filename are configured.
 func (c *Config) HasDefaultFeedList() bool {
 	return c.FeedList.Format != "" && c.FeedList.Filename != ""
 }
 
-// GetDefaultFeedList returns the configured default format and filename
+// GetDefaultFeedList returns the configured default format and filename.
 func (c *Config) GetDefaultFeedList() (format, filename string) {
 	return c.FeedList.Format, c.FeedList.Filename
 }

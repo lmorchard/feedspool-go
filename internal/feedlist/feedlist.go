@@ -11,7 +11,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/textlist"
 )
 
-// Format represents the supported feed list formats
+// Format represents the supported feed list formats.
 type Format string
 
 const (
@@ -19,7 +19,12 @@ const (
 	FormatText Format = "text"
 )
 
-// FeedList interface provides unified access to different feed list formats
+// String returns the string representation of the format.
+func (f Format) String() string {
+	return string(f)
+}
+
+// FeedList interface provides unified access to different feed list formats.
 type FeedList interface {
 	GetURLs() []string
 	AddURL(url string) error
@@ -27,18 +32,18 @@ type FeedList interface {
 	Save(filename string) error
 }
 
-// OPMLFeedList wraps OPML functionality
+// OPMLFeedList wraps OPML functionality.
 type OPMLFeedList struct {
 	opml *opml.OPML
 	urls []string
 }
 
-// TextFeedList uses the text parser
+// TextFeedList uses the text parser.
 type TextFeedList struct {
 	urls []string
 }
 
-// LoadFeedList loads a feed list from a file based on the specified format
+// LoadFeedList loads a feed list from a file based on the specified format.
 func LoadFeedList(format Format, filename string) (FeedList, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -56,7 +61,7 @@ func LoadFeedList(format Format, filename string) (FeedList, error) {
 	}
 }
 
-// NewFeedList creates a new empty feed list of the specified format
+// NewFeedList creates a new empty feed list of the specified format.
 func NewFeedList(format Format) FeedList {
 	switch format {
 	case FormatOPML:
@@ -79,7 +84,7 @@ func NewFeedList(format Format) FeedList {
 	}
 }
 
-// DetectFormat attempts to detect the format based on file extension
+// DetectFormat attempts to detect the format based on file extension.
 func DetectFormat(filename string) Format {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
@@ -93,7 +98,7 @@ func DetectFormat(filename string) Format {
 	}
 }
 
-// loadOPMLFeedList loads an OPML feed list from a reader
+// loadOPMLFeedList loads an OPML feed list from a reader.
 func loadOPMLFeedList(reader io.Reader) (FeedList, error) {
 	opmlData, err := opml.ParseOPML(reader)
 	if err != nil {
@@ -107,7 +112,7 @@ func loadOPMLFeedList(reader io.Reader) (FeedList, error) {
 	}, nil
 }
 
-// loadTextFeedList loads a text feed list from a reader
+// loadTextFeedList loads a text feed list from a reader.
 func loadTextFeedList(reader io.Reader) (FeedList, error) {
 	urls, err := textlist.ParseTextList(reader)
 	if err != nil {
@@ -119,14 +124,14 @@ func loadTextFeedList(reader io.Reader) (FeedList, error) {
 	}, nil
 }
 
-// OPMLFeedList methods
+// OPMLFeedList methods.
 
-// GetURLs returns all URLs in the OPML feed list
+// GetURLs returns all URLs in the OPML feed list.
 func (ofl *OPMLFeedList) GetURLs() []string {
 	return ofl.urls
 }
 
-// AddURL adds a URL to the OPML feed list
+// AddURL adds a URL to the OPML feed list.
 func (ofl *OPMLFeedList) AddURL(url string) error {
 	// Check if URL already exists
 	for _, existingURL := range ofl.urls {
@@ -151,7 +156,7 @@ func (ofl *OPMLFeedList) AddURL(url string) error {
 	return nil
 }
 
-// RemoveURL removes a URL from the OPML feed list
+// RemoveURL removes a URL from the OPML feed list.
 func (ofl *OPMLFeedList) RemoveURL(url string) error {
 	// Remove from URLs slice
 	newURLs := make([]string, 0)
@@ -174,7 +179,7 @@ func (ofl *OPMLFeedList) RemoveURL(url string) error {
 	return nil
 }
 
-// Save saves the OPML feed list to a file
+// Save saves the OPML feed list to a file.
 func (ofl *OPMLFeedList) Save(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -196,7 +201,7 @@ func (ofl *OPMLFeedList) Save(filename string) error {
 
 	// Write outlines
 	for _, outline := range ofl.opml.Body.Outlines {
-		line := fmt.Sprintf(`        <outline text="%s" type="%s" xmlUrl="%s" />%s`,
+		line := fmt.Sprintf(`        <outline text=%q type=%q xmlUrl=%q />%s`,
 			outline.Text, outline.Type, outline.XMLURL, "\n")
 		if _, err := file.WriteString(line); err != nil {
 			return fmt.Errorf("failed to write OPML outline: %w", err)
@@ -214,14 +219,14 @@ func (ofl *OPMLFeedList) Save(filename string) error {
 	return nil
 }
 
-// TextFeedList methods
+// TextFeedList methods.
 
-// GetURLs returns all URLs in the text feed list
+// GetURLs returns all URLs in the text feed list.
 func (tfl *TextFeedList) GetURLs() []string {
 	return tfl.urls
 }
 
-// AddURL adds a URL to the text feed list
+// AddURL adds a URL to the text feed list.
 func (tfl *TextFeedList) AddURL(url string) error {
 	// Check if URL already exists
 	for _, existingURL := range tfl.urls {
@@ -234,7 +239,7 @@ func (tfl *TextFeedList) AddURL(url string) error {
 	return nil
 }
 
-// RemoveURL removes a URL from the text feed list
+// RemoveURL removes a URL from the text feed list.
 func (tfl *TextFeedList) RemoveURL(url string) error {
 	newURLs := make([]string, 0)
 	for _, existingURL := range tfl.urls {
@@ -246,7 +251,7 @@ func (tfl *TextFeedList) RemoveURL(url string) error {
 	return nil
 }
 
-// Save saves the text feed list to a file
+// Save saves the text feed list to a file.
 func (tfl *TextFeedList) Save(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
