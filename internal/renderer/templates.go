@@ -12,7 +12,7 @@ var embeddedTemplates embed.FS
 //go:embed assets
 var embeddedAssets embed.FS
 
-// GetEmbeddedTemplates returns the embedded templates filesystem
+// GetEmbeddedTemplates returns the embedded templates filesystem.
 func GetEmbeddedTemplates() fs.FS {
 	templatesFS, err := fs.Sub(embeddedTemplates, "templates")
 	if err != nil {
@@ -21,7 +21,7 @@ func GetEmbeddedTemplates() fs.FS {
 	return templatesFS
 }
 
-// GetEmbeddedAssets returns the embedded assets filesystem
+// GetEmbeddedAssets returns the embedded assets filesystem.
 func GetEmbeddedAssets() fs.FS {
 	assetsFS, err := fs.Sub(embeddedAssets, "assets")
 	if err != nil {
@@ -30,7 +30,7 @@ func GetEmbeddedAssets() fs.FS {
 	return assetsFS
 }
 
-// LoadTemplateFromFS loads and parses a template from the given filesystem
+// LoadTemplateFromFS loads and parses a template from the given filesystem.
 func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	tmpl := template.New(name).Funcs(template.FuncMap{
 		"html": func(s string) template.HTML {
@@ -47,18 +47,18 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	return tmpl.Parse(string(content))
 }
 
-// LoadDefaultTemplate loads the default index.html template from embedded files
+// LoadDefaultTemplate loads the default index.html template from embedded files.
 func LoadDefaultTemplate() (*template.Template, error) {
 	return LoadTemplateFromFS(GetEmbeddedTemplates(), "index.html")
 }
 
-// LoadCustomTemplate loads a template from a custom filesystem path
+// LoadCustomTemplate loads a template from a custom filesystem path.
 func LoadCustomTemplate(templateDir, name string) (*template.Template, error) {
 	fsys := fsFromDir(templateDir)
 	return LoadTemplateFromFS(fsys, name)
 }
 
-// fsFromDir creates a filesystem interface from a directory path
+// fsFromDir creates a filesystem interface from a directory path.
 func fsFromDir(dir string) fs.FS {
 	return fsFromDirImpl(dir)
 }

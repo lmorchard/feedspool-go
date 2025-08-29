@@ -289,7 +289,7 @@ func GetFeedURLs() ([]string, error) {
 	return urls, nil
 }
 
-// GetFeedsWithItemsByTimeRange gets feeds and their items within a specific time range
+// GetFeedsWithItemsByTimeRange gets feeds and their items within a specific time range.
 func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Feed, map[string][]Item, error) {
 	if db == nil {
 		return nil, nil, fmt.Errorf("database not connected")
@@ -356,14 +356,14 @@ func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Fe
 	return feeds, items, nil
 }
 
-// GetFeedsWithItemsByMaxAge gets feeds and their items within a specified age from now
+// GetFeedsWithItemsByMaxAge gets feeds and their items within a specified age from now.
 func GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string) ([]Feed, map[string][]Item, error) {
 	end := time.Now()
 	start := end.Add(-maxAge)
 	return GetFeedsWithItemsByTimeRange(start, end, feedURLs)
 }
 
-// getItemsForFeeds gets all items for a set of feeds within a time range
+// getItemsForFeeds gets all items for a set of feeds within a time range.
 func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[string][]Item, error) {
 	if len(feedURLMap) == 0 {
 		return make(map[string][]Item), nil
@@ -419,9 +419,10 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 	return items, nil
 }
 
-// ParseTimeWindow parses CLI time arguments and returns start and end times
+// ParseTimeWindow parses CLI time arguments and returns start and end times.
 func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.Time, err error) {
 	// Parse explicit time range first
+	//nolint:nestif // Time parsing logic requires nested conditionals
 	if startStr != "" || endStr != "" {
 		if startStr != "" {
 			startTime, err = time.Parse(time.RFC3339, startStr)

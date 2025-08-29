@@ -5,24 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lmorchard/feedspool-go/internal/database"
-	"github.com/lmorchard/feedspool-go/internal/feedlist"
+	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-const (
-	defaultOutputDir   = "./build"
-	defaultFormat      = "text"
-	formatOPML         = "opml"
-	formatText         = "text"
-	actionUpgrade      = "upgrade"
-	actionInitialize   = "initialize"
-	defaultPort        = 8080
-	shutdownTimeout    = 5
-	serverReadTimeout  = 15
-	serverWriteTimeout = 15
 )
 
 var (
@@ -88,144 +74,65 @@ func init() {
 func runRender(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
-	// Get values from viper (includes config file values)
-	maxAge := viper.GetString("render.max_age")
-	start := viper.GetString("render.start")
-	end := viper.GetString("render.end")
-	outputDir := viper.GetString("render.output")
-	templatesDir := viper.GetString("render.templates")
-	assetsDir := viper.GetString("render.assets")
-	feedsFile := viper.GetString("render.feeds")
-	format := viper.GetString("render.format")
+	// Build configuration from flags and config file
+	config := buildRenderConfig(cfg)
 
-	// Override with command line flags if provided
-	if renderMaxAge != "" {
-		maxAge = renderMaxAge
-	}
-	if renderStart != "" {
-		start = renderStart
-	}
-	if renderEnd != "" {
-		end = renderEnd
-	}
-	if renderOutput != defaultOutputDir {
-		outputDir = renderOutput
-	}
-	if renderTemplates != "" {
-		templatesDir = renderTemplates
-	}
-	if renderAssets != "" {
-		assetsDir = renderAssets
-	}
-	if renderFeeds != "" {
-		feedsFile = renderFeeds
-	}
-	if renderFormat != defaultFormat {
-		format = renderFormat
-	}
-
-	// Validate parameters
-	if err := validateRenderParams(maxAge, start, end, outputDir, templatesDir, assetsDir, feedsFile, format); err != nil {
+	// Validate configuration
+	if err := validateRenderConfig(config); err != nil {
 		return err
 	}
 
-	// Parse time window
-	startTime, endTime, err := database.ParseTimeWindow(maxAge, start, end)
-	if err != nil {
-		return fmt.Errorf("invalid time parameters: %w", err)
+	// Execute the render operation
+	return renderer.ExecuteWorkflow(config)
+}
+
+func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
+	// Get values from viper (includes config file values)
+	config := &renderer.WorkflowConfig{
+		MaxAge:       viper.GetString("render.max_age"),
+		Start:        viper.GetString("render.start"),
+		End:          viper.GetString("render.end"),
+		OutputDir:    viper.GetString("render.output"),
+		TemplatesDir: viper.GetString("render.templates"),
+		AssetsDir:    viper.GetString("render.assets"),
+		FeedsFile:    viper.GetString("render.feeds"),
+		Format:       viper.GetString("render.format"),
+		Database:     cfg.Database,
 	}
 
-	// Load feed URLs from file if specified
-	var feedURLs []string
-	if feedsFile != "" {
-		var feedFormat feedlist.Format
-		switch format {
-		case formatOPML:
-			feedFormat = feedlist.FormatOPML
-		case formatText:
-			feedFormat = feedlist.FormatText
-		default:
-			return fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
-		}
-
-		feedList, err := feedlist.LoadFeedList(feedFormat, feedsFile)
-		if err != nil {
-			return fmt.Errorf("failed to load feed list: %w", err)
-		}
-		feedURLs = feedList.GetURLs()
+	// Override with command line flags if provided
+	if renderMaxAge != "" {
+		config.MaxAge = renderMaxAge
+	}
+	if renderStart != "" {
+		config.Start = renderStart
+	}
+	if renderEnd != "" {
+		config.End = renderEnd
+	}
+	if renderOutput != defaultOutputDir {
+		config.OutputDir = renderOutput
+	}
+	if renderTemplates != "" {
+		config.TemplatesDir = renderTemplates
+	}
+	if renderAssets != "" {
+		config.AssetsDir = renderAssets
+	}
+	if renderFeeds != "" {
+		config.FeedsFile = renderFeeds
+	}
+	if renderFormat != defaultFormat {
+		config.Format = renderFormat
 	}
 
-	// Create output directory
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
+	return config
+}
 
-	// Connect to database
-	if err := database.Connect(cfg.Database); err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer database.Close()
-
-	if err := database.IsInitialized(); err != nil {
-		return fmt.Errorf("database not initialized: %w", err)
-	}
-
-	fmt.Printf("Rendering feeds from %s to %s...\n",
-		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
-	if len(feedURLs) > 0 {
-		fmt.Printf("Using %d feeds from %s\n", len(feedURLs), feedsFile)
-	}
-
-	// Query feeds and items
-	feeds, items, err := database.GetFeedsWithItemsByTimeRange(startTime, endTime, feedURLs)
-	if err != nil {
-		return fmt.Errorf("failed to query feeds and items: %w", err)
-	}
-
-	if len(feeds) == 0 {
-		fmt.Println("No feeds found matching criteria")
-		return nil
-	}
-
-	fmt.Printf("Found %d feeds with items\n", len(feeds))
-
-	// Initialize renderer
-	r := renderer.NewRenderer(templatesDir, assetsDir)
-
-	// Prepare template context
-	timeWindow := fmt.Sprintf("From %s to %s", startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
-	if maxAge != "" {
-		timeWindow = fmt.Sprintf("Last %s", maxAge)
-	}
-
-	context := &renderer.TemplateContext{
-		Feeds:       feeds,
-		Items:       items,
-		GeneratedAt: endTime,
-		TimeWindow:  timeWindow,
-	}
-
-	// Render HTML
-	outputFile := filepath.Join(outputDir, "index.html")
-	file, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer file.Close()
-
-	if err := r.Render(file, "index.html", context); err != nil {
-		return fmt.Errorf("failed to render template: %w", err)
-	}
-
-	// Copy assets
-	if err := r.CopyAssets(outputDir); err != nil {
-		return fmt.Errorf("failed to copy assets: %w", err)
-	}
-
-	fmt.Printf("Static site generated successfully in: %s\n", outputDir)
-	fmt.Printf("Open %s in your browser to view the site\n", outputFile)
-
-	return nil
+func validateRenderConfig(config *renderer.WorkflowConfig) error {
+	return validateRenderParams(config.MaxAge, config.Start, config.End,
+		config.OutputDir, config.TemplatesDir, config.AssetsDir,
+		config.FeedsFile, config.Format)
 }
 
 func validateRenderParams(maxAge, start, end, outputDir, templatesDir, assetsDir, feedsFile, format string) error {

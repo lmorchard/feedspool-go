@@ -108,17 +108,17 @@ func (r *Renderer) CopyAssets(outputDir string) error {
 	})
 }
 
-// ExtractTemplates extracts embedded templates to filesystem
+// ExtractTemplates extracts embedded templates to filesystem.
 func ExtractTemplates(outputDir string) error {
 	return extractFromFS(GetEmbeddedTemplates(), outputDir, "templates")
 }
 
-// ExtractAssets extracts embedded assets to filesystem
+// ExtractAssets extracts embedded assets to filesystem.
 func ExtractAssets(outputDir string) error {
 	return extractFromFS(GetEmbeddedAssets(), outputDir, "assets")
 }
 
-// extractFromFS extracts files from a filesystem to a directory
+// extractFromFS extracts files from a filesystem to a directory.
 func extractFromFS(sourceFS fs.FS, outputDir, name string) error {
 	return fs.WalkDir(sourceFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
