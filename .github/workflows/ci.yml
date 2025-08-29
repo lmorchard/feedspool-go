@@ -74,7 +74,9 @@ jobs:
         ./feedspool version
         ./feedspool init --help
         ./feedspool fetch --help
-        ./feedspool update --help
         ./feedspool show --help
         ./feedspool purge --help
+        ./feedspool subscribe --help
+        ./feedspool unsubscribe --help
+        ./feedspool export --help
 

@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 
-	"github.com/lmorchard/feedspool-go/internal/config"
-	"github.com/lmorchard/feedspool-go/internal/feedlist"
+	"github.com/lmorchard/feedspool-go/internal/subscription"
 	"github.com/spf13/cobra"
 )
 
@@ -36,85 +34,26 @@ func runUnsubscribe(_ *cobra.Command, args []string) error {
 	targetURL := args[0]
 	cfg := GetConfig()
 
-	if _, err := url.Parse(targetURL); err != nil {
-		return fmt.Errorf("invalid URL: %s - %w", targetURL, err)
-	}
+	manager := subscription.New(cfg)
 
-	format, filename, err := determineUnsubscribeFormatAndFilename(cfg, unsubscribeFormat, unsubscribeFilename)
+	format, filename, err := manager.ResolveFormatAndFilename(unsubscribeFormat, unsubscribeFilename)
 	if err != nil {
 		return err
 	}
 
-	feedFormat, err := validateUnsubscribeFormat(format)
+	result, err := manager.Unsubscribe(format, filename, targetURL)
 	if err != nil {
 		return err
 	}
 
-	list, err := feedlist.LoadFeedList(feedFormat, filename)
-	if err != nil {
-		return fmt.Errorf("failed to load feed list %s: %w", filename, err)
-	}
-
-	fmt.Printf("Loaded feed list: %s\n", filename)
-
-	return removeURLFromList(list, targetURL, filename)
-}
-
-func determineUnsubscribeFormatAndFilename(
-	cfg *config.Config, format, filename string,
-) (resultFormat, resultFilename string, err error) {
-	if format == "" || filename == "" {
-		if cfg.HasDefaultFeedList() {
-			if format == "" {
-				format, _ = cfg.GetDefaultFeedList()
-			}
-			if filename == "" {
-				_, filename = cfg.GetDefaultFeedList()
-			}
-		} else {
-			return "", "", fmt.Errorf("feed list format and filename must be specified " +
-				"(use --format and --filename flags or configure defaults)")
-		}
-	}
-	return format, filename, nil
-}
-
-func validateUnsubscribeFormat(format string) (feedlist.Format, error) {
-	switch format {
-	case string(feedlist.FormatOPML):
-		return feedlist.FormatOPML, nil
-	case string(feedlist.FormatText):
-		return feedlist.FormatText, nil
-	default:
-		return "", fmt.Errorf("unsupported format: %s (must be 'opml' or 'text')", format)
-	}
-}
-
-func removeURLFromList(list feedlist.FeedList, targetURL, filename string) error {
-	existingURLs := list.GetURLs()
-	exists := false
-	for _, existing := range existingURLs {
-		if existing == targetURL {
-			exists = true
-			break
-		}
-	}
-
-	if !exists {
-		fmt.Printf("Warning: Feed URL not found in list: %s\n", targetURL)
+	if !result.Found {
+		fmt.Printf("Feed URL not found in list: %s\n", targetURL)
 		return nil
 	}
 
-	if err := list.RemoveURL(targetURL); err != nil {
-		return fmt.Errorf("failed to remove URL %s: %w", targetURL, err)
+	if result.Removed {
+		fmt.Printf("Removed feed from %s: %s\n", filename, targetURL)
 	}
 
-	fmt.Printf("Removed feed: %s\n", targetURL)
-
-	if err := list.Save(filename); err != nil {
-		return fmt.Errorf("failed to save feed list: %w", err)
-	}
-
-	fmt.Printf("Updated feed list saved to %s\n", filename)
 	return nil
 }

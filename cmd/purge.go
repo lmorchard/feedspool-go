@@ -63,9 +63,15 @@ func runPurge(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Determine purge mode
+	// List mode is active if either format or filename is specified
 	isListMode := purgeFormat != "" || purgeFilename != ""
-	isAgeMode := purgeAge != defaultPurgeAge || (!isListMode && purgeAge == defaultPurgeAge)
+
+	// Age mode is active if:
+	// - The user specified a non-default age (explicit age-based purge)
+	// - Or, neither list mode nor a non-default age is specified (default to age-based purge)
+	isExplicitAge := purgeAge != defaultPurgeAge
+	isDefaultAge := purgeAge == defaultPurgeAge
+	isAgeMode := isExplicitAge || (!isListMode && isDefaultAge)
 
 	// Validate mode selection
 	if isListMode && isAgeMode && purgeAge != defaultPurgeAge {

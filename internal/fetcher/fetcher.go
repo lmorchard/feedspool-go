@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -207,7 +208,7 @@ func FetchConcurrent(
 		pending := make(map[int]completionEvent)
 
 		// Calculate padding width based on total count
-		totalWidth := len(fmt.Sprintf("%d", len(urls)))
+		totalWidth := len(strconv.Itoa(len(urls)))
 
 		for completion := range completions {
 			pending[completion.index] = completion
