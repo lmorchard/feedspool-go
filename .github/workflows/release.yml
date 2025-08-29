@@ -31,10 +31,9 @@ jobs:
           - os: macos-latest
             goos: darwin
             goarch: arm64
-          # TODO: Fix Windows build archive creation issue
-          # - os: windows-latest
-          #   goos: windows
-          #   goarch: amd64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -77,23 +76,21 @@ jobs:
           -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$VERSION -X github.com/lmorchard/feedspool-go/cmd.Commit=$COMMIT -X github.com/lmorchard/feedspool-go/cmd.Date=$DATE" \
           -o "$output_name" main.go
 
-    - name: Create archive
+    - name: Create archive (Unix)
+      if: matrix.goos != 'windows'
       shell: bash
       run: |
-        output_name="feedspool"
-        if [ "$GOOS" = "windows" ]; then
-          output_name="feedspool.exe"
-        fi
-        
         archive_name="feedspool_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
-        
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          zip "${archive_name}.zip" "$output_name"
-          echo "ARCHIVE=${archive_name}.zip" >> $GITHUB_ENV
-        else
-          tar -czf "${archive_name}.tar.gz" "$output_name"
-          echo "ARCHIVE=${archive_name}.tar.gz" >> $GITHUB_ENV
-        fi
+        tar -czf "${archive_name}.tar.gz" "feedspool"
+        echo "ARCHIVE=${archive_name}.tar.gz" >> $GITHUB_ENV
+
+    - name: Create archive (Windows)
+      if: matrix.goos == 'windows'
+      shell: powershell
+      run: |
+        $archive_name = "feedspool_$($env:VERSION)_${{ matrix.goos }}_${{ matrix.goarch }}"
+        Compress-Archive -Path "feedspool.exe" -DestinationPath "${archive_name}.zip"
+        echo "ARCHIVE=${archive_name}.zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
