@@ -50,17 +50,18 @@ func runExport(_ *cobra.Command, args []string) error {
 	}
 
 	// Connect to database
-	if err := database.Connect(cfg.Database); err != nil {
+	db, err := database.New(cfg.Database)
+	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.IsInitialized(); err != nil {
+	if err := db.IsInitialized(); err != nil {
 		return err
 	}
 
 	// Get all feeds from database
-	feeds, err := database.GetAllFeeds()
+	feeds, err := db.GetAllFeeds()
 	if err != nil {
 		return fmt.Errorf("failed to get feeds from database: %w", err)
 	}

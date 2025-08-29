@@ -54,12 +54,13 @@ func init() {
 func runPurge(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
-	if err := database.Connect(cfg.Database); err != nil {
+	db, err := database.New(cfg.Database)
+	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.IsInitialized(); err != nil {
+	if err := db.IsInitialized(); err != nil {
 		return err
 	}
 
@@ -79,12 +80,12 @@ func runPurge(_ *cobra.Command, _ []string) error {
 	}
 
 	if isListMode {
-		return runFeedListCleanup(cfg)
+		return runFeedListCleanup(cfg, db)
 	}
-	return runAgePurge(cfg)
+	return runAgePurge(cfg, db)
 }
 
-func runFeedListCleanup(cfg *config.Config) error {
+func runFeedListCleanup(cfg *config.Config, db *database.DB) error {
 	format, filename, err := determinePurgeFormatAndFilename(cfg, purgeFormat, purgeFilename)
 	if err != nil {
 		return err
@@ -100,12 +101,12 @@ func runFeedListCleanup(cfg *config.Config) error {
 		return err
 	}
 
-	feedsToDelete, err := findFeedsToDelete(authorizedURLs)
+	feedsToDelete, err := findFeedsToDelete(db, authorizedURLs)
 	if err != nil {
 		return err
 	}
 
-	return processFeedDeletion(cfg, feedsToDelete, format, filename)
+	return processFeedDeletion(cfg, db, feedsToDelete, format, filename)
 }
 
 func loadAuthorizedFeeds(feedFormat feedlist.Format, filename string) ([]string, error) {
@@ -119,8 +120,8 @@ func loadAuthorizedFeeds(feedFormat feedlist.Format, filename string) ([]string,
 	return authorizedURLs, nil
 }
 
-func findFeedsToDelete(authorizedURLs []string) ([]string, error) {
-	dbFeeds, err := database.GetAllFeeds()
+func findFeedsToDelete(db *database.DB, authorizedURLs []string) ([]string, error) {
+	dbFeeds, err := db.GetAllFeeds()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feeds from database: %w", err)
 	}
@@ -140,7 +141,7 @@ func findFeedsToDelete(authorizedURLs []string) ([]string, error) {
 	return feedsToDelete, nil
 }
 
-func processFeedDeletion(cfg *config.Config, feedsToDelete []string, format, filename string) error {
+func processFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []string, format, filename string) error {
 	if len(feedsToDelete) == 0 {
 		return reportNoFeedsToDelete(cfg, format, filename)
 	}
@@ -149,7 +150,7 @@ func processFeedDeletion(cfg *config.Config, feedsToDelete []string, format, fil
 		return reportDryRunDeletion(cfg, feedsToDelete, format, filename)
 	}
 
-	return executeFeedDeletion(cfg, feedsToDelete, format, filename)
+	return executeFeedDeletion(cfg, db, feedsToDelete, format, filename)
 }
 
 func reportNoFeedsToDelete(cfg *config.Config, format, filename string) error {
@@ -191,10 +192,10 @@ func reportDryRunDeletion(cfg *config.Config, feedsToDelete []string, format, fi
 	return nil
 }
 
-func executeFeedDeletion(cfg *config.Config, feedsToDelete []string, format, filename string) error {
+func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []string, format, filename string) error {
 	deletedCount := 0
 	for _, url := range feedsToDelete {
-		if err := database.DeleteFeed(url); err != nil {
+		if err := db.DeleteFeed(url); err != nil {
 			fmt.Printf("Warning: Failed to delete feed %s: %v\n", url, err)
 		} else {
 			deletedCount++
@@ -219,7 +220,7 @@ func executeFeedDeletion(cfg *config.Config, feedsToDelete []string, format, fil
 	return nil
 }
 
-func runAgePurge(cfg *config.Config) error {
+func runAgePurge(cfg *config.Config, db *database.DB) error {
 	duration, err := parseDuration(purgeAge)
 	if err != nil {
 		return fmt.Errorf("invalid age format: %w", err)
@@ -244,7 +245,7 @@ func runAgePurge(cfg *config.Config) error {
 		return nil
 	}
 
-	deleted, err := database.DeleteArchivedItems(cutoffTime)
+	deleted, err := db.DeleteArchivedItems(cutoffTime)
 	if err != nil {
 		return fmt.Errorf("failed to delete archived items: %w", err)
 	}

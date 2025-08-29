@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func setupTestDB(t *testing.T) string {
+func setupTestDB(t *testing.T) (db *DB, tempDir string) {
 	t.Helper()
 
 	// Create temporary database file
@@ -15,25 +15,26 @@ func setupTestDB(t *testing.T) string {
 	dbPath := filepath.Join(tmpDir, "feedspool_test.db")
 
 	// Initialize database
-	if err := Connect(dbPath); err != nil {
+	db, err := New(dbPath)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := InitSchema(); err != nil {
+	if err := db.InitSchema(); err != nil {
 		t.Fatal(err)
 	}
 
 	// Cleanup function
 	t.Cleanup(func() {
-		Close()
+		db.Close()
 		os.Remove(dbPath)
 	})
 
-	return dbPath
+	return db, dbPath
 }
 
 func TestUpsertAndGetFeed(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	feed := &Feed{
 		URL:          "https://example.com/feed.xml",
@@ -46,19 +47,19 @@ func TestUpsertAndGetFeed(t *testing.T) {
 	}
 
 	// Test Upsert
-	err := UpsertFeed(feed)
+	err := db.UpsertFeed(feed)
 	if err != nil {
 		t.Errorf("UpsertFeed() error = %v", err)
 	}
 
 	// Test Get
-	retrieved, err := GetFeed(feed.URL)
+	retrieved, err := db.GetFeed(feed.URL)
 	if err != nil {
-		t.Errorf("GetFeed() error = %v", err)
+		t.Errorf("db.GetFeed() error = %v", err)
 	}
 
 	if retrieved == nil {
-		t.Fatal("GetFeed() returned nil")
+		t.Fatal("db.GetFeed() returned nil")
 	}
 
 	if retrieved.URL != feed.URL {
@@ -75,20 +76,20 @@ func TestUpsertAndGetFeed(t *testing.T) {
 }
 
 func TestGetFeedNotFound(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
-	feed, err := GetFeed("https://nonexistent.com/feed.xml")
+	feed, err := db.GetFeed("https://nonexistent.com/feed.xml")
 	if err != nil {
-		t.Errorf("GetFeed() error = %v", err)
+		t.Errorf("db.GetFeed() error = %v", err)
 	}
 
 	if feed != nil {
-		t.Errorf("GetFeed() should return nil for non-existent feed")
+		t.Errorf("db.GetFeed() should return nil for non-existent feed")
 	}
 }
 
 func TestGetAllFeeds(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	feeds := []*Feed{
 		{
@@ -105,20 +106,20 @@ func TestGetAllFeeds(t *testing.T) {
 
 	// Insert feeds
 	for _, feed := range feeds {
-		err := UpsertFeed(feed)
+		err := db.UpsertFeed(feed)
 		if err != nil {
 			t.Errorf("UpsertFeed() error = %v", err)
 		}
 	}
 
 	// Get all feeds
-	retrieved, err := GetAllFeeds()
+	retrieved, err := db.GetAllFeeds()
 	if err != nil {
-		t.Errorf("GetAllFeeds() error = %v", err)
+		t.Errorf("db.GetAllFeeds() error = %v", err)
 	}
 
 	if len(retrieved) != 2 {
-		t.Errorf("GetAllFeeds() returned %d feeds, want 2", len(retrieved))
+		t.Errorf("db.GetAllFeeds() returned %d feeds, want 2", len(retrieved))
 	}
 
 	// Check ordering (should be by URL)
@@ -128,7 +129,7 @@ func TestGetAllFeeds(t *testing.T) {
 }
 
 func TestUpsertAndGetItem(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	// First insert a feed
 	feed := &Feed{
@@ -136,7 +137,7 @@ func TestUpsertAndGetItem(t *testing.T) {
 		Title:    "Test Feed",
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
-	err := UpsertFeed(feed)
+	err := db.UpsertFeed(feed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,19 +154,19 @@ func TestUpsertAndGetItem(t *testing.T) {
 	}
 
 	// Test Upsert
-	err = UpsertItem(item)
+	err = db.UpsertItem(item)
 	if err != nil {
-		t.Errorf("UpsertItem() error = %v", err)
+		t.Errorf("db.UpsertItem() error = %v", err)
 	}
 
 	// Test Get
-	items, err := GetItemsForFeed(item.FeedURL, 0, time.Time{}, time.Time{})
+	items, err := db.GetItemsForFeed(item.FeedURL, 0, time.Time{}, time.Time{})
 	if err != nil {
-		t.Errorf("GetItemsForFeed() error = %v", err)
+		t.Errorf("db.GetItemsForFeed() error = %v", err)
 	}
 
 	if len(items) != 1 {
-		t.Fatalf("GetItemsForFeed() returned %d items, want 1", len(items))
+		t.Fatalf("db.GetItemsForFeed() returned %d items, want 1", len(items))
 	}
 
 	retrieved := items[0]
@@ -181,7 +182,7 @@ func TestUpsertAndGetItem(t *testing.T) {
 func TestGetItemsForFeedWithFilters(t *testing.T) {
 	const testItem3GUID = "item3"
 
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
@@ -189,7 +190,7 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 		Title:    "Test Feed",
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
-	err := UpsertFeed(feed)
+	err := db.UpsertFeed(feed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,20 +223,20 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 
 	// Insert items
 	for _, item := range items {
-		err := UpsertItem(item)
+		err := db.UpsertItem(item)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	// Test limit
-	retrieved, err := GetItemsForFeed(feed.URL, 2, time.Time{}, time.Time{})
+	retrieved, err := db.GetItemsForFeed(feed.URL, 2, time.Time{}, time.Time{})
 	if err != nil {
-		t.Errorf("GetItemsForFeed() error = %v", err)
+		t.Errorf("db.GetItemsForFeed() error = %v", err)
 	}
 
 	if len(retrieved) != 2 {
-		t.Errorf("GetItemsForFeed() with limit=2 returned %d items, want 2", len(retrieved))
+		t.Errorf("db.GetItemsForFeed() with limit=2 returned %d items, want 2", len(retrieved))
 	}
 
 	// Should be ordered by newest first
@@ -245,13 +246,13 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 
 	// Test since filter
 	since := now.Add(-30 * time.Minute)
-	retrieved, err = GetItemsForFeed(feed.URL, 0, since, time.Time{})
+	retrieved, err = db.GetItemsForFeed(feed.URL, 0, since, time.Time{})
 	if err != nil {
-		t.Errorf("GetItemsForFeed() error = %v", err)
+		t.Errorf("db.GetItemsForFeed() error = %v", err)
 	}
 
 	if len(retrieved) != 1 {
-		t.Errorf("GetItemsForFeed() with since filter returned %d items, want 1", len(retrieved))
+		t.Errorf("db.GetItemsForFeed() with since filter returned %d items, want 1", len(retrieved))
 	}
 
 	if retrieved[0].GUID != testItem3GUID {
@@ -260,7 +261,7 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 }
 
 func TestMarkItemsArchived(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
@@ -268,7 +269,7 @@ func TestMarkItemsArchived(t *testing.T) {
 		Title:    "Test Feed",
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
-	err := UpsertFeed(feed)
+	err := db.UpsertFeed(feed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +284,7 @@ func TestMarkItemsArchived(t *testing.T) {
 			PublishedDate: time.Now(),
 			ItemJSON:      JSON(`{"title": "` + guid + `"}`),
 		}
-		err := UpsertItem(item)
+		err := db.UpsertItem(item)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -291,14 +292,14 @@ func TestMarkItemsArchived(t *testing.T) {
 
 	// Mark item2 and item3 as not archived (active), item1 should be archived
 	activeGUIDs := []string{"item2", "item3"}
-	err = MarkItemsArchived(feed.URL, activeGUIDs)
+	err = db.MarkItemsArchived(feed.URL, activeGUIDs)
 	if err != nil {
-		t.Errorf("MarkItemsArchived() error = %v", err)
+		t.Errorf("db.MarkItemsArchived() error = %v", err)
 	}
 
 	// Get all items (including archived)
-	db := GetDB()
-	rows, err := db.Query("SELECT guid, archived FROM items WHERE feed_url = ? ORDER BY guid", feed.URL)
+	conn := db.GetConnection()
+	rows, err := conn.Query("SELECT guid, archived FROM items WHERE feed_url = ? ORDER BY guid", feed.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +334,7 @@ func TestMarkItemsArchived(t *testing.T) {
 }
 
 func TestDeleteArchivedItems(t *testing.T) {
-	setupTestDB(t)
+	db, _ := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
@@ -341,7 +342,7 @@ func TestDeleteArchivedItems(t *testing.T) {
 		Title:    "Test Feed",
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
-	err := UpsertFeed(feed)
+	err := db.UpsertFeed(feed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +378,7 @@ func TestDeleteArchivedItems(t *testing.T) {
 	}
 
 	for _, item := range items {
-		err := UpsertItem(item)
+		err := db.UpsertItem(item)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -385,17 +386,17 @@ func TestDeleteArchivedItems(t *testing.T) {
 
 	// Delete archived items older than 1 hour
 	cutoff := now.Add(-1 * time.Hour)
-	deleted, err := DeleteArchivedItems(cutoff)
+	deleted, err := db.DeleteArchivedItems(cutoff)
 	if err != nil {
-		t.Errorf("DeleteArchivedItems() error = %v", err)
+		t.Errorf("db.DeleteArchivedItems() error = %v", err)
 	}
 
 	if deleted != 1 {
-		t.Errorf("DeleteArchivedItems() deleted %d items, want 1", deleted)
+		t.Errorf("db.DeleteArchivedItems() deleted %d items, want 1", deleted)
 	}
 
 	// Check remaining items
-	allItems, err := GetItemsForFeed(feed.URL, 0, time.Time{}, time.Time{})
+	allItems, err := db.GetItemsForFeed(feed.URL, 0, time.Time{}, time.Time{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -406,9 +407,9 @@ func TestDeleteArchivedItems(t *testing.T) {
 	}
 
 	// Check total count in database
-	db := GetDB()
+	conn := db.GetConnection()
 	var totalCount int
-	err = db.QueryRow("SELECT COUNT(*) FROM items WHERE feed_url = ?", feed.URL).Scan(&totalCount)
+	err = conn.QueryRow("SELECT COUNT(*) FROM items WHERE feed_url = ?", feed.URL).Scan(&totalCount)
 	if err != nil {
 		t.Fatal(err)
 	}

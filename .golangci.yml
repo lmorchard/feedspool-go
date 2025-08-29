@@ -181,8 +181,3 @@ issues:
       linters:
         - unparam
 
-    # Allow global database connection in database package
-    - path: internal/database/db\.go
-      linters:
-        - gochecknoglobals
-

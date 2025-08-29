@@ -35,7 +35,7 @@ const testFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
     </channel>
 </rss>`
 
-func setupTestDatabase(t *testing.T) {
+func setupTestDatabase(t *testing.T) *database.DB {
 	t.Helper()
 
 	// Create temporary database file
@@ -43,27 +43,31 @@ func setupTestDatabase(t *testing.T) {
 	dbPath := filepath.Join(tmpDir, "fetcher_test.db")
 
 	// Initialize database
-	if err := database.Connect(dbPath); err != nil {
+	db, err := database.New(dbPath)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := database.InitSchema(); err != nil {
+	if err := db.InitSchema(); err != nil {
 		t.Fatal(err)
 	}
 
 	// Cleanup function
 	t.Cleanup(func() {
-		database.Close()
+		db.Close()
 		os.Remove(dbPath)
 	})
+
+	return db
 }
 
 func TestNewFetcher(t *testing.T) {
+	db := setupTestDatabase(t)
 	timeout := 30 * time.Second
 	maxItems := 50
 	force := true
 
-	fetcher := NewFetcher(timeout, maxItems, force)
+	fetcher := NewFetcher(db, timeout, maxItems, force)
 
 	if fetcher.timeout != timeout {
 		t.Errorf("NewFetcher() timeout = %v, want %v", fetcher.timeout, timeout)
@@ -85,7 +89,8 @@ func TestNewFetcher(t *testing.T) {
 func TestFetchFeedSuccess(t *testing.T) {
 	const testETag = "test-etag"
 
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
+	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -97,7 +102,7 @@ func TestFetchFeedSuccess(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := NewFetcher(30*time.Second, 100, false)
+	fetcher := NewFetcher(db, 30*time.Second, 100, false)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error != nil {
@@ -132,7 +137,7 @@ func TestFetchFeedSuccess(t *testing.T) {
 func TestFetchFeedNotModified(t *testing.T) {
 	const testETag = "test-etag"
 
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
 
 	// Create test server that returns 304 for conditional requests
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -156,12 +161,12 @@ func TestFetchFeedNotModified(t *testing.T) {
 		LastFetchTime: time.Now(),
 		FeedJSON:      database.JSON(`{"title": "Existing Feed"}`),
 	}
-	err := database.UpsertFeed(existingFeed)
+	err := db.UpsertFeed(existingFeed)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fetcher := NewFetcher(30*time.Second, 100, false)
+	fetcher := NewFetcher(db, 30*time.Second, 100, false)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error != nil {
@@ -178,7 +183,8 @@ func TestFetchFeedNotModified(t *testing.T) {
 }
 
 func TestFetchFeedHTTPError(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
+	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server that returns 404
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -186,7 +192,7 @@ func TestFetchFeedHTTPError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := NewFetcher(30*time.Second, 100, false)
+	fetcher := NewFetcher(db, 30*time.Second, 100, false)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error == nil {
@@ -199,7 +205,8 @@ func TestFetchFeedHTTPError(t *testing.T) {
 }
 
 func TestFetchFeedInvalidXML(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
+	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server that returns invalid XML
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -209,7 +216,7 @@ func TestFetchFeedInvalidXML(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := NewFetcher(30*time.Second, 100, false)
+	fetcher := NewFetcher(db, 30*time.Second, 100, false)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error == nil {
@@ -222,7 +229,8 @@ func TestFetchFeedInvalidXML(t *testing.T) {
 }
 
 func TestFetchFeedMaxItems(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
+	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -233,7 +241,7 @@ func TestFetchFeedMaxItems(t *testing.T) {
 	defer server.Close()
 
 	// Limit to 1 item
-	fetcher := NewFetcher(30*time.Second, 1, false)
+	fetcher := NewFetcher(db, 30*time.Second, 1, false)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error != nil {
@@ -246,7 +254,7 @@ func TestFetchFeedMaxItems(t *testing.T) {
 }
 
 func TestFetchFeedForce(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
 
 	requestCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -272,13 +280,13 @@ func TestFetchFeedForce(t *testing.T) {
 		LastFetchTime: time.Now(),
 		FeedJSON:      database.JSON(`{"title": "Existing Feed"}`),
 	}
-	err := database.UpsertFeed(existingFeed)
+	err := db.UpsertFeed(existingFeed)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Fetch with force=true
-	fetcher := NewFetcher(30*time.Second, 100, true)
+	fetcher := NewFetcher(db, 30*time.Second, 100, true)
 	result := fetcher.FetchFeed(server.URL)
 
 	if result.Error != nil {
@@ -295,7 +303,8 @@ func TestFetchFeedForce(t *testing.T) {
 }
 
 func TestFetchConcurrent(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
+	_ = db // Make linter happy - db is used implicitly by fetcher
 
 	// Create test servers
 	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -313,7 +322,7 @@ func TestFetchConcurrent(t *testing.T) {
 	defer server2.Close()
 
 	urls := []string{server1.URL, server2.URL}
-	results := FetchConcurrent(urls, 2, 30*time.Second, 100, 0, false)
+	results := FetchConcurrent(db, urls, 2, 30*time.Second, 100, 0, false)
 
 	if len(results) != 2 {
 		t.Errorf("FetchConcurrent() returned %d results, want 2", len(results))
@@ -355,7 +364,7 @@ func TestFetchConcurrent(t *testing.T) {
 }
 
 func TestFetchConcurrentWithMaxAge(t *testing.T) {
-	setupTestDatabase(t)
+	db := setupTestDatabase(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/rss+xml")
@@ -371,7 +380,7 @@ func TestFetchConcurrentWithMaxAge(t *testing.T) {
 		LastFetchTime: time.Now(), // Just fetched
 		FeedJSON:      database.JSON(`{"title": "Recent Feed"}`),
 	}
-	err := database.UpsertFeed(recentFeed)
+	err := db.UpsertFeed(recentFeed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +388,7 @@ func TestFetchConcurrentWithMaxAge(t *testing.T) {
 	urls := []string{server.URL}
 	maxAge := 1 * time.Hour // Skip feeds fetched within last hour
 
-	results := FetchConcurrent(urls, 1, 30*time.Second, 100, maxAge, false)
+	results := FetchConcurrent(db, urls, 1, 30*time.Second, 100, maxAge, false)
 
 	if len(results) != 1 {
 		t.Errorf("FetchConcurrent() returned %d results, want 1", len(results))

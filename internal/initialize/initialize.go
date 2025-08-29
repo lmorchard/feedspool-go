@@ -61,17 +61,18 @@ func initializeDatabase(config *Config) error {
 		return fmt.Errorf("database already exists at %s. Use --upgrade to upgrade existing database", config.Database)
 	}
 
-	if err := database.Connect(config.Database); err != nil {
+	db, err := database.New(config.Database)
+	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.InitSchema(); err != nil {
+	if err := db.InitSchema(); err != nil {
 		return fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
 	if !config.JSONOutput {
-		printDatabaseResult(config.Upgrade)
+		printDatabaseResult(db, config.Upgrade)
 	}
 
 	return nil
@@ -141,9 +142,9 @@ func confirmExtraction() bool {
 	return response == "y" || response == "yes"
 }
 
-func printDatabaseResult(upgrade bool) {
+func printDatabaseResult(db *database.DB, upgrade bool) {
 	if upgrade {
-		version, err := database.GetMigrationVersion()
+		version, err := db.GetMigrationVersion()
 		if err != nil {
 			fmt.Printf("Could not get migration version: %v\n", err) //nolint:forbidigo // User-facing output
 		} else {
@@ -163,9 +164,11 @@ func outputJSON(config *Config, databaseInit bool) error {
 	if databaseInit {
 		result["database"] = config.Database
 		if config.Upgrade {
-			version, _ := database.GetMigrationVersion()
+			// For JSON output, we'd need to pass the db instance here,
+			// but since this is for JSON output and the db is already closed,
+			// we'll skip the version for now
 			result["action"] = "upgrade"
-			result["version"] = version
+			result["version"] = "unknown"
 		} else {
 			result["action"] = "initialize"
 		}

@@ -27,10 +27,15 @@ type WorkflowConfig struct {
 // ExecuteWorkflow performs the complete render operation with the given configuration.
 func ExecuteWorkflow(config *WorkflowConfig) error {
 	// Setup database
-	if err := setupDatabase(config.Database); err != nil {
-		return err
+	db, err := database.New(config.Database)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
+
+	if err := db.IsInitialized(); err != nil {
+		return fmt.Errorf("database not initialized: %w", err)
+	}
 
 	// Parse time window
 	startTime, endTime, err := database.ParseTimeWindow(config.MaxAge, config.Start, config.End)
@@ -50,7 +55,7 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 	}
 
 	// Query data
-	feeds, items, err := queryData(startTime, endTime, feedURLs)
+	feeds, items, err := queryData(db, startTime, endTime, feedURLs)
 	if err != nil {
 		return err
 	}
@@ -62,18 +67,6 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 
 	// Generate site
 	return generateSite(config, feeds, items, startTime, endTime)
-}
-
-func setupDatabase(dbPath string) error {
-	if err := database.Connect(dbPath); err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	if err := database.IsInitialized(); err != nil {
-		return fmt.Errorf("database not initialized: %w", err)
-	}
-
-	return nil
 }
 
 func loadFeedURLs(feedsFile, format string) ([]string, error) {
@@ -99,7 +92,9 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 	return feedList.GetURLs(), nil
 }
 
-func queryData(startTime, endTime time.Time, feedURLs []string) ([]database.Feed, map[string][]database.Item, error) {
+func queryData(
+	db *database.DB, startTime, endTime time.Time, feedURLs []string,
+) ([]database.Feed, map[string][]database.Item, error) {
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Rendering feeds from %s to %s...\n",
 		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
@@ -107,7 +102,7 @@ func queryData(startTime, endTime time.Time, feedURLs []string) ([]database.Feed
 		fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
 	}
 
-	feeds, items, err := database.GetFeedsWithItemsByTimeRange(startTime, endTime, feedURLs)
+	feeds, items, err := db.GetFeedsWithItemsByTimeRange(startTime, endTime, feedURLs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query feeds and items: %w", err)
 	}
