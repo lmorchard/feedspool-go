@@ -1,4 +1,4 @@
-.PHONY: build test clean run lint format fmt
+.PHONY: build test clean run lint format fmt setup
 
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.0.1")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -33,3 +33,9 @@ lint:
 		exit 1; \
 	fi
 	$$(go env GOPATH)/bin/golangci-lint run --timeout=5m
+
+setup:
+	@echo "Installing development tools..."
+	go install mvdan.cc/gofumpt@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "Tools installed successfully!"

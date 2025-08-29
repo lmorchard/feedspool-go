@@ -84,7 +84,10 @@ Create a `feedspool.yaml` file (see `feedspool.yaml.example`) or use command-lin
 
 Install development tools:
 ```bash
-# Install latest versions
+# Quick setup - install all required tools
+make setup
+
+# Or install manually
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 go install mvdan.cc/gofumpt@latest
 ```
@@ -92,6 +95,9 @@ go install mvdan.cc/gofumpt@latest
 ### Development Commands
 
 ```bash
+# Setup development tools
+make setup
+
 # Build
 make build
 
