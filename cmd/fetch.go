@@ -45,10 +45,10 @@ control, age filtering, and database cleanup based on feed lists.`,
 }
 
 func init() {
-	fetchCmd.Flags().DurationVar(&fetchTimeout, "timeout", 30*time.Second, "Feed fetch timeout")
-	fetchCmd.Flags().IntVar(&fetchMaxItems, "max-items", 100, "Maximum items to keep per feed")
+	fetchCmd.Flags().DurationVar(&fetchTimeout, "timeout", config.DefaultTimeout, "Feed fetch timeout")
+	fetchCmd.Flags().IntVar(&fetchMaxItems, "max-items", config.DefaultMaxItems, "Maximum items to keep per feed")
 	fetchCmd.Flags().BoolVar(&fetchForce, "force", false, "Ignore cache headers and fetch anyway")
-	fetchCmd.Flags().IntVar(&fetchConcurrency, "concurrency", 32, "Maximum concurrent fetches")
+	fetchCmd.Flags().IntVar(&fetchConcurrency, "concurrency", config.DefaultConcurrency, "Maximum concurrent fetches")
 	fetchCmd.Flags().DurationVar(&fetchMaxAge, "max-age", 0, "Skip feeds fetched within this duration")
 	fetchCmd.Flags().BoolVar(&fetchRemoveMissing, "remove-missing", false, "Delete feeds not in list (file mode only)")
 	fetchCmd.Flags().StringVar(&fetchFormat, "format", "", "Feed list format (opml or text)")
@@ -59,12 +59,13 @@ func init() {
 func runFetch(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
 
-	if err := database.Connect(cfg.Database); err != nil {
+	db, err := database.New(cfg.Database)
+	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.IsInitialized(); err != nil {
+	if err := db.IsInitialized(); err != nil {
 		return err
 	}
 
@@ -76,15 +77,26 @@ func runFetch(_ *cobra.Command, args []string) error {
 
 	if fetchFormat != "" || fetchFilename != "" {
 		// File mode
-		return runFileFetch(cfg)
+		return runFileFetch(cfg, db)
 	}
 
 	// Database mode (no args, no file flags)
-	return runDatabaseFetch(cfg)
+	return runDatabaseFetch(cfg, db)
 }
 
 func runSingleURLFetch(cfg *config.Config, feedURL string) error {
-	fetcher := fetcher.NewFetcher(fetchTimeout, fetchMaxItems, fetchForce)
+	// We need a DB instance for single URL fetch too
+	db, err := database.New(cfg.Database)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
+	if err := db.IsInitialized(); err != nil {
+		return err
+	}
+
+	fetcher := fetcher.NewFetcher(db, fetchTimeout, fetchMaxItems, fetchForce)
 	result := fetcher.FetchFeed(feedURL)
 
 	if result.Error != nil {
@@ -117,7 +129,7 @@ func runSingleURLFetch(cfg *config.Config, feedURL string) error {
 	return nil
 }
 
-func runFileFetch(cfg *config.Config) error {
+func runFileFetch(cfg *config.Config, db *database.DB) error {
 	format, filename, err := determineFetchFormatAndFilename(cfg, fetchFormat, fetchFilename)
 	if err != nil {
 		return err
@@ -144,6 +156,7 @@ func runFileFetch(cfg *config.Config) error {
 
 	// Fetch feeds concurrently
 	results := fetcher.FetchConcurrent(
+		db,
 		feedURLs,
 		fetchConcurrency,
 		fetchTimeout,
@@ -156,7 +169,7 @@ func runFileFetch(cfg *config.Config) error {
 
 	// Remove missing feeds if requested
 	if fetchRemoveMissing {
-		removedCount := removeMissingFeedsFromFile(feedURLs)
+		removedCount := removeMissingFeedsFromFile(db, feedURLs)
 		if !cfg.JSON && removedCount > 0 {
 			fmt.Printf("Removed %d feeds not in list\n", removedCount)
 		}
@@ -167,9 +180,9 @@ func runFileFetch(cfg *config.Config) error {
 	return nil
 }
 
-func runDatabaseFetch(cfg *config.Config) error {
+func runDatabaseFetch(cfg *config.Config, db *database.DB) error {
 	// Get all feeds from database
-	dbFeeds, err := database.GetAllFeeds()
+	dbFeeds, err := db.GetAllFeeds()
 	if err != nil {
 		return fmt.Errorf("failed to get feeds from database: %w", err)
 	}
@@ -189,6 +202,7 @@ func runDatabaseFetch(cfg *config.Config) error {
 
 	// Fetch feeds concurrently
 	results := fetcher.FetchConcurrent(
+		db,
 		feedURLs,
 		fetchConcurrency,
 		fetchTimeout,
@@ -248,8 +262,8 @@ func processFetchResults(results []*fetcher.FetchResult) (successCount, errorCou
 	return
 }
 
-func removeMissingFeedsFromFile(feedURLs []string) int {
-	existingURLs, err := database.GetFeedURLs()
+func removeMissingFeedsFromFile(db *database.DB, feedURLs []string) int {
+	existingURLs, err := db.GetFeedURLs()
 	if err != nil {
 		fmt.Printf("Warning: Failed to get existing feeds: %v\n", err)
 		return 0
@@ -263,7 +277,7 @@ func removeMissingFeedsFromFile(feedURLs []string) int {
 	removedCount := 0
 	for _, existingURL := range existingURLs {
 		if !urlMap[existingURL] {
-			if err := database.DeleteFeed(existingURL); err != nil {
+			if err := db.DeleteFeed(existingURL); err != nil {
 				fmt.Printf("Warning: Failed to delete feed %s: %v\n", existingURL, err)
 			} else {
 				removedCount++

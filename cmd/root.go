@@ -66,9 +66,9 @@ func initConfig() {
 	}
 
 	viper.SetDefault("database", "./feeds.db")
-	viper.SetDefault("concurrency", 32)
+	viper.SetDefault("concurrency", config.DefaultConcurrency)
 	viper.SetDefault("timeout", "30s")
-	viper.SetDefault("max_items", 100)
+	viper.SetDefault("max_items", config.DefaultMaxItems)
 
 	// Render command defaults
 	viper.SetDefault("render.output_dir", defaultOutputDir)

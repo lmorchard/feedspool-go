@@ -7,8 +7,12 @@ import (
 )
 
 const (
-	defaultPort      = 8080
-	defaultOutputDir = "./build"
+	defaultPort        = 8080
+	defaultOutputDir   = "./build"
+	DefaultTimeout     = 30 * time.Second
+	DefaultConcurrency = 32
+	DefaultMaxItems    = 100
+	DefaultDirPerm     = 0o755
 )
 
 type Config struct {
@@ -51,7 +55,7 @@ func LoadConfig() *Config {
 	timeoutStr := viper.GetString("timeout")
 	timeout, err := time.ParseDuration(timeoutStr)
 	if err != nil {
-		timeout = 30 * time.Second
+		timeout = DefaultTimeout
 	}
 
 	return &Config{
@@ -86,9 +90,9 @@ func LoadConfig() *Config {
 func GetDefault() *Config {
 	return &Config{
 		Database:    "./feeds.db",
-		Concurrency: 32,
-		Timeout:     30 * time.Second,
-		MaxItems:    100,
+		Concurrency: DefaultConcurrency,
+		Timeout:     DefaultTimeout,
+		MaxItems:    DefaultMaxItems,
 		FeedList: FeedListConfig{
 			Format:   "", // Empty strings indicate not configured
 			Filename: "",

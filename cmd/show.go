@@ -52,12 +52,13 @@ func runShow(_ *cobra.Command, args []string) error {
 	feedURL := args[0]
 	cfg := GetConfig()
 
-	if err := database.Connect(cfg.Database); err != nil {
+	db, err := database.New(cfg.Database)
+	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.IsInitialized(); err != nil {
+	if err := db.IsInitialized(); err != nil {
 		return err
 	}
 
@@ -66,7 +67,7 @@ func runShow(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	feed, items, err := getFeedAndItems(feedURL, since, until)
+	feed, items, err := getFeedAndItems(db, feedURL, since, until)
 	if err != nil {
 		return err
 	}
@@ -99,13 +100,15 @@ func parseDateFilters() (since, until time.Time, err error) {
 	return
 }
 
-func getFeedAndItems(feedURL string, since, until time.Time) (*database.Feed, []*database.Item, error) {
-	feed, err := database.GetFeed(feedURL)
+func getFeedAndItems(
+	db *database.DB, feedURL string, since, until time.Time,
+) (*database.Feed, []*database.Item, error) {
+	feed, err := db.GetFeed(feedURL)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get feed: %w", err)
 	}
 
-	items, err := database.GetItemsForFeed(feedURL, showLimit, since, until)
+	items, err := db.GetItemsForFeed(feedURL, showLimit, since, until)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get items: %w", err)
 	}

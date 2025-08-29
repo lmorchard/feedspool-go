@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/lmorchard/feedspool-go/internal/config"
 	_ "github.com/mattn/go-sqlite3" // sqlite3 driver
 	"github.com/sirupsen/logrus"
 )
@@ -14,47 +15,50 @@ import (
 //go:embed schema.sql
 var schemaSQL string
 
-var db *sql.DB
+// DB wraps a database connection with methods for feed operations.
+type DB struct {
+	conn *sql.DB
+}
 
-func Connect(dbPath string) error {
+// New creates a new database connection and initializes it.
+func New(dbPath string) (*DB, error) {
 	dir := filepath.Dir(dbPath)
 	if dir != "." && dir != "/" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("failed to create database directory: %w", err)
+		if err := os.MkdirAll(dir, config.DefaultDirPerm); err != nil {
+			return nil, fmt.Errorf("failed to create database directory: %w", err)
 		}
 	}
 
-	var err error
-	db, err = sql.Open("sqlite3", dbPath)
+	conn, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		return fmt.Errorf("failed to enable foreign keys: %w", err)
+	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
-	if _, err := db.Exec("PRAGMA journal_mode = WAL"); err != nil {
-		return fmt.Errorf("failed to set journal mode: %w", err)
+	if _, err := conn.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to set journal mode: %w", err)
 	}
 
-	if _, err := db.Exec("PRAGMA synchronous = NORMAL"); err != nil {
-		return fmt.Errorf("failed to set synchronous mode: %w", err)
+	if _, err := conn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to set synchronous mode: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
+	conn.SetMaxOpenConns(1)
+	conn.SetMaxIdleConns(1)
 
 	logrus.Debug("Database connection established")
-	return nil
+	return &DB{conn: conn}, nil
 }
 
-func InitSchema() error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
-	_, err := db.Exec(schemaSQL)
+// InitSchema initializes the database schema.
+func (db *DB) InitSchema() error {
+	_, err := db.conn.Exec(schemaSQL)
 	if err != nil {
 		return fmt.Errorf("failed to initialize schema: %w", err)
 	}
@@ -63,26 +67,19 @@ func InitSchema() error {
 	return nil
 }
 
-func GetDB() *sql.DB {
-	return db
-}
-
-func Close() error {
-	if db != nil {
-		return db.Close()
+// Close closes the database connection.
+func (db *DB) Close() error {
+	if db.conn != nil {
+		return db.conn.Close()
 	}
 	return nil
 }
 
 // IsInitialized checks if the database is properly initialized with required tables.
-func IsInitialized() error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
+func (db *DB) IsInitialized() error {
 	// Check if the feeds table exists by trying to query it
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM feeds LIMIT 1").Scan(&count)
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM feeds LIMIT 1").Scan(&count)
 	if err != nil {
 		return fmt.Errorf("database not initialized - run 'feedspool init' first")
 	}
@@ -90,13 +87,10 @@ func IsInitialized() error {
 	return nil
 }
 
-func GetMigrationVersion() (int, error) {
-	if db == nil {
-		return 0, fmt.Errorf("database not connected")
-	}
-
+// GetMigrationVersion returns the current migration version.
+func (db *DB) GetMigrationVersion() (int, error) {
 	var version int
-	err := db.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version)
+	err := db.conn.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version)
 	if err != nil {
 		return 0, err
 	}
@@ -104,12 +98,14 @@ func GetMigrationVersion() (int, error) {
 	return version, nil
 }
 
-func ApplyMigration(version int, migrationSQL string) error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
+// GetConnection returns the underlying database connection for testing purposes.
+func (db *DB) GetConnection() *sql.DB {
+	return db.conn
+}
 
-	tx, err := db.Begin()
+// ApplyMigration applies a database migration.
+func (db *DB) ApplyMigration(version int, migrationSQL string) error {
+	tx, err := db.conn.Begin()
 	if err != nil {
 		return err
 	}

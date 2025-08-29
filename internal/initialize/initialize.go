@@ -11,6 +11,8 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 )
 
+const unknownVersion = "unknown"
+
 // Config holds all configuration for initialization operations.
 type Config struct {
 	Database         string
@@ -27,11 +29,15 @@ func Execute(config *Config) error {
 	// Determine what operations to perform
 	databaseInit := !config.ExtractTemplates && !config.ExtractAssets
 
+	var db *database.DB
 	// Database initialization
 	if databaseInit {
-		if err := initializeDatabase(config); err != nil {
+		var err error
+		db, err = initializeDatabase(config)
+		if err != nil {
 			return err
 		}
+		defer db.Close()
 	}
 
 	// Template extraction
@@ -50,31 +56,32 @@ func Execute(config *Config) error {
 
 	// JSON output for extraction results
 	if config.JSONOutput {
-		return outputJSON(config, databaseInit)
+		outputJSON(config, db, databaseInit)
 	}
 
 	return nil
 }
 
-func initializeDatabase(config *Config) error {
+func initializeDatabase(config *Config) (*database.DB, error) {
 	if _, err := os.Stat(config.Database); err == nil && !config.Upgrade {
-		return fmt.Errorf("database already exists at %s. Use --upgrade to upgrade existing database", config.Database)
+		return nil, fmt.Errorf("database already exists at %s. Use --upgrade to upgrade existing database", config.Database)
 	}
 
-	if err := database.Connect(config.Database); err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+	db, err := database.New(config.Database)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer database.Close()
 
-	if err := database.InitSchema(); err != nil {
-		return fmt.Errorf("failed to initialize schema: %w", err)
+	if err := db.InitSchema(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
 	if !config.JSONOutput {
-		printDatabaseResult(config.Upgrade)
+		printDatabaseResult(db, config.Upgrade)
 	}
 
-	return nil
+	return db, nil
 }
 
 func extractTemplateFiles(targetDir string, jsonOutput bool) error {
@@ -141,9 +148,9 @@ func confirmExtraction() bool {
 	return response == "y" || response == "yes"
 }
 
-func printDatabaseResult(upgrade bool) {
+func printDatabaseResult(db *database.DB, upgrade bool) {
 	if upgrade {
-		version, err := database.GetMigrationVersion()
+		version, err := db.GetMigrationVersion()
 		if err != nil {
 			fmt.Printf("Could not get migration version: %v\n", err) //nolint:forbidigo // User-facing output
 		} else {
@@ -155,7 +162,7 @@ func printDatabaseResult(upgrade bool) {
 	}
 }
 
-func outputJSON(config *Config, databaseInit bool) error {
+func outputJSON(config *Config, db *database.DB, databaseInit bool) {
 	result := map[string]any{
 		"success": true,
 	}
@@ -163,9 +170,13 @@ func outputJSON(config *Config, databaseInit bool) error {
 	if databaseInit {
 		result["database"] = config.Database
 		if config.Upgrade {
-			version, _ := database.GetMigrationVersion()
 			result["action"] = "upgrade"
-			result["version"] = version
+			result["version"] = getVersionForJSON(db)
+			if result["version"] == unknownVersion && db != nil {
+				if _, err := db.GetMigrationVersion(); err != nil {
+					result["version_error"] = err.Error()
+				}
+			}
 		} else {
 			result["action"] = "initialize"
 		}
@@ -180,5 +191,15 @@ func outputJSON(config *Config, databaseInit bool) error {
 
 	jsonData, _ := json.Marshal(result)
 	fmt.Println(string(jsonData)) //nolint:forbidigo // JSON output to stdout
-	return nil
+}
+
+func getVersionForJSON(db *database.DB) any {
+	if db == nil {
+		return unknownVersion
+	}
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		return unknownVersion
+	}
+	return version
 }

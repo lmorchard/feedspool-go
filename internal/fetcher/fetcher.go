@@ -26,9 +26,10 @@ type Fetcher struct {
 	timeout   time.Duration
 	maxItems  int
 	forceFlag bool
+	db        *database.DB
 }
 
-func NewFetcher(timeout time.Duration, maxItems int, force bool) *Fetcher {
+func NewFetcher(db *database.DB, timeout time.Duration, maxItems int, force bool) *Fetcher {
 	return &Fetcher{
 		client: &http.Client{
 			Timeout: timeout,
@@ -36,6 +37,7 @@ func NewFetcher(timeout time.Duration, maxItems int, force bool) *Fetcher {
 		timeout:   timeout,
 		maxItems:  maxItems,
 		forceFlag: force,
+		db:        db,
 	}
 }
 
@@ -44,7 +46,7 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 		URL: feedURL,
 	}
 
-	existingFeed, err := database.GetFeed(feedURL)
+	existingFeed, err := f.db.GetFeed(feedURL)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to check existing feed: %w", err)
 		return result
@@ -114,7 +116,7 @@ func (f *Fetcher) processParsedFeed(
 	feed.ErrorCount = 0
 	feed.LastError = ""
 
-	if err := database.UpsertFeed(feed); err != nil {
+	if err := f.db.UpsertFeed(feed); err != nil {
 		result.Error = fmt.Errorf("failed to save feed: %w", err)
 		return result
 	}
@@ -145,7 +147,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 		}
 
 		item.Archived = false
-		if err := database.UpsertItem(item); err != nil {
+		if err := f.db.UpsertItem(item); err != nil {
 			logrus.Warnf("Failed to save item: %v", err)
 			continue
 		}
@@ -154,7 +156,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 		itemCount++
 	}
 
-	if err := database.MarkItemsArchived(feedURL, activeGUIDs); err != nil {
+	if err := f.db.MarkItemsArchived(feedURL, activeGUIDs); err != nil {
 		logrus.Warnf("Failed to mark archived items: %v", err)
 	}
 
@@ -165,7 +167,7 @@ func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.F
 	if existingFeed != nil {
 		existingFeed.LastFetchTime = time.Now()
 		existingFeed.LastSuccessfulFetch = time.Now()
-		if upsertErr := database.UpsertFeed(existingFeed); upsertErr != nil {
+		if upsertErr := f.db.UpsertFeed(existingFeed); upsertErr != nil {
 			logrus.WithError(upsertErr).Warn("Failed to update feed in database")
 		}
 		result.Feed = existingFeed
@@ -179,7 +181,7 @@ func (f *Fetcher) updateFeedError(feed *database.Feed, errorMsg string) {
 		feed.ErrorCount++
 		feed.LastError = errorMsg
 		feed.LastFetchTime = time.Now()
-		if err := database.UpsertFeed(feed); err != nil {
+		if err := f.db.UpsertFeed(feed); err != nil {
 			logrus.WithError(err).Warn("Failed to update feed error in database")
 		}
 	}
@@ -191,10 +193,10 @@ type completionEvent struct {
 }
 
 func FetchConcurrent(
-	urls []string, concurrency int, timeout time.Duration,
+	db *database.DB, urls []string, concurrency int, timeout time.Duration,
 	maxItems int, maxAge time.Duration, force bool,
 ) []*FetchResult {
-	fetcher := NewFetcher(timeout, maxItems, force)
+	fetcher := NewFetcher(db, timeout, maxItems, force)
 	results := make([]*FetchResult, len(urls))
 
 	sem := make(chan struct{}, concurrency)
@@ -251,7 +253,7 @@ func FetchConcurrent(
 			var result *FetchResult
 
 			if maxAge > 0 && !force {
-				existingFeed, _ := database.GetFeed(feedURL)
+				existingFeed, _ := db.GetFeed(feedURL)
 				if existingFeed != nil && time.Since(existingFeed.LastFetchTime) < maxAge {
 					result = &FetchResult{
 						URL:    feedURL,

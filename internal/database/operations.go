@@ -9,11 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UpsertFeed(feed *Feed) error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
+// UpsertFeed inserts or updates a feed record in the database.
+func (db *DB) UpsertFeed(feed *Feed) error {
 	query := `
 		INSERT INTO feeds (url, title, description, last_updated, etag, last_modified, 
 			last_fetch_time, last_successful_fetch, error_count, last_error, feed_json)
@@ -31,7 +28,7 @@ func UpsertFeed(feed *Feed) error {
 			feed_json = excluded.feed_json
 	`
 
-	_, err := db.Exec(query,
+	_, err := db.conn.Exec(query,
 		feed.URL, feed.Title, feed.Description, feed.LastUpdated, feed.ETag,
 		feed.LastModified, feed.LastFetchTime, feed.LastSuccessfulFetch,
 		feed.ErrorCount, feed.LastError, feed.FeedJSON)
@@ -43,11 +40,8 @@ func UpsertFeed(feed *Feed) error {
 	return nil
 }
 
-func GetFeed(url string) (*Feed, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database not connected")
-	}
-
+// GetFeed retrieves a feed by URL from the database.
+func (db *DB) GetFeed(url string) (*Feed, error) {
 	query := `
 		SELECT url, title, description, last_updated, etag, last_modified,
 			last_fetch_time, last_successful_fetch, error_count, last_error, feed_json
@@ -55,7 +49,7 @@ func GetFeed(url string) (*Feed, error) {
 	`
 
 	feed := &Feed{}
-	err := db.QueryRow(query, url).Scan(
+	err := db.conn.QueryRow(query, url).Scan(
 		&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 		&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
 		&feed.ErrorCount, &feed.LastError, &feed.FeedJSON)
@@ -70,18 +64,15 @@ func GetFeed(url string) (*Feed, error) {
 	return feed, nil
 }
 
-func GetAllFeeds() ([]*Feed, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database not connected")
-	}
-
+// GetAllFeeds retrieves all feeds from the database, ordered by URL.
+func (db *DB) GetAllFeeds() ([]*Feed, error) {
 	query := `
 		SELECT url, title, description, last_updated, etag, last_modified,
 			last_fetch_time, last_successful_fetch, error_count, last_error, feed_json
 		FROM feeds ORDER BY url
 	`
 
-	rows, err := db.Query(query)
+	rows, err := db.conn.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feeds: %w", err)
 	}
@@ -107,11 +98,8 @@ func GetAllFeeds() ([]*Feed, error) {
 	return feeds, nil
 }
 
-func UpsertItem(item *Item) error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
+// UpsertItem inserts or updates an item record in the database.
+func (db *DB) UpsertItem(item *Item) error {
 	query := `
 		INSERT INTO items (feed_url, guid, title, link, published_date, 
 			content, summary, archived, item_json)
@@ -126,7 +114,7 @@ func UpsertItem(item *Item) error {
 			item_json = excluded.item_json
 	`
 
-	_, err := db.Exec(query,
+	_, err := db.conn.Exec(query,
 		item.FeedURL, item.GUID, item.Title, item.Link, item.PublishedDate,
 		item.Content, item.Summary, item.Archived, item.ItemJSON)
 	if err != nil {
@@ -137,11 +125,8 @@ func UpsertItem(item *Item) error {
 	return nil
 }
 
-func GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database not connected")
-	}
-
+// GetItemsForFeed retrieves items for a specific feed with optional filtering by time range and limit.
+func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item, error) {
 	query := `
 		SELECT id, feed_url, guid, title, link, published_date, 
 			content, summary, archived, item_json
@@ -167,7 +152,7 @@ func GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item
 		args = append(args, limit)
 	}
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get items: %w", err)
 	}
@@ -193,13 +178,10 @@ func GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item
 	return items, nil
 }
 
-func MarkItemsArchived(feedURL string, activeGUIDs []string) error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
+// MarkItemsArchived marks items as archived for a specific feed, except for the provided active GUIDs.
+func (db *DB) MarkItemsArchived(feedURL string, activeGUIDs []string) error {
 	if len(activeGUIDs) == 0 {
-		_, err := db.Exec("UPDATE items SET archived = 1 WHERE feed_url = ?", feedURL)
+		_, err := db.conn.Exec("UPDATE items SET archived = 1 WHERE feed_url = ?", feedURL)
 		if err != nil {
 			return fmt.Errorf("failed to archive all items: %w", err)
 		}
@@ -215,11 +197,12 @@ func MarkItemsArchived(feedURL string, activeGUIDs []string) error {
 		args[i+1] = guid
 	}
 
+	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(
 		"UPDATE items SET archived = 1 WHERE feed_url = ? AND guid NOT IN (%s)",
 		strings.Join(placeholders, ","))
 
-	result, err := db.Exec(query, args...)
+	result, err := db.conn.Exec(query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to archive items: %w", err)
 	}
@@ -232,13 +215,10 @@ func MarkItemsArchived(feedURL string, activeGUIDs []string) error {
 	return nil
 }
 
-func DeleteArchivedItems(olderThan time.Time) (int64, error) {
-	if db == nil {
-		return 0, fmt.Errorf("database not connected")
-	}
-
+// DeleteArchivedItems deletes archived items older than the specified time.
+func (db *DB) DeleteArchivedItems(olderThan time.Time) (int64, error) {
 	query := "DELETE FROM items WHERE archived = 1 AND published_date < ?"
-	result, err := db.Exec(query, olderThan)
+	result, err := db.conn.Exec(query, olderThan)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete archived items: %w", err)
 	}
@@ -248,12 +228,9 @@ func DeleteArchivedItems(olderThan time.Time) (int64, error) {
 	return rowsAffected, nil
 }
 
-func DeleteFeed(url string) error {
-	if db == nil {
-		return fmt.Errorf("database not connected")
-	}
-
-	_, err := db.Exec("DELETE FROM feeds WHERE url = ?", url)
+// DeleteFeed deletes a feed and all its associated items from the database.
+func (db *DB) DeleteFeed(url string) error {
+	_, err := db.conn.Exec("DELETE FROM feeds WHERE url = ?", url)
 	if err != nil {
 		return fmt.Errorf("failed to delete feed: %w", err)
 	}
@@ -262,12 +239,9 @@ func DeleteFeed(url string) error {
 	return nil
 }
 
-func GetFeedURLs() ([]string, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database not connected")
-	}
-
-	rows, err := db.Query("SELECT url FROM feeds ORDER BY url")
+// GetFeedURLs retrieves all feed URLs from the database, ordered by URL.
+func (db *DB) GetFeedURLs() ([]string, error) {
+	rows, err := db.conn.Query("SELECT url FROM feeds ORDER BY url")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feed URLs: %w", err)
 	}
@@ -290,11 +264,7 @@ func GetFeedURLs() ([]string, error) {
 }
 
 // GetFeedsWithItemsByTimeRange gets feeds and their items within a specific time range.
-func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Feed, map[string][]Item, error) {
-	if db == nil {
-		return nil, nil, fmt.Errorf("database not connected")
-	}
-
+func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Feed, map[string][]Item, error) {
 	// Build feeds query
 	feedsQuery := `
 		SELECT f.url, f.title, f.description, f.last_updated, f.etag, f.last_modified,
@@ -317,7 +287,7 @@ func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Fe
 	feedsQuery += " ORDER BY f.last_updated DESC"
 
 	// Query feeds
-	rows, err := db.Query(feedsQuery, feedsArgs...)
+	rows, err := db.conn.Query(feedsQuery, feedsArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query feeds: %w", err)
 	}
@@ -347,7 +317,7 @@ func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Fe
 	items := make(map[string][]Item)
 	if len(feeds) > 0 {
 		var err error
-		items, err = getItemsForFeeds(feedURLMap, start, end)
+		items, err = db.getItemsForFeeds(feedURLMap, start, end)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get items: %w", err)
 		}
@@ -357,14 +327,14 @@ func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Fe
 }
 
 // GetFeedsWithItemsByMaxAge gets feeds and their items within a specified age from now.
-func GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string) ([]Feed, map[string][]Item, error) {
+func (db *DB) GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string) ([]Feed, map[string][]Item, error) {
 	end := time.Now()
 	start := end.Add(-maxAge)
-	return GetFeedsWithItemsByTimeRange(start, end, feedURLs)
+	return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
 }
 
 // getItemsForFeeds gets all items for a set of feeds within a time range.
-func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[string][]Item, error) {
+func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[string][]Item, error) {
 	if len(feedURLMap) == 0 {
 		return make(map[string][]Item), nil
 	}
@@ -384,6 +354,7 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 	}
 	args = append(args, start, end)
 
+	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(`
 		SELECT id, feed_url, guid, title, link, published_date,
 			content, summary, archived, item_json
@@ -393,7 +364,7 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 		ORDER BY feed_url, published_date DESC
 	`, strings.Join(placeholders, ","))
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
