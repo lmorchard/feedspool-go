@@ -422,45 +422,52 @@ func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[str
 // ParseTimeWindow parses CLI time arguments and returns start and end times.
 func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.Time, err error) {
 	// Parse explicit time range first
-	//nolint:nestif // Time parsing logic requires nested conditionals
 	if startStr != "" || endStr != "" {
-		if startStr != "" {
-			startTime, err = time.Parse(time.RFC3339, startStr)
-			if err != nil {
-				return time.Time{}, time.Time{}, fmt.Errorf("invalid start time format: %w", err)
-			}
-		}
-
-		if endStr != "" {
-			endTime, err = time.Parse(time.RFC3339, endStr)
-			if err != nil {
-				return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
-			}
-		} else {
-			endTime = time.Now()
-		}
-
-		if !startTime.IsZero() && !endTime.IsZero() && startTime.After(endTime) {
-			return time.Time{}, time.Time{}, fmt.Errorf("start time cannot be after end time")
-		}
-
-		return startTime, endTime, nil
+		return parseExplicitTimeRange(startStr, endStr)
 	}
 
 	// Parse max age duration
 	if maxAge != "" {
-		duration, err := time.ParseDuration(maxAge)
-		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
-		}
-
-		endTime = time.Now()
-		startTime = endTime.Add(-duration)
-		return startTime, endTime, nil
+		return parseMaxAgeDuration(maxAge)
 	}
 
 	// Default to 24 hours if nothing specified
 	endTime = time.Now()
 	startTime = endTime.Add(-24 * time.Hour)
+	return startTime, endTime, nil
+}
+
+func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Time, err error) {
+	if startStr != "" {
+		startTime, err = time.Parse(time.RFC3339, startStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid start time format: %w", err)
+		}
+	}
+
+	if endStr != "" {
+		endTime, err = time.Parse(time.RFC3339, endStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
+		}
+	} else {
+		endTime = time.Now()
+	}
+
+	if !startTime.IsZero() && !endTime.IsZero() && startTime.After(endTime) {
+		return time.Time{}, time.Time{}, fmt.Errorf("start time cannot be after end time")
+	}
+
+	return startTime, endTime, nil
+}
+
+func parseMaxAgeDuration(maxAge string) (startTime, endTime time.Time, err error) {
+	duration, err := time.ParseDuration(maxAge)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
+	}
+
+	endTime = time.Now()
+	startTime = endTime.Add(-duration)
 	return startTime, endTime, nil
 }

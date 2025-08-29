@@ -42,6 +42,7 @@ test*.opml
 
 # Distribution directory
 dist/
+build/
 
 coverage.out
 tmp/

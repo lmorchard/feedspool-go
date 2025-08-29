@@ -13,6 +13,8 @@ var embeddedTemplates embed.FS
 var embeddedAssets embed.FS
 
 // GetEmbeddedTemplates returns the embedded templates filesystem.
+// This function panics if the embedded templates cannot be accessed,
+// as this indicates a build-time error with embedded resources.
 func GetEmbeddedTemplates() fs.FS {
 	templatesFS, err := fs.Sub(embeddedTemplates, "templates")
 	if err != nil {
@@ -22,6 +24,8 @@ func GetEmbeddedTemplates() fs.FS {
 }
 
 // GetEmbeddedAssets returns the embedded assets filesystem.
+// This function panics if the embedded assets cannot be accessed,
+// as this indicates a build-time error with embedded resources.
 func GetEmbeddedAssets() fs.FS {
 	assetsFS, err := fs.Sub(embeddedAssets, "assets")
 	if err != nil {
@@ -54,11 +58,6 @@ func LoadDefaultTemplate() (*template.Template, error) {
 
 // LoadCustomTemplate loads a template from a custom filesystem path.
 func LoadCustomTemplate(templateDir, name string) (*template.Template, error) {
-	fsys := fsFromDir(templateDir)
+	fsys := fsFromDirImpl(templateDir)
 	return LoadTemplateFromFS(fsys, name)
-}
-
-// fsFromDir creates a filesystem interface from a directory path.
-func fsFromDir(dir string) fs.FS {
-	return fsFromDirImpl(dir)
 }
