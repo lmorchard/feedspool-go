@@ -45,10 +45,10 @@ control, age filtering, and database cleanup based on feed lists.`,
 }
 
 func init() {
-	fetchCmd.Flags().DurationVar(&fetchTimeout, "timeout", 30*time.Second, "Feed fetch timeout")
-	fetchCmd.Flags().IntVar(&fetchMaxItems, "max-items", 100, "Maximum items to keep per feed")
+	fetchCmd.Flags().DurationVar(&fetchTimeout, "timeout", config.DefaultTimeout, "Feed fetch timeout")
+	fetchCmd.Flags().IntVar(&fetchMaxItems, "max-items", config.DefaultMaxItems, "Maximum items to keep per feed")
 	fetchCmd.Flags().BoolVar(&fetchForce, "force", false, "Ignore cache headers and fetch anyway")
-	fetchCmd.Flags().IntVar(&fetchConcurrency, "concurrency", 32, "Maximum concurrent fetches")
+	fetchCmd.Flags().IntVar(&fetchConcurrency, "concurrency", config.DefaultConcurrency, "Maximum concurrent fetches")
 	fetchCmd.Flags().DurationVar(&fetchMaxAge, "max-age", 0, "Skip feeds fetched within this duration")
 	fetchCmd.Flags().BoolVar(&fetchRemoveMissing, "remove-missing", false, "Delete feeds not in list (file mode only)")
 	fetchCmd.Flags().StringVar(&fetchFormat, "format", "", "Feed list format (opml or text)")

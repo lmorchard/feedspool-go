@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/lmorchard/feedspool-go/internal/config"
 	_ "github.com/mattn/go-sqlite3" // sqlite3 driver
 	"github.com/sirupsen/logrus"
 )
@@ -19,7 +20,7 @@ var db *sql.DB
 func Connect(dbPath string) error {
 	dir := filepath.Dir(dbPath)
 	if dir != "." && dir != "/" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, config.DefaultDirPerm); err != nil {
 			return fmt.Errorf("failed to create database directory: %w", err)
 		}
 	}

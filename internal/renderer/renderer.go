@@ -12,6 +12,8 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 )
 
+const defaultDirPerm = 0o755
+
 // TemplateContext contains all data passed to templates.
 type TemplateContext struct {
 	Feeds       []database.Feed
@@ -89,7 +91,7 @@ func (r *Renderer) CopyAssets(outputDir string) error {
 		destPath := filepath.Join(outputDir, path)
 		destDir := filepath.Dir(destPath)
 
-		if err := os.MkdirAll(destDir, 0o755); err != nil {
+		if err := os.MkdirAll(destDir, defaultDirPerm); err != nil {
 			return fmt.Errorf("failed to create asset directory %s: %w", destDir, err)
 		}
 
@@ -141,7 +143,7 @@ func extractFromFS(sourceFS fs.FS, outputDir, name string) error {
 		destPath := filepath.Join(outputDir, path)
 		destDir := filepath.Dir(destPath)
 
-		if err := os.MkdirAll(destDir, 0o755); err != nil {
+		if err := os.MkdirAll(destDir, defaultDirPerm); err != nil {
 			return fmt.Errorf("failed to create %s directory %s: %w", name, destDir, err)
 		}
 

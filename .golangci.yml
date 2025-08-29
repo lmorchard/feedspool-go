@@ -144,20 +144,8 @@ issues:
         - gocognit
         - lll
 
-    # Exclude magic number checks for common values
-    - text: "Magic number: 30"
-      linters:
-        - mnd
-    - text: "Magic number: 32" 
-      linters:
-        - mnd
-    - text: "Magic number: 100"
-      linters:
-        - mnd
+    # Exclude magic number checks for regex match count (tied to specific regex structure)
     - text: "Magic number: 3"
-      linters:
-        - mnd
-    - text: "Magic number: 0o755"
       linters:
         - mnd
 

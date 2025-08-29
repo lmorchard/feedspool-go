@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	configpkg "github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
 )
@@ -44,7 +45,7 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 	}
 
 	// Create output directory
-	if err := os.MkdirAll(config.OutputDir, 0o755); err != nil {
+	if err := os.MkdirAll(config.OutputDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
