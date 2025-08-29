@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -184,6 +185,11 @@ func (f *Fetcher) updateFeedError(feed *database.Feed, errorMsg string) {
 	}
 }
 
+type completionEvent struct {
+	index  int
+	result *FetchResult
+}
+
 func FetchConcurrent(
 	urls []string, concurrency int, timeout time.Duration,
 	maxItems int, maxAge time.Duration, force bool,
@@ -192,7 +198,46 @@ func FetchConcurrent(
 	results := make([]*FetchResult, len(urls))
 
 	sem := make(chan struct{}, concurrency)
+	completions := make(chan completionEvent, len(urls))
 	var wg sync.WaitGroup
+
+	// Start goroutine to handle completion logging in order
+	go func() {
+		completedCount := 0
+		nextExpected := 0
+		pending := make(map[int]completionEvent)
+
+		// Calculate padding width based on total count
+		totalWidth := len(strconv.Itoa(len(urls)))
+
+		for completion := range completions {
+			pending[completion.index] = completion
+
+			// Process all sequential completions starting from nextExpected
+			for {
+				if event, exists := pending[nextExpected]; exists {
+					completedCount++
+					percentage := int(float64(completedCount) / float64(len(urls)) * 100)
+
+					if event.result.Error != nil {
+						logrus.Infof("Failed   %3d%% (%*d/%d) %s: %v",
+							percentage, totalWidth, completedCount, len(urls), event.result.URL, event.result.Error)
+					} else if event.result.Cached {
+						logrus.Infof("Cached   %3d%% (%*d/%d) %s",
+							percentage, totalWidth, completedCount, len(urls), event.result.URL)
+					} else if event.result.Feed != nil {
+						logrus.Infof("Fetched  %3d%% (%*d/%d) %s (%d items)",
+							percentage, totalWidth, completedCount, len(urls), event.result.URL, event.result.ItemCount)
+					}
+
+					delete(pending, nextExpected)
+					nextExpected++
+				} else {
+					break
+				}
+			}
+		}
+	}()
 
 	for i, url := range urls {
 		wg.Add(1)
@@ -201,24 +246,31 @@ func FetchConcurrent(
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
+			logrus.Debugf("Starting fetch: %s", feedURL)
+
+			var result *FetchResult
+
 			if maxAge > 0 && !force {
 				existingFeed, _ := database.GetFeed(feedURL)
 				if existingFeed != nil && time.Since(existingFeed.LastFetchTime) < maxAge {
-					results[index] = &FetchResult{
+					result = &FetchResult{
 						URL:    feedURL,
 						Feed:   existingFeed,
 						Cached: true,
 					}
-					logrus.Debugf("Skipping recently fetched feed: %s", feedURL)
-					return
 				}
 			}
 
-			logrus.Infof("Fetching %s (%d/%d)", feedURL, index+1, len(urls))
-			results[index] = fetcher.FetchFeed(feedURL)
+			if result == nil {
+				result = fetcher.FetchFeed(feedURL)
+			}
+
+			results[index] = result
+			completions <- completionEvent{index: index, result: result}
 		}(i, url)
 	}
 
 	wg.Wait()
+	close(completions)
 	return results
 }

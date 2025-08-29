@@ -14,6 +14,12 @@ type Config struct {
 	Concurrency int
 	Timeout     time.Duration
 	MaxItems    int
+	FeedList    FeedListConfig
+}
+
+type FeedListConfig struct {
+	Format   string
+	Filename string
 }
 
 func LoadConfig() *Config {
@@ -31,6 +37,10 @@ func LoadConfig() *Config {
 		Concurrency: viper.GetInt("concurrency"),
 		Timeout:     timeout,
 		MaxItems:    viper.GetInt("max_items"),
+		FeedList: FeedListConfig{
+			Format:   viper.GetString("feedlist.format"),
+			Filename: viper.GetString("feedlist.filename"),
+		},
 	}
 }
 
@@ -40,5 +50,19 @@ func GetDefault() *Config {
 		Concurrency: 32,
 		Timeout:     30 * time.Second,
 		MaxItems:    100,
+		FeedList: FeedListConfig{
+			Format:   "", // Empty strings indicate not configured
+			Filename: "",
+		},
 	}
+}
+
+// HasDefaultFeedList returns true if both format and filename are configured.
+func (c *Config) HasDefaultFeedList() bool {
+	return c.FeedList.Format != "" && c.FeedList.Filename != ""
+}
+
+// GetDefaultFeedList returns the configured default format and filename.
+func (c *Config) GetDefaultFeedList() (format, filename string) {
+	return c.FeedList.Format, c.FeedList.Filename
 }

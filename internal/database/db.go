@@ -74,6 +74,22 @@ func Close() error {
 	return nil
 }
 
+// IsInitialized checks if the database is properly initialized with required tables.
+func IsInitialized() error {
+	if db == nil {
+		return fmt.Errorf("database not connected")
+	}
+
+	// Check if the feeds table exists by trying to query it
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM feeds LIMIT 1").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("database not initialized - run 'feedspool init' first")
+	}
+
+	return nil
+}
+
 func GetMigrationVersion() (int, error) {
 	if db == nil {
 		return 0, fmt.Errorf("database not connected")

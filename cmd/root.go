@@ -19,9 +19,17 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "feedspool",
 	Short: "feedspool - RSS/Atom feed management CLI",
-	Long: `feedspool is a CLI tool for managing RSS and Atom feeds.
-It can fetch feeds from OPML files, store them in a SQLite database,
-and provide various querying and management capabilities.`,
+	Long: `feedspool is a CLI tool for managing RSS and Atom feeds with subscription management.
+
+Features:
+• Unified feed fetching from single URLs, OPML files, or text lists
+• Subscribe/unsubscribe commands with RSS/Atom autodiscovery
+• Export database feeds to OPML or text formats
+• Feed list cleanup and age-based purging
+• Concurrent fetching with HTTP caching
+• Configurable defaults for streamlined workflows
+
+Use 'feedspool <command> --help' for detailed command information.`,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		initConfig()
 		setupLogging()
