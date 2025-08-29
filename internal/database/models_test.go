@@ -8,6 +8,8 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+const testItemTitle = "Test Item"
+
 func TestJSONValue(t *testing.T) {
 	tests := []struct {
 		name string
@@ -142,24 +144,24 @@ func TestJSONMarshalJSON(t *testing.T) {
 
 func TestJSONUnmarshalJSON(t *testing.T) {
 	tests := []struct {
-		name  string
-		data  []byte
-		want  string
+		name string
+		data []byte
+		want string
 	}{
 		{
-			name:  "valid JSON object",
-			data:  []byte(`{"test": "value"}`),
-			want:  `{"test": "value"}`,
+			name: "valid JSON object",
+			data: []byte(`{"test": "value"}`),
+			want: `{"test": "value"}`,
 		},
 		{
-			name:  "valid JSON array",
-			data:  []byte(`[1, 2, 3]`),
-			want:  `[1, 2, 3]`,
+			name: "valid JSON array",
+			data: []byte(`[1, 2, 3]`),
+			want: `[1, 2, 3]`,
 		},
 		{
-			name:  "null JSON",
-			data:  []byte(`null`),
-			want:  `null`,
+			name: "null JSON",
+			data: []byte(`null`),
+			want: `null`,
 		},
 	}
 
@@ -180,29 +182,29 @@ func TestJSONUnmarshalJSON(t *testing.T) {
 
 func TestJSONMarshalUnmarshalRoundTrip(t *testing.T) {
 	// Test that marshaling and then unmarshaling preserves the JSON
-	originalData := `{"title":"Test Item","link":"https://example.com","array":[1,2,3],"nested":{"key":"value"}}`
-	
+	originalData := `{"title":"` + testItemTitle + `","link":"https://example.com","array":[1,2,3],"nested":{"key":"value"}}`
+
 	// Create a JSON value
 	j1 := JSON(originalData)
-	
+
 	// Marshal it
 	marshaled, err := json.Marshal(j1)
 	if err != nil {
 		t.Fatalf("Failed to marshal JSON: %v", err)
 	}
-	
+
 	// Unmarshal it back
 	var j2 JSON
 	err = json.Unmarshal(marshaled, &j2)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal JSON: %v", err)
 	}
-	
+
 	// They should be equal
 	if string(j1) != string(j2) {
 		t.Errorf("Round trip failed: original = %v, result = %v", string(j1), string(j2))
 	}
-	
+
 	// Verify the marshaled data is valid JSON (not base64)
 	var testObj map[string]interface{}
 	err = json.Unmarshal(marshaled, &testObj)
@@ -217,40 +219,40 @@ func TestItemJSONMarshalNotBase64(t *testing.T) {
 		ID:            1,
 		FeedURL:       "https://example.com/feed.xml",
 		GUID:          "test-guid",
-		Title:         "Test Item",
+		Title:         testItemTitle,
 		Link:          "https://example.com/item",
 		PublishedDate: time.Now(),
-		ItemJSON:      JSON(`{"title":"Test Item","custom":{"field":"value"}}`),
+		ItemJSON:      JSON(`{"title":"` + testItemTitle + `","custom":{"field":"value"}}`),
 	}
-	
+
 	// Marshal the item
 	marshaled, err := json.Marshal(item)
 	if err != nil {
 		t.Fatalf("Failed to marshal Item: %v", err)
 	}
-	
+
 	// Unmarshal to a map to check the ItemJSON field
 	var result map[string]interface{}
 	err = json.Unmarshal(marshaled, &result)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal to map: %v", err)
 	}
-	
+
 	// ItemJSON should be a map (parsed JSON), not a string (base64)
 	itemJSONField, ok := result["ItemJSON"]
 	if !ok {
 		t.Fatal("ItemJSON field not found in marshaled data")
 	}
-	
+
 	// If it's a string, it means it was base64 encoded (bad)
 	// If it's a map, it means it was properly marshaled as JSON (good)
 	if _, isString := itemJSONField.(string); isString {
 		t.Errorf("ItemJSON was marshaled as base64 string, should be JSON object")
 	}
-	
+
 	if itemJSONMap, isMap := itemJSONField.(map[string]interface{}); isMap {
 		// Verify the content
-		if title, ok := itemJSONMap["title"].(string); !ok || title != "Test Item" {
+		if title, ok := itemJSONMap["title"].(string); !ok || title != testItemTitle {
 			t.Errorf("ItemJSON content incorrect: %v", itemJSONMap)
 		}
 	} else {
@@ -306,10 +308,7 @@ func TestFeedFromGofeed(t *testing.T) {
 }
 
 func TestItemFromGofeed(t *testing.T) {
-	const (
-		testItemTitle = "Test Item"
-		testItemURL   = "https://example.com/feed.xml"
-	)
+	const testItemURL = "https://example.com/feed.xml"
 
 	now := time.Now()
 	gofeedItem := &gofeed.Item{
@@ -346,7 +345,7 @@ func TestItemFromGofeed(t *testing.T) {
 
 func TestItemFromGofeedNoGUID(t *testing.T) {
 	gofeedItem := &gofeed.Item{
-		Title: "Test Item",
+		Title: testItemTitle,
 		Link:  "https://example.com/item",
 	}
 
@@ -370,7 +369,7 @@ func TestItemFromGofeedNoGUID(t *testing.T) {
 
 func TestGenerateGUID(t *testing.T) {
 	link := "https://example.com/item"
-	title := "Test Item"
+	title := testItemTitle
 
 	guid1 := generateGUID(link, title)
 	guid2 := generateGUID(link, title)

@@ -63,7 +63,7 @@ func (j *JSON) Scan(value interface{}) error {
 }
 
 func (j JSON) MarshalJSON() ([]byte, error) {
-	if j == nil || len(j) == 0 {
+	if len(j) == 0 {
 		return []byte("null"), nil
 	}
 	return []byte(j), nil

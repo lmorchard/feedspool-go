@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/spf13/cobra"
 )
@@ -56,45 +57,73 @@ func runShow(_ *cobra.Command, args []string) error {
 	}
 	defer database.Close()
 
-	var since, until time.Time
-	var err error
+	since, until, err := parseDateFilters()
+	if err != nil {
+		return err
+	}
 
+	feed, items, err := getFeedAndItems(feedURL, since, until)
+	if err != nil {
+		return err
+	}
+
+	if showSort == "oldest" {
+		reverseItems(items)
+	}
+
+	format := determineOutputFormat(cfg)
+	return outputInFormat(format, feed, items)
+}
+
+func parseDateFilters() (since, until time.Time, err error) {
 	if showSince != "" {
 		since, err = time.Parse(time.RFC3339, showSince)
 		if err != nil {
-			return fmt.Errorf("invalid since date: %w", err)
+			err = fmt.Errorf("invalid since date: %w", err)
+			return
 		}
 	}
 
 	if showUntil != "" {
 		until, err = time.Parse(time.RFC3339, showUntil)
 		if err != nil {
-			return fmt.Errorf("invalid until date: %w", err)
+			err = fmt.Errorf("invalid until date: %w", err)
+			return
 		}
 	}
 
-	// Get feed metadata
+	return
+}
+
+func getFeedAndItems(feedURL string, since, until time.Time) (*database.Feed, []*database.Item, error) {
 	feed, err := database.GetFeed(feedURL)
 	if err != nil {
-		return fmt.Errorf("failed to get feed: %w", err)
+		return nil, nil, fmt.Errorf("failed to get feed: %w", err)
 	}
 
 	items, err := database.GetItemsForFeed(feedURL, showLimit, since, until)
 	if err != nil {
-		return fmt.Errorf("failed to get items: %w", err)
+		return nil, nil, fmt.Errorf("failed to get items: %w", err)
 	}
 
-	if showSort == "oldest" {
-		for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
-			items[i], items[j] = items[j], items[i]
-		}
-	}
+	return feed, items, nil
+}
 
+func reverseItems(items []*database.Item) {
+	for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+		items[i], items[j] = items[j], items[i]
+	}
+}
+
+func determineOutputFormat(cfg *config.Config) string {
 	format := showFormat
 	if format == formatTable && cfg.JSON {
 		format = formatJSON
 	}
+	return format
+}
 
+func outputInFormat(format string, feed *database.Feed, items []*database.Item) error {
 	switch format {
 	case formatJSON:
 		return outputJSON(feed, items)
