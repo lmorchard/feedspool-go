@@ -29,4 +29,21 @@ _testmain.go
 .idea
 
 feedspool-go
+feedspool
 data
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# Test files
+test*.opml
+
+# Distribution directory
+dist/
+build/
+
+coverage.out
+tmp/
+feedspool.yaml
