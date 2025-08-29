@@ -70,6 +70,20 @@ func initConfig() {
 	viper.SetDefault("timeout", "30s")
 	viper.SetDefault("max_items", 100)
 
+	// Render command defaults
+	viper.SetDefault("render.output_dir", "./build")
+	viper.SetDefault("render.templates_dir", "")
+	viper.SetDefault("render.assets_dir", "")
+	viper.SetDefault("render.default_max_age", "24h")
+
+	// Serve command defaults
+	viper.SetDefault("serve.port", 8080)
+	viper.SetDefault("serve.dir", "./build")
+
+	// Init command defaults
+	viper.SetDefault("init.templates_dir", "./templates")
+	viper.SetDefault("init.assets_dir", "./assets")
+
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {

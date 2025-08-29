@@ -20,3 +20,25 @@ debug: false
 
 # JSON output format
 json: false
+
+# Default feed list settings
+feedlist:
+  format: ""    # Default format for feed lists (opml or text)
+  filename: ""  # Default filename for feed lists
+
+# Static site generator settings
+render:
+  output_dir: "./build"      # Default output directory for rendered site
+  templates_dir: ""          # Custom templates directory (empty = use embedded)
+  assets_dir: ""             # Custom assets directory (empty = use embedded)  
+  default_max_age: "24h"     # Default time window for rendering
+
+# HTTP server settings
+serve:
+  port: 8080        # Default HTTP server port
+  dir: "./build"    # Default directory to serve
+
+# Initialization settings
+init:
+  templates_dir: "./templates"  # Default directory for template extraction
+  assets_dir: "./assets"        # Default directory for asset extraction
