@@ -62,6 +62,21 @@ func (j *JSON) Scan(value interface{}) error {
 	return nil
 }
 
+func (j JSON) MarshalJSON() ([]byte, error) {
+	if j == nil || len(j) == 0 {
+		return []byte("null"), nil
+	}
+	return []byte(j), nil
+}
+
+func (j *JSON) UnmarshalJSON(data []byte) error {
+	if j == nil {
+		return fmt.Errorf("UnmarshalJSON on nil pointer")
+	}
+	*j = JSON(data)
+	return nil
+}
+
 func FeedFromGofeed(gf *gofeed.Feed, url string) (*Feed, error) {
 	feedJSON, err := json.Marshal(gf)
 	if err != nil {

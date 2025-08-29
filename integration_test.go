@@ -128,12 +128,27 @@ func TestIntegrationEndToEnd(t *testing.T) {
 			t.Errorf("Show JSON failed: %v, output: %s", err, output)
 		}
 
+		// Check for feed-level fields
 		if !strings.Contains(output, `"Title"`) {
-			t.Errorf("JSON output should contain Title field, got: %s", output)
+			t.Errorf("JSON output should contain feed Title field, got: %s", output)
+		}
+
+		if !strings.Contains(output, `"URL"`) {
+			t.Errorf("JSON output should contain feed URL field, got: %s", output)
+		}
+
+		// Check for Items array and item fields
+		if !strings.Contains(output, `"Items"`) {
+			t.Errorf("JSON output should contain Items array, got: %s", output)
 		}
 
 		if !strings.Contains(output, `"GUID"`) {
-			t.Errorf("JSON output should contain GUID field, got: %s", output)
+			t.Errorf("JSON output should contain item GUID field, got: %s", output)
+		}
+
+		// Check that FeedJSON and ItemJSON are objects, not base64 strings
+		if strings.Contains(output, `"FeedJSON":"eyJ`) || strings.Contains(output, `"ItemJSON":"eyJ`) {
+			t.Errorf("JSON output should not contain base64-encoded JSON fields, got: %s", output)
 		}
 	})
 

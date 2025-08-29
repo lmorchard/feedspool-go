@@ -93,6 +93,171 @@ func TestJSONScanError(t *testing.T) {
 	}
 }
 
+func TestJSONMarshalJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		j    JSON
+		want string
+	}{
+		{
+			name: "nil JSON",
+			j:    nil,
+			want: "null",
+		},
+		{
+			name: "empty JSON",
+			j:    JSON{},
+			want: "null",
+		},
+		{
+			name: "valid JSON object",
+			j:    JSON(`{"test": "value", "number": 42}`),
+			want: `{"test": "value", "number": 42}`,
+		},
+		{
+			name: "valid JSON array",
+			j:    JSON(`[1, 2, 3]`),
+			want: `[1, 2, 3]`,
+		},
+		{
+			name: "nested JSON",
+			j:    JSON(`{"outer": {"inner": "value"}}`),
+			want: `{"outer": {"inner": "value"}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.j.MarshalJSON()
+			if err != nil {
+				t.Errorf("JSON.MarshalJSON() error = %v", err)
+				return
+			}
+			if string(got) != tt.want {
+				t.Errorf("JSON.MarshalJSON() = %v, want %v", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestJSONUnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		name  string
+		data  []byte
+		want  string
+	}{
+		{
+			name:  "valid JSON object",
+			data:  []byte(`{"test": "value"}`),
+			want:  `{"test": "value"}`,
+		},
+		{
+			name:  "valid JSON array",
+			data:  []byte(`[1, 2, 3]`),
+			want:  `[1, 2, 3]`,
+		},
+		{
+			name:  "null JSON",
+			data:  []byte(`null`),
+			want:  `null`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var j JSON
+			err := j.UnmarshalJSON(tt.data)
+			if err != nil {
+				t.Errorf("JSON.UnmarshalJSON() error = %v", err)
+				return
+			}
+			if string(j) != tt.want {
+				t.Errorf("JSON.UnmarshalJSON() = %v, want %v", string(j), tt.want)
+			}
+		})
+	}
+}
+
+func TestJSONMarshalUnmarshalRoundTrip(t *testing.T) {
+	// Test that marshaling and then unmarshaling preserves the JSON
+	originalData := `{"title":"Test Item","link":"https://example.com","array":[1,2,3],"nested":{"key":"value"}}`
+	
+	// Create a JSON value
+	j1 := JSON(originalData)
+	
+	// Marshal it
+	marshaled, err := json.Marshal(j1)
+	if err != nil {
+		t.Fatalf("Failed to marshal JSON: %v", err)
+	}
+	
+	// Unmarshal it back
+	var j2 JSON
+	err = json.Unmarshal(marshaled, &j2)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+	
+	// They should be equal
+	if string(j1) != string(j2) {
+		t.Errorf("Round trip failed: original = %v, result = %v", string(j1), string(j2))
+	}
+	
+	// Verify the marshaled data is valid JSON (not base64)
+	var testObj map[string]interface{}
+	err = json.Unmarshal(marshaled, &testObj)
+	if err != nil {
+		t.Errorf("Marshaled data is not valid JSON: %v", err)
+	}
+}
+
+func TestItemJSONMarshalNotBase64(t *testing.T) {
+	// This test ensures that ItemJSON is not base64 encoded when marshaled
+	item := &Item{
+		ID:            1,
+		FeedURL:       "https://example.com/feed.xml",
+		GUID:          "test-guid",
+		Title:         "Test Item",
+		Link:          "https://example.com/item",
+		PublishedDate: time.Now(),
+		ItemJSON:      JSON(`{"title":"Test Item","custom":{"field":"value"}}`),
+	}
+	
+	// Marshal the item
+	marshaled, err := json.Marshal(item)
+	if err != nil {
+		t.Fatalf("Failed to marshal Item: %v", err)
+	}
+	
+	// Unmarshal to a map to check the ItemJSON field
+	var result map[string]interface{}
+	err = json.Unmarshal(marshaled, &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal to map: %v", err)
+	}
+	
+	// ItemJSON should be a map (parsed JSON), not a string (base64)
+	itemJSONField, ok := result["ItemJSON"]
+	if !ok {
+		t.Fatal("ItemJSON field not found in marshaled data")
+	}
+	
+	// If it's a string, it means it was base64 encoded (bad)
+	// If it's a map, it means it was properly marshaled as JSON (good)
+	if _, isString := itemJSONField.(string); isString {
+		t.Errorf("ItemJSON was marshaled as base64 string, should be JSON object")
+	}
+	
+	if itemJSONMap, isMap := itemJSONField.(map[string]interface{}); isMap {
+		// Verify the content
+		if title, ok := itemJSONMap["title"].(string); !ok || title != "Test Item" {
+			t.Errorf("ItemJSON content incorrect: %v", itemJSONMap)
+		}
+	} else {
+		t.Errorf("ItemJSON should be a JSON object, got %T", itemJSONField)
+	}
+}
+
 func TestFeedFromGofeed(t *testing.T) {
 	const (
 		testFeedTitle       = "Test Feed"

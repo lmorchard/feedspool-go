@@ -17,6 +17,11 @@ const (
 	formatTable = "table"
 )
 
+type FeedWithItems struct {
+	*database.Feed
+	Items []*database.Item `json:"Items"`
+}
+
 var (
 	showFormat string
 	showSort   string
@@ -68,6 +73,12 @@ func runShow(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	// Get feed metadata
+	feed, err := database.GetFeed(feedURL)
+	if err != nil {
+		return fmt.Errorf("failed to get feed: %w", err)
+	}
+
 	items, err := database.GetItemsForFeed(feedURL, showLimit, since, until)
 	if err != nil {
 		return fmt.Errorf("failed to get items: %w", err)
@@ -86,7 +97,7 @@ func runShow(_ *cobra.Command, args []string) error {
 
 	switch format {
 	case formatJSON:
-		return outputJSON(items)
+		return outputJSON(feed, items)
 	case "csv":
 		return outputCSV(items)
 	case formatTable:
@@ -113,10 +124,14 @@ func outputTable(items []*database.Item) error {
 	return w.Flush()
 }
 
-func outputJSON(items []*database.Item) error {
+func outputJSON(feed *database.Feed, items []*database.Item) error {
+	feedWithItems := &FeedWithItems{
+		Feed:  feed,
+		Items: items,
+	}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(items)
+	return encoder.Encode(feedWithItems)
 }
 
 func outputCSV(items []*database.Item) error {
