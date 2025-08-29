@@ -61,9 +61,6 @@ linters:
     - whitespace
   disable:
     - nilnil          # Returning nil,nil is sometimes appropriate
-    # Disable overly strict linters for CLI applications
-    - gocognit        # Cognitive complexity is often unavoidable in CLI apps
-    - gocyclo         # Cyclomatic complexity is often unavoidable in CLI apps
 
 linters-settings:
   cyclop:
@@ -94,8 +91,7 @@ linters-settings:
       - style
     disabled-checks:
       - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain
-      - octalLiteral
+      - ifElseChain  # Often produces false positives for different condition types
       - whyNoLint
       - wrapperFunc
 
@@ -159,13 +155,13 @@ issues:
       linters:
         - gochecknoinits
 
-    # Allow print statements in CLI commands for user output
-    - path: cmd/
+    # Allow print statements in main CLI commands for user output
+    - path: cmd/(fetch|show|purge|export|render|serve|subscribe|unsubscribe|version)\.go
       linters:
         - forbidigo
 
-    # Allow complex nested blocks in CLI commands (user interface logic)
-    - path: cmd/
+    # Allow complex nested blocks in main CLI commands (user interface logic)
+    - path: cmd/(fetch|purge|render|root)\.go
       linters:
         - nestif
 
