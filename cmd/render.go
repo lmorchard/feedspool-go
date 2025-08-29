@@ -8,7 +8,6 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -58,15 +57,7 @@ func init() {
 	renderCmd.Flags().StringVar(&renderFeeds, "feeds", "", "Feed list file")
 	renderCmd.Flags().StringVar(&renderFormat, "format", defaultFormat, "Feed list format (opml or text)")
 
-	// Bind flags to viper for config file support
-	_ = viper.BindPFlag("render.max_age", renderCmd.Flags().Lookup("max-age"))
-	_ = viper.BindPFlag("render.start", renderCmd.Flags().Lookup("start"))
-	_ = viper.BindPFlag("render.end", renderCmd.Flags().Lookup("end"))
-	_ = viper.BindPFlag("render.output", renderCmd.Flags().Lookup("output"))
-	_ = viper.BindPFlag("render.templates", renderCmd.Flags().Lookup("templates"))
-	_ = viper.BindPFlag("render.assets", renderCmd.Flags().Lookup("assets"))
-	_ = viper.BindPFlag("render.feeds", renderCmd.Flags().Lookup("feeds"))
-	_ = viper.BindPFlag("render.format", renderCmd.Flags().Lookup("format"))
+	// Note: Config file values are loaded through the Config struct, not viper bindings
 
 	rootCmd.AddCommand(renderCmd)
 }
@@ -87,16 +78,16 @@ func runRender(_ *cobra.Command, _ []string) error {
 }
 
 func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
-	// Get values from viper (includes config file values)
+	// Start with config file values
 	config := &renderer.WorkflowConfig{
-		MaxAge:       viper.GetString("render.max_age"),
-		Start:        viper.GetString("render.start"),
-		End:          viper.GetString("render.end"),
-		OutputDir:    viper.GetString("render.output"),
-		TemplatesDir: viper.GetString("render.templates"),
-		AssetsDir:    viper.GetString("render.assets"),
-		FeedsFile:    viper.GetString("render.feeds"),
-		Format:       viper.GetString("render.format"),
+		MaxAge:       cfg.Render.DefaultMaxAge,
+		Start:        "",
+		End:          "",
+		OutputDir:    cfg.Render.OutputDir,
+		TemplatesDir: cfg.Render.TemplatesDir,
+		AssetsDir:    cfg.Render.AssetsDir,
+		FeedsFile:    "",
+		Format:       cfg.FeedList.Format,
 		Database:     cfg.Database,
 	}
 

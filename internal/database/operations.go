@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -107,7 +109,6 @@ func (db *DB) UpsertItem(item *Item) error {
 		ON CONFLICT(feed_url, guid) DO UPDATE SET
 			title = excluded.title,
 			link = excluded.link,
-			published_date = excluded.published_date,
 			content = excluded.content,
 			summary = excluded.summary,
 			archived = excluded.archived,
@@ -433,7 +434,7 @@ func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Ti
 }
 
 func parseMaxAgeDuration(maxAge string) (startTime, endTime time.Time, err error) {
-	duration, err := time.ParseDuration(maxAge)
+	duration, err := ParseDuration(maxAge)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
 	}
@@ -441,4 +442,30 @@ func parseMaxAgeDuration(maxAge string) (startTime, endTime time.Time, err error
 	endTime = time.Now()
 	startTime = endTime.Add(-duration)
 	return startTime, endTime, nil
+}
+
+// ParseDuration parses duration strings including "d" for days and "w" for weeks.
+func ParseDuration(s string) (time.Duration, error) {
+	re := regexp.MustCompile(`^(\d+)([dwh])$`)
+	matches := re.FindStringSubmatch(strings.ToLower(s))
+
+	if len(matches) != 3 {
+		return time.ParseDuration(s)
+	}
+
+	num, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, err
+	}
+
+	switch matches[2] {
+	case "d":
+		return time.Duration(num) * 24 * time.Hour, nil
+	case "w":
+		return time.Duration(num) * 7 * 24 * time.Hour, nil
+	case "h":
+		return time.Duration(num) * time.Hour, nil
+	default:
+		return time.ParseDuration(s)
+	}
 }

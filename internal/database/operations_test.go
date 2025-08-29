@@ -179,6 +179,86 @@ func TestUpsertAndGetItem(t *testing.T) {
 	}
 }
 
+func TestUpsertItemDateStability(t *testing.T) {
+	const updatedTitle = "Updated Title"
+
+	db, _ := setupTestDB(t)
+
+	// Insert feed first
+	feed := &Feed{
+		URL:      "https://example.com/feed.xml",
+		Title:    "Test Feed",
+		FeedJSON: JSON(`{"title": "Test Feed"}`),
+	}
+	err := db.UpsertFeed(feed)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an item with a specific published date
+	originalTime := time.Date(2023, 1, 15, 12, 0, 0, 0, time.UTC)
+	item := &Item{
+		FeedURL:       feed.URL,
+		GUID:          "test-item-1",
+		Title:         "Test Item",
+		Link:          "https://example.com/item1",
+		PublishedDate: originalTime,
+		Content:       "Test content",
+		ItemJSON:      JSON(`{"title": "Test Item"}`),
+	}
+
+	// First upsert (insert)
+	err = db.UpsertItem(item)
+	if err != nil {
+		t.Errorf("First UpsertItem() error = %v", err)
+	}
+
+	// Get the item to verify the date
+	items, err := db.GetItemsForFeed(feed.URL, 0, time.Time{}, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatal("Expected 1 item")
+	}
+
+	firstInsertDate := items[0].PublishedDate
+
+	// Wait a moment, then update the item with a new date (simulating a feed without proper dates)
+	time.Sleep(10 * time.Millisecond)
+	newTime := time.Now() // This should NOT overwrite the original date
+	item.PublishedDate = newTime
+	item.Title = updatedTitle // Update other fields
+
+	// Second upsert (update)
+	err = db.UpsertItem(item)
+	if err != nil {
+		t.Errorf("Second UpsertItem() error = %v", err)
+	}
+
+	// Get the item again and verify the date is stable
+	items, err = db.GetItemsForFeed(feed.URL, 0, time.Time{}, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatal("Expected 1 item")
+	}
+
+	secondFetchDate := items[0].PublishedDate
+
+	// The published date should NOT have changed
+	if !firstInsertDate.Equal(secondFetchDate) {
+		t.Errorf("Published date should be stable across updates. First: %v, Second: %v",
+			firstInsertDate, secondFetchDate)
+	}
+
+	// But other fields should be updated
+	if items[0].Title != updatedTitle {
+		t.Errorf("Title should be updated: got %s, want %s", items[0].Title, updatedTitle)
+	}
+}
+
 func TestGetItemsForFeedWithFilters(t *testing.T) {
 	const testItem3GUID = "item3"
 
