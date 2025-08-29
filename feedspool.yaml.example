@@ -1,0 +1,22 @@
+# feedspool Configuration File Example
+
+# Database file path
+database: ./feeds.db
+
+# Number of concurrent feed fetches
+concurrency: 32
+
+# Timeout for individual feed fetches
+timeout: 30s
+
+# Maximum number of items to keep per feed
+max_items: 100
+
+# Verbose output
+verbose: false
+
+# Debug output
+debug: false
+
+# JSON output format
+json: false

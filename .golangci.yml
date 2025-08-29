@@ -1,0 +1,204 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - cyclop
+    - dupl
+    - durationcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - copyloopvar
+    - forbidigo
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - godot
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - mnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - stylecheck
+    - usetesting
+    - testpackage
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+  disable:
+    - nilnil          # Returning nil,nil is sometimes appropriate
+    # Disable overly strict linters for CLI applications
+    - gocognit        # Cognitive complexity is often unavoidable in CLI apps
+    - gocyclo         # Cyclomatic complexity is often unavoidable in CLI apps
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    package-average: 10.0
+    skip-tests: false
+
+  dupl:
+    threshold: 100
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  gocognit:
+    min-complexity: 20
+
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+
+  gocyclo:
+    min-complexity: 15
+
+  mnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - operation
+      - return
+      - assign
+    ignored-numbers: 0,1,2,8,10,16,32,60,64,100,256,404,500,503,1024
+    ignored-functions: 'make'
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Struct field alignment is optimization, not correctness
+      - shadow         # Variable shadowing warnings are often false positives in tests
+
+  lll:
+    line-length: 120
+
+  misspell:
+    locale: US
+
+  nolintlint:
+    allow-leading-space: true
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - gocognit
+        - lll
+
+    # Exclude magic number checks for common values
+    - text: "Magic number: 30"
+      linters:
+        - mnd
+    - text: "Magic number: 32" 
+      linters:
+        - mnd
+    - text: "Magic number: 100"
+      linters:
+        - mnd
+    - text: "Magic number: 3"
+      linters:
+        - mnd
+    - text: "Magic number: 0o755"
+      linters:
+        - mnd
+
+    # Allow globals in cmd package (normal for Cobra CLI apps)
+    - path: cmd/
+      linters:
+        - gochecknoglobals
+
+    # Allow init functions in cmd package
+    - path: cmd/
+      linters:
+        - gochecknoinits
+
+    # Allow print statements in CLI commands for user output
+    - path: cmd/
+      linters:
+        - forbidigo
+
+    # Allow complex nested blocks in CLI commands (user interface logic)
+    - path: cmd/
+      linters:
+        - nestif
+
+    # Allow complex test functions
+    - path: _test\.go
+      linters:
+        - cyclop
+        - gocognit
+
+    # Allow test package naming conventions
+    - path: _test\.go
+      linters:
+        - testpackage
+
+    # Allow unused parameters in test helper functions
+    - path: _test\.go
+      linters:
+        - unparam
+
+    # Allow global database connection in database package
+    - path: internal/database/db\.go
+      linters:
+        - gochecknoglobals
+
