@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultPort      = 8080
+	defaultOutputDir = "./build"
+)
+
 type Config struct {
 	Database    string
 	Verbose     bool
@@ -15,11 +20,31 @@ type Config struct {
 	Timeout     time.Duration
 	MaxItems    int
 	FeedList    FeedListConfig
+	Render      RenderConfig
+	Serve       ServeConfig
+	Init        InitConfig
 }
 
 type FeedListConfig struct {
 	Format   string
 	Filename string
+}
+
+type RenderConfig struct {
+	OutputDir     string
+	TemplatesDir  string
+	AssetsDir     string
+	DefaultMaxAge string
+}
+
+type ServeConfig struct {
+	Port int
+	Dir  string
+}
+
+type InitConfig struct {
+	TemplatesDir string
+	AssetsDir    string
 }
 
 func LoadConfig() *Config {
@@ -41,6 +66,20 @@ func LoadConfig() *Config {
 			Format:   viper.GetString("feedlist.format"),
 			Filename: viper.GetString("feedlist.filename"),
 		},
+		Render: RenderConfig{
+			OutputDir:     viper.GetString("render.output_dir"),
+			TemplatesDir:  viper.GetString("render.templates_dir"),
+			AssetsDir:     viper.GetString("render.assets_dir"),
+			DefaultMaxAge: viper.GetString("render.default_max_age"),
+		},
+		Serve: ServeConfig{
+			Port: viper.GetInt("serve.port"),
+			Dir:  viper.GetString("serve.dir"),
+		},
+		Init: InitConfig{
+			TemplatesDir: viper.GetString("init.templates_dir"),
+			AssetsDir:    viper.GetString("init.assets_dir"),
+		},
 	}
 }
 
@@ -53,6 +92,20 @@ func GetDefault() *Config {
 		FeedList: FeedListConfig{
 			Format:   "", // Empty strings indicate not configured
 			Filename: "",
+		},
+		Render: RenderConfig{
+			OutputDir:     "./build",
+			TemplatesDir:  "",
+			AssetsDir:     "",
+			DefaultMaxAge: "24h",
+		},
+		Serve: ServeConfig{
+			Port: defaultPort,
+			Dir:  defaultOutputDir,
+		},
+		Init: InitConfig{
+			TemplatesDir: "./templates",
+			AssetsDir:    "./assets",
 		},
 	}
 }

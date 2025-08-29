@@ -185,18 +185,10 @@ make lint
 
 ## TODO
 
-### Completed ✅
-- [x] rework fetch command to take both single feed and feed list
-- [x] rework update command to fetch all feeds in DB without a list (unified into fetch)
-- [x] support plain text list of feed URLs alongside OPML
-- [x] feed "subscription" commands to add / remove feeds from OPML & text
-- [x] commands to export feeds in DB to OPML & text
-- [x] command to autodiscover feed URL from HTML URL
-
 ### Future Enhancements
-- [ ] add per feed fetch history log table
 - [ ] implement a static site generator to render HTML from feeds
 - [ ] implement a simple REST API server to access feeds data
 - [ ] implement a simple HTTP server to serve up static site and feeds API
 - [ ] enhance `init` command to create database, default config, and default feed list files
 - [ ] `init` can also dump static site generation templates to a directory for customization
+- [ ] add per feed fetch history log table

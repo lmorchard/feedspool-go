@@ -288,3 +288,186 @@ func GetFeedURLs() ([]string, error) {
 
 	return urls, nil
 }
+
+// GetFeedsWithItemsByTimeRange gets feeds and their items within a specific time range.
+func GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Feed, map[string][]Item, error) {
+	if db == nil {
+		return nil, nil, fmt.Errorf("database not connected")
+	}
+
+	// Build feeds query
+	feedsQuery := `
+		SELECT f.url, f.title, f.description, f.last_updated, f.etag, f.last_modified,
+			f.last_fetch_time, f.last_successful_fetch, f.error_count, f.last_error, f.feed_json
+		FROM feeds f
+		WHERE f.last_updated >= ? AND f.last_updated <= ?
+	`
+	feedsArgs := []interface{}{start, end}
+
+	// Add feed URL filtering if specified
+	if len(feedURLs) > 0 {
+		placeholders := make([]string, len(feedURLs))
+		for i, url := range feedURLs {
+			placeholders[i] = "?"
+			feedsArgs = append(feedsArgs, url)
+		}
+		feedsQuery += " AND f.url IN (" + strings.Join(placeholders, ",") + ")"
+	}
+
+	feedsQuery += " ORDER BY f.last_updated DESC"
+
+	// Query feeds
+	rows, err := db.Query(feedsQuery, feedsArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to query feeds: %w", err)
+	}
+	defer rows.Close()
+
+	feeds := []Feed{}
+	feedURLMap := make(map[string]bool)
+
+	for rows.Next() {
+		feed := Feed{}
+		err := rows.Scan(
+			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
+			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
+			&feed.ErrorCount, &feed.LastError, &feed.FeedJSON)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to scan feed: %w", err)
+		}
+		feeds = append(feeds, feed)
+		feedURLMap[feed.URL] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("error iterating over feeds: %w", err)
+	}
+
+	// Query items for the found feeds
+	items := make(map[string][]Item)
+	if len(feeds) > 0 {
+		var err error
+		items, err = getItemsForFeeds(feedURLMap, start, end)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get items: %w", err)
+		}
+	}
+
+	return feeds, items, nil
+}
+
+// GetFeedsWithItemsByMaxAge gets feeds and their items within a specified age from now.
+func GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string) ([]Feed, map[string][]Item, error) {
+	end := time.Now()
+	start := end.Add(-maxAge)
+	return GetFeedsWithItemsByTimeRange(start, end, feedURLs)
+}
+
+// getItemsForFeeds gets all items for a set of feeds within a time range.
+func getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[string][]Item, error) {
+	if len(feedURLMap) == 0 {
+		return make(map[string][]Item), nil
+	}
+
+	// Build placeholders for IN clause
+	feedURLs := make([]string, 0, len(feedURLMap))
+	for url := range feedURLMap {
+		feedURLs = append(feedURLs, url)
+	}
+
+	placeholders := make([]string, len(feedURLs))
+	args := make([]interface{}, 0, len(feedURLs)+2)
+
+	for i, url := range feedURLs {
+		placeholders[i] = "?"
+		args = append(args, url)
+	}
+	args = append(args, start, end)
+
+	query := fmt.Sprintf(`
+		SELECT id, feed_url, guid, title, link, published_date,
+			content, summary, archived, item_json
+		FROM items
+		WHERE feed_url IN (%s) AND archived = 0 
+			AND published_date >= ? AND published_date <= ?
+		ORDER BY feed_url, published_date DESC
+	`, strings.Join(placeholders, ","))
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items: %w", err)
+	}
+	defer rows.Close()
+
+	items := make(map[string][]Item)
+	for rows.Next() {
+		item := Item{}
+		err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			&item.ItemJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		items[item.FeedURL] = append(items[item.FeedURL], item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over items: %w", err)
+	}
+
+	return items, nil
+}
+
+// ParseTimeWindow parses CLI time arguments and returns start and end times.
+func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.Time, err error) {
+	// Parse explicit time range first
+	if startStr != "" || endStr != "" {
+		return parseExplicitTimeRange(startStr, endStr)
+	}
+
+	// Parse max age duration
+	if maxAge != "" {
+		return parseMaxAgeDuration(maxAge)
+	}
+
+	// Default to 24 hours if nothing specified
+	endTime = time.Now()
+	startTime = endTime.Add(-24 * time.Hour)
+	return startTime, endTime, nil
+}
+
+func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Time, err error) {
+	if startStr != "" {
+		startTime, err = time.Parse(time.RFC3339, startStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid start time format: %w", err)
+		}
+	}
+
+	if endStr != "" {
+		endTime, err = time.Parse(time.RFC3339, endStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
+		}
+	} else {
+		endTime = time.Now()
+	}
+
+	if !startTime.IsZero() && !endTime.IsZero() && startTime.After(endTime) {
+		return time.Time{}, time.Time{}, fmt.Errorf("start time cannot be after end time")
+	}
+
+	return startTime, endTime, nil
+}
+
+func parseMaxAgeDuration(maxAge string) (startTime, endTime time.Time, err error) {
+	duration, err := time.ParseDuration(maxAge)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
+	}
+
+	endTime = time.Now()
+	startTime = endTime.Add(-duration)
+	return startTime, endTime, nil
+}
