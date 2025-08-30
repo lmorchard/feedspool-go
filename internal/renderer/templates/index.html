@@ -7,53 +7,49 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!--
     <header>
         <h1>Feed Reader</h1>
         <p>Generated at: {{.GeneratedAt.Format "2006-01-02 15:04:05"}} ({{.TimeWindow}})</p>
     </header>
+    -->
 
     <main>
         {{range .Feeds}}
+        {{$items := index $.Items .URL}}
+        {{if $items}}
         <article class="feed">
             <header class="feed-header">
-                <h2><a href="{{.URL}}" target="_blank">{{.Title}}</a></h2>
-                {{if .Description}}
-                <p class="feed-description">{{.Description}}</p>
-                {{end}}
-                <p class="feed-meta">Last updated: {{.LastUpdated.Format "2006-01-02 15:04:05"}}</p>
+                <h2{{if .Description}} title="{{.Description}}"{{end}}><a href="{{.URL}}" target="_blank">{{.Title}}</a></h2>
             </header>
 
             <div class="items">
-                {{$items := index $.Items .URL}}
-                {{if $items}}
-                    {{range $items}}
-                    <details class="item">
-                        <summary class="item-summary">
-                            <span class="item-title">
-                                {{if .Link}}
-                                <a href="{{.Link}}" target="_blank">{{.Title}}</a>
-                                {{else}}
-                                {{.Title}}
-                                {{end}}
-                            </span>
-                            <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006"}}</time>
-                        </summary>
-                        <div class="item-content">
-                            {{if .Content}}
-                                {{.Content | html}}
-                            {{else if .Summary}}
-                                {{.Summary | html}}
+                {{range $items}}
+                <details class="item">
+                    <summary class="item-summary">
+                        <span class="item-title">
+                            {{if .Link}}
+                            <a href="{{.Link}}" target="_blank">{{.Title}}</a>
                             {{else}}
-                                <p><em>No content available</em></p>
+                            {{.Title}}
                             {{end}}
-                        </div>
-                    </details>
-                    {{end}}
-                {{else}}
-                    <p class="no-items">No items found</p>
+                        </span>
+                        <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006"}}</time>
+                    </summary>
+                    <div class="item-content">
+                        {{if .Content}}
+                            {{.Content | html}}
+                        {{else if .Summary}}
+                            {{.Summary | html}}
+                        {{else}}
+                            <p><em>No content available</em></p>
+                        {{end}}
+                    </div>
+                </details>
                 {{end}}
             </div>
         </article>
+        {{end}}
         {{end}}
     </main>
 
