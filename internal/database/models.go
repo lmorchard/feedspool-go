@@ -22,6 +22,7 @@ type Feed struct {
 	LastSuccessfulFetch time.Time `db:"last_successful_fetch"`
 	ErrorCount          int       `db:"error_count"`
 	LastError           string    `db:"last_error"`
+	LatestItemDate      time.Time `db:"latest_item_date"`
 	FeedJSON            JSON      `db:"feed_json"`
 }
 

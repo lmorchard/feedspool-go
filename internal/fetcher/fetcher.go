@@ -116,20 +116,26 @@ func (f *Fetcher) processParsedFeed(
 	feed.ErrorCount = 0
 	feed.LastError = ""
 
+	// Process items and get the latest item date
+	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
+	if !latestItemDate.IsZero() {
+		feed.LatestItemDate = latestItemDate
+	}
+
 	if err := f.db.UpsertFeed(feed); err != nil {
 		result.Error = fmt.Errorf("failed to save feed: %w", err)
 		return result
 	}
 
-	itemCount := f.processFeedItems(gofeedData, feedURL)
 	result.ItemCount = itemCount
 	result.Feed = feed
 	return result
 }
 
-func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int {
+func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int, time.Time) {
 	activeGUIDs := []string{}
 	itemCount := 0
+	var latestItemDate time.Time
 	maxItems := f.maxItems
 	if maxItems <= 0 {
 		maxItems = len(gofeedData.Items)
@@ -146,6 +152,11 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 			continue
 		}
 
+		// Track the latest item date
+		if latestItemDate.IsZero() || item.PublishedDate.After(latestItemDate) {
+			latestItemDate = item.PublishedDate
+		}
+
 		item.Archived = false
 		if err := f.db.UpsertItem(item); err != nil {
 			logrus.Warnf("Failed to save item: %v", err)
@@ -160,7 +171,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 		logrus.Warnf("Failed to mark archived items: %v", err)
 	}
 
-	return itemCount
+	return itemCount, latestItemDate
 }
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {

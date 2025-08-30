@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS feeds (
     last_successful_fetch DATETIME,
     error_count INTEGER NOT NULL DEFAULT 0,
     last_error TEXT NOT NULL DEFAULT '',
+    latest_item_date DATETIME,
     feed_json JSON
 );
 

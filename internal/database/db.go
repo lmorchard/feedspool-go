@@ -63,6 +63,11 @@ func (db *DB) InitSchema() error {
 		return fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
+	// Run any pending migrations
+	if err := db.RunMigrations(); err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	logrus.Debug("Database schema initialized")
 	return nil
 }

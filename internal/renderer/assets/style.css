@@ -92,6 +92,9 @@ main {
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-accent);
     color: var(--text-accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .feed-header h2 {
@@ -106,6 +109,15 @@ main {
 
 .feed-header h2 a:hover {
     text-decoration: underline;
+}
+
+.feed-last-updated {
+    color: var(--text-accent);
+    font-size: 0.8rem;
+    font-weight: normal;
+    white-space: nowrap;
+    padding: 0 0.5rem;
+    opacity: 0.8;
 }
 
 .feed-description {
