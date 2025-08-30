@@ -89,6 +89,12 @@ func (db *DB) IsInitialized() error {
 		return fmt.Errorf("database not initialized - run 'feedspool init' first")
 	}
 
+	// Run any pending migrations for existing databases
+	if err := db.RunMigrations(); err != nil {
+		logrus.Warnf("Failed to run migrations: %v", err)
+		// Don't fail here - the database is still usable even if migrations fail
+	}
+
 	return nil
 }
 
@@ -133,6 +139,5 @@ func (db *DB) ApplyMigration(version int, migrationSQL string) error {
 		return fmt.Errorf("failed to commit migration %d: %w", version, err)
 	}
 
-	logrus.Infof("Applied migration version %d", version)
 	return nil
 }
