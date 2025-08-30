@@ -120,11 +120,11 @@ func ItemFromGofeed(gi *gofeed.Item, feedURL string) (*Item, error) {
 	}
 
 	if gi.PublishedParsed != nil {
-		item.PublishedDate = *gi.PublishedParsed
+		item.PublishedDate = gi.PublishedParsed.UTC()
 	} else if gi.UpdatedParsed != nil {
-		item.PublishedDate = *gi.UpdatedParsed
+		item.PublishedDate = gi.UpdatedParsed.UTC()
 	} else {
-		item.PublishedDate = time.Now()
+		item.PublishedDate = time.Now().UTC()
 	}
 
 	return item, nil

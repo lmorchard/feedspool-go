@@ -1,18 +1,18 @@
 # feedspool
 
-A CLI tool for managing RSS/Atom feeds with SQLite storage.
+A CLI tool for managing RSS/Atom feeds with SQLite storage and static website generation.
 
 ## Features
 
-- Unified feed fetching from single URLs, OPML files, or text lists
-- Feed subscription management (subscribe/unsubscribe)
-- Export database feeds to OPML or text formats
+- Feed fetching from single URLs, OPML files, or text lists
 - Concurrent feed fetching with HTTP caching
+- Static HTML site generation with responsive design and dark mode
+- Feed subscription management (subscribe/unsubscribe)
+- RSS/Atom feed autodiscovery from HTML pages
+- Export database feeds to OPML or text formats
 - SQLite database storage with feed history
 - Multiple output formats (table, JSON, CSV)
-- Static HTML site generation with responsive design and dark mode
 - Automatic archival of removed items and feed list cleanup
-- RSS/Atom feed autodiscovery from HTML pages
 - Configurable via YAML files with default feed list support
 
 ## Installation
@@ -58,7 +58,7 @@ make build
 ./feedspool init --extract-assets --assets-dir ./my-assets
 ```
 
-### Unified Feed Fetching
+### Feed Fetching
 
 ```bash
 # Fetch a single feed

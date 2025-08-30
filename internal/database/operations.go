@@ -404,7 +404,7 @@ func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.T
 	}
 
 	// Default to 24 hours if nothing specified
-	endTime = time.Now()
+	endTime = time.Now().UTC()
 	startTime = endTime.Add(-24 * time.Hour)
 	return startTime, endTime, nil
 }
@@ -423,7 +423,7 @@ func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Ti
 			return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
 		}
 	} else {
-		endTime = time.Now()
+		endTime = time.Now().UTC()
 	}
 
 	if !startTime.IsZero() && !endTime.IsZero() && startTime.After(endTime) {
@@ -439,7 +439,7 @@ func parseMaxAgeDuration(maxAge string) (startTime, endTime time.Time, err error
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid max-age duration: %w", err)
 	}
 
-	endTime = time.Now()
+	endTime = time.Now().UTC()
 	startTime = endTime.Add(-duration)
 	return startTime, endTime, nil
 }

@@ -139,7 +139,7 @@ main {
     cursor: pointer;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 0.125rem 0;
     font-weight: 500;
 }
@@ -161,6 +161,7 @@ main {
     color: var(--text-secondary);
     font-size: 0.8rem;
     font-weight: normal;
+    white-space: nowrap;
 }
 
 .item-content {
