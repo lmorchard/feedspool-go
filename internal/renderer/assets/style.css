@@ -172,6 +172,25 @@ main {
     line-height: 1.7;
 }
 
+auto-iframe {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.content-iframe {
+    width: 100%;
+    min-height: 25px;
+    height: 25px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    display: block;
+    overflow: auto;
+    transition: height 0.3s ease;
+}
+
 .item-content h1, .item-content h2, .item-content h3, 
 .item-content h4, .item-content h5, .item-content h6 {
     margin: 1rem 0 0.5rem 0;
