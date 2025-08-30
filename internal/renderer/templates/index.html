@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feed Reader</title>
     <link rel="stylesheet" href="style.css">
+    <script src="index.js" defer></script>
 </head>
 <body>
     <!--
@@ -48,9 +49,13 @@
                     </summary>
                     <div class="item-content">
                         {{if .Content}}
-                            {{.Content | html}}
+                            <auto-iframe>
+                                <iframe data-src="{{.Content | iframeContent}}" class="content-iframe"></iframe>
+                            </auto-iframe>
                         {{else if .Summary}}
-                            {{.Summary | html}}
+                            <auto-iframe>
+                                <iframe data-src="{{.Summary | iframeContent}}" class="content-iframe"></iframe>
+                            </auto-iframe>
                         {{else}}
                             <p><em>No content available</em></p>
                         {{end}}
