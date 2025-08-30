@@ -22,7 +22,7 @@
         <article class="feed">
             <header class="feed-header">
                 <h2{{if .Description}} title="{{.Description}}"{{end}}><a href="{{.URL}}" target="_blank">{{.Title}}</a></h2>
-                <time class="feed-last-updated">Updated: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04"}}</time>
+                <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04"}}{{end}}</time>
             </header>
 
             <div class="items">
