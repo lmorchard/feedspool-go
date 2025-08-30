@@ -22,7 +22,7 @@
         <article class="feed">
             <header class="feed-header">
                 <h2{{if .Description}} title="{{.Description}}"{{end}}><a href="{{.URL}}" target="_blank">{{.Title}}</a></h2>
-                <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04"}}{{end}}</time>
+                <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
             </header>
 
             <div class="items">
@@ -46,7 +46,7 @@
                             {{$title}}
                             {{end}}
                         </span>
-                        <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006 15:04"}}</time>
+                        <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006 15:04 UTC"}}</time>
                     </summary>
                     <div class="item-content">
                         {{if .Content}}
