@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"html"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -85,8 +86,8 @@ func FeedFromGofeed(gf *gofeed.Feed, url string) (*Feed, error) {
 
 	feed := &Feed{
 		URL:         url,
-		Title:       gf.Title,
-		Description: gf.Description,
+		Title:       html.UnescapeString(gf.Title),
+		Description: html.UnescapeString(gf.Description),
 		FeedJSON:    JSON(feedJSON),
 	}
 
@@ -108,10 +109,10 @@ func ItemFromGofeed(gi *gofeed.Item, feedURL string) (*Item, error) {
 	item := &Item{
 		FeedURL:  feedURL,
 		GUID:     gi.GUID,
-		Title:    gi.Title,
+		Title:    html.UnescapeString(gi.Title),
 		Link:     gi.Link,
-		Content:  gi.Content,
-		Summary:  gi.Description,
+		Content:  html.UnescapeString(gi.Content),
+		Summary:  html.UnescapeString(gi.Description),
 		ItemJSON: JSON(itemJSON),
 	}
 
