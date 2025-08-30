@@ -49,13 +49,13 @@
                     </summary>
                     <div class="item-content">
                         {{if .Content}}
-                            <auto-iframe>
+                            <content-isolation-iframe>
                                 <iframe data-src="{{.Content | iframeContent}}" class="content-iframe"></iframe>
-                            </auto-iframe>
+                            </content-isolation-iframe>
                         {{else if .Summary}}
-                            <auto-iframe>
+                            <content-isolation-iframe>
                                 <iframe data-src="{{.Summary | iframeContent}}" class="content-iframe"></iframe>
-                            </auto-iframe>
+                            </content-isolation-iframe>
                         {{else}}
                             <p><em>No content available</em></p>
                         {{end}}

@@ -161,14 +161,13 @@ function reportHeight() {
         // Only send to parent if we're in an iframe
         if (window.parent !== window) {
             lastReportedHeight = height;
+            
             window.parent.postMessage({
                 type: 'iframe-height',
                 height: height,
-                // Include a unique identifier if needed
-                frameId: window.frameElement ? window.frameElement.id : null
             }, '*');
         }
-    }, 100); // 100ms debounce
+    }, 75);
 }
 
 // Report initial height when content loads

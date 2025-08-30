@@ -172,7 +172,7 @@ main {
     line-height: 1.7;
 }
 
-auto-iframe {
+content-isolation-iframe {
     display: block;
     width: 100%;
     overflow: hidden;
@@ -189,6 +189,12 @@ auto-iframe {
     display: block;
     overflow: auto;
     transition: height 0.3s ease;
+}
+
+/* Lazy loading state for iframes */
+.content-iframe[data-src] {
+    min-height: 10px;
+    background: var(--bg-tertiary);
 }
 
 .item-content h1, .item-content h2, .item-content h3, 

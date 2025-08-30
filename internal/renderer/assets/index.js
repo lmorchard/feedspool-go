@@ -3,119 +3,61 @@
  * Contains custom elements and interactive features for the feed reader
  * 
  * Features:
- * - Auto-resizing iframe custom element (<auto-iframe>)
+ * - Auto-resizing iframe custom element (<content-isolation-iframe>)
  * - Lazy loading for iframes in details elements
  * - Future: Additional custom elements and enhancements
  */
 
-// Shared intersection observer for all auto-iframe elements
-let sharedIntersectionObserver = null;
-let sharedMessageHandler = null;
-
-function getSharedIntersectionObserver() {
-    if (!sharedIntersectionObserver) {
-        sharedIntersectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const autoIframe = entry.target;
-                    if (autoIframe.loadIframe && !autoIframe.isLoaded) {
-                        autoIframe.loadIframe();
-                    }
-                }
-            });
-        }, {
-            rootMargin: '100px', // Start loading 100px before entering viewport
-            threshold: 0.01
-        });
-    }
-    return sharedIntersectionObserver;
-}
-
-function getSharedMessageHandler() {
-    if (!sharedMessageHandler) {
-        sharedMessageHandler = (event) => {
-            // Security: Only accept messages from our own iframes (data URLs)
-            if (!event.origin.startsWith('data:') && event.origin !== 'null') {
-                return;
-            }
-
-            // Check if this message is for iframe height adjustment
-            if (event.data && event.data.type === 'iframe-height') {
-                // Find all auto-iframe elements and check which one contains the source iframe
-                const autoIframes = document.querySelectorAll('auto-iframe');
-                for (let autoIframe of autoIframes) {
-                    const iframe = autoIframe.querySelector('iframe');
-                    if (iframe && iframe.contentWindow === event.source) {
-                        autoIframe.adjustHeight(iframe, event.data.height);
-                        break;
-                    }
-                }
-            }
-        };
-        
-        // Add the shared message listener
-        window.addEventListener('message', sharedMessageHandler);
-    }
-    return sharedMessageHandler;
-}
-
-class AutoIframe extends HTMLElement {
+class ContentIsolationIframe extends HTMLElement {
     constructor() {
         super();
         this.iframe = null;
         this.isLoaded = false;
-        this.adjustHeightTimeout = null;
+
+        // Create a debounced version of the height adjustment function
+        this.debouncedAdjustHeight = debounce((iframe, height) => {
+            iframe.style.height = `${height + 15}px`;
+
+            // Remove min/max height constraints for auto-sizing
+            iframe.style.minHeight = 'auto';
+            iframe.style.maxHeight = 'none';
+        }, 50); // 50ms debounce
     }
 
     connectedCallback() {
         // Find the iframe within this element
         this.iframe = this.querySelector('iframe');
-        
+
         if (!this.iframe) {
-            console.warn('auto-iframe: No iframe found within element');
+            console.warn('content-isolation-iframe: No iframe found within element');
             return;
         }
 
-        // Give the iframe a unique ID if it doesn't have one
+        // Ensure the iframe has a unique ID (required for message routing)
         if (!this.iframe.id) {
-            this.iframe.id = `auto-iframe-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+            this.iframe.id = `content-isolation-iframe-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         }
 
         // Set initial styles
         this.style.display = 'block';
         this.style.overflow = 'hidden';
-        
+
         // Check if we should lazy load
         const dataSrc = this.iframe.getAttribute('data-src');
         if (dataSrc) {
             // Set up lazy loading with Intersection Observer
-            this.setupLazyLoading(dataSrc);
+            this.setupLazyLoading();
         } else {
             // If src is already set, proceed normally
-            this.setupMessageHandler();
-        }
-        
-        // Also handle details element opening/closing
-        const details = this.closest('details');
-        if (details) {
-            details.addEventListener('toggle', () => {
-                if (details.open && !this.isLoaded && this.iframe.hasAttribute('data-src')) {
-                    // Load iframe when details opens
-                    this.loadIframe();
-                }
-            });
+            setupSharedContentIsolationIframeMessageHandler();
         }
     }
-    
-    setupLazyLoading(dataSrc) {
-        // Show a placeholder or loading state
-        this.iframe.style.minHeight = '10px';
-        this.iframe.style.background = 'var(--bg-tertiary, #f8f9fa)';
-        
+
+    setupLazyLoading() {
         // Use shared intersection observer
-        const observer = getSharedIntersectionObserver();
+        const observer = getContentIsolationIframeSharedIntersectionObserver();
         observer.observe(this);
-        
+
         // Also check if parent details is already open
         const details = this.closest('details');
         if (!details || details.open) {
@@ -128,56 +70,145 @@ class AutoIframe extends HTMLElement {
             }
         }
     }
-    
+
     loadIframe() {
         if (this.isLoaded) return;
-        
+
         const dataSrc = this.iframe.getAttribute('data-src');
         if (!dataSrc) return;
-        
+
         // Set the actual src from data-src
         this.iframe.src = dataSrc;
         this.iframe.removeAttribute('data-src');
         this.isLoaded = true;
-        
+
+        // Register contentWindow after iframe loads
+        this.iframe.addEventListener('load', () => {
+            if (this.iframe.contentWindow) {
+                contentIsolationIframeRegistry.set(this.iframe.contentWindow, this);
+            }
+        });
+
         // Stop observing this element
-        const observer = getSharedIntersectionObserver();
+        const observer = getContentIsolationIframeSharedIntersectionObserver();
         observer.unobserve(this);
-        
+
         // Ensure shared message handler is initialized for height adjustment
-        getSharedMessageHandler();
+        setupSharedContentIsolationIframeMessageHandler();
     }
-    
 
     disconnectedCallback() {
+        // Unregister from the registry
+        if (this.iframe && this.iframe.contentWindow) {
+            contentIsolationIframeRegistry.delete(this.iframe.contentWindow);
+        }
+
         // Stop observing this element when disconnected
-        if (sharedIntersectionObserver) {
-            sharedIntersectionObserver.unobserve(this);
+        if (sharedContentIsolationIframeIntersectionObserver) {
+            sharedContentIsolationIframeIntersectionObserver.unobserve(this);
+        }
+
+        // Cancel any pending height adjustments
+        if (this.debouncedAdjustHeight && this.debouncedAdjustHeight.cancel) {
+            this.debouncedAdjustHeight.cancel();
         }
     }
 
     adjustHeight(iframe, height) {
-        if (iframe && iframe === this.iframe) {
-            // Clear any pending height adjustment
-            if (this.adjustHeightTimeout) {
-                clearTimeout(this.adjustHeightTimeout);
-            }
-            
-            // Debounce height adjustments to prevent flickering
-            this.adjustHeightTimeout = setTimeout(() => {
-                iframe.style.height = `${height + 15}px`;
-                
-                // Remove min/max height constraints for auto-sizing
-                iframe.style.minHeight = 'auto';
-                iframe.style.maxHeight = 'none';
-                
-                this.adjustHeightTimeout = null;
-            }, 50); // 50ms debounce
-        }
+        if (!iframe || iframe !== this.iframe) return;
+
+        // Use the debounced version to adjust height
+        this.debouncedAdjustHeight(iframe, height);
     }
 
 }
 
-// Register the custom element
-customElements.define('auto-iframe', AutoIframe);
+// Registry to map iframe contentWindows to their parent contentIsolationIframe elements
+const contentIsolationIframeRegistry = new Map();
 
+// Set up document-level event delegation for details toggle events
+document.addEventListener('toggle', (event) => {
+    // Check if the toggled element is a details element that's being opened
+    if (event.target.tagName === 'DETAILS' && event.target.open) {
+        // Find all content-isolation-iframe elements within this details element
+        const els = event.target.querySelectorAll('content-isolation-iframe');
+        els.forEach(el => el.loadIframe());
+    }
+});
+
+// Shared intersection observer for all content-isolation-iframe elements
+let sharedContentIsolationIframeIntersectionObserver = null;
+function getContentIsolationIframeSharedIntersectionObserver() {
+    if (!sharedContentIsolationIframeIntersectionObserver) {
+        sharedContentIsolationIframeIntersectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = entry.target;
+                    if (target.loadIframe && !target.isLoaded) {
+                        target.loadIframe();
+                    }
+                }
+            });
+        }, {
+            rootMargin: '100px', // Start loading 100px before entering viewport
+            threshold: 0.01
+        });
+    }
+    return sharedContentIsolationIframeIntersectionObserver;
+}
+
+let sharedContentIsolationIframeMessageHandler = null;
+function setupSharedContentIsolationIframeMessageHandler() {
+    if (!sharedContentIsolationIframeMessageHandler) {
+        sharedContentIsolationIframeMessageHandler = (event) => {
+            // Security: Only accept messages from our own iframes (data URLs)
+            if (!event.origin.startsWith('data:') && event.origin !== 'null') {
+                return;
+            }
+
+            // Check if this message is for iframe height adjustment
+            if (event.data && event.data.type === 'iframe-height') {
+                // Use the contentWindow (event.source) to directly look up the contentIsolationIframe element
+                if (contentIsolationIframeRegistry.has(event.source)) {
+                    const contentIsolationIframe = contentIsolationIframeRegistry.get(event.source);
+                    contentIsolationIframe.adjustHeight(contentIsolationIframe.iframe, event.data.height);
+                } else {
+                    console.log('contentIsolationIframe not found in registry for source:', event.source);
+                }
+            }
+        };
+
+        // Add the shared message listener
+        window.addEventListener('message', sharedContentIsolationIframeMessageHandler);
+    }
+    return sharedContentIsolationIframeMessageHandler;
+}
+
+// Register the custom element
+customElements.define('content-isolation-iframe', ContentIsolationIframe);
+
+// Utility function to create a debounced version of a function
+function debounce(func, delay) {
+    let timeoutId = null;
+
+    return function debounced(...args) {
+        // Clear any pending execution
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+
+        // Schedule new execution
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+            timeoutId = null;
+        }, delay);
+
+        // Return a cancel function
+        debounced.cancel = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+        };
+    };
+}
