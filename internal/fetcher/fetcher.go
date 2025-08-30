@@ -116,15 +116,20 @@ func (f *Fetcher) processParsedFeed(
 	feed.ErrorCount = 0
 	feed.LastError = ""
 
+	// Save feed first to satisfy foreign key constraints
+	if err := f.db.UpsertFeed(feed); err != nil {
+		result.Error = fmt.Errorf("failed to save feed: %w", err)
+		return result
+	}
+
 	// Process items and get the latest item date
 	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
 	if !latestItemDate.IsZero() {
 		feed.LatestItemDate = latestItemDate
-	}
-
-	if err := f.db.UpsertFeed(feed); err != nil {
-		result.Error = fmt.Errorf("failed to save feed: %w", err)
-		return result
+		// Update feed with latest item date
+		if err := f.db.UpsertFeed(feed); err != nil {
+			logrus.Warnf("Failed to update feed with latest item date: %v", err)
+		}
 	}
 
 	result.ItemCount = itemCount

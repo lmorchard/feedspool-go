@@ -100,13 +100,22 @@ func (db *DB) IsInitialized() error {
 
 // GetMigrationVersion returns the current migration version.
 func (db *DB) GetMigrationVersion() (int, error) {
-	var version int
+	var version sql.NullInt64
 	err := db.conn.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version)
 	if err != nil {
+		// If the table doesn't exist, check if this is an old database (has feeds table but no migrations)
+		var count int
+		if err2 := db.conn.QueryRow("SELECT COUNT(*) FROM feeds").Scan(&count); err2 == nil {
+			// Old database without migrations table - assume version 1
+			return 1, nil
+		}
 		return 0, err
 	}
 
-	return version, nil
+	if !version.Valid {
+		return 0, nil
+	}
+	return int(version.Int64), nil
 }
 
 // GetConnection returns the underlying database connection for testing purposes.
