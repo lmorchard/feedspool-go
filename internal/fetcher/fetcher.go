@@ -202,7 +202,7 @@ func FetchConcurrent(
 	sem := make(chan struct{}, concurrency)
 	completions := make(chan completionEvent, len(urls))
 	var wg sync.WaitGroup
-	
+
 	// WaitGroup for the logging goroutine
 	var logWg sync.WaitGroup
 	logWg.Add(1)
@@ -279,9 +279,9 @@ func FetchConcurrent(
 
 	wg.Wait()
 	close(completions)
-	
+
 	// Wait for the logging goroutine to finish processing all events
 	logWg.Wait()
-	
+
 	return results
 }
