@@ -44,7 +44,7 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 		// Fall back to embedded if custom doesn't exist
 		iframeTemplateContent, _ = fs.ReadFile(GetEmbeddedTemplates(), "iframe_content.html")
 	}
-	
+
 	iframeTmpl, err := template.New("iframe").Parse(string(iframeTemplateContent))
 	if err != nil {
 		return nil, err
@@ -58,12 +58,14 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 		"iframeContent": func(content string) template.URL {
 			// Render the content through the iframe template
 			var buf bytes.Buffer
+			// #nosec G203 - Intentional HTML output for iframe content rendering
 			if err := iframeTmpl.Execute(&buf, template.HTML(content)); err != nil {
 				// Fallback to simple encoding if template fails
 				encoded := base64.StdEncoding.EncodeToString([]byte(content))
+				// #nosec G203 - Intentional URL output for iframe src
 				return template.URL("data:text/html;charset=utf-8;base64," + encoded)
 			}
-			
+
 			// Base64 encode the rendered template
 			encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
 			// Return as a data URL that can be used in iframe src
