@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -125,7 +126,7 @@ func (f *Fetcher) processParsedFeed(
 	// Process items and get the latest item date
 	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
 	if !latestItemDate.IsZero() {
-		feed.LatestItemDate = latestItemDate
+		feed.LatestItemDate = sql.NullTime{Time: latestItemDate, Valid: true}
 		// Update feed with latest item date
 		if err := f.db.UpsertFeed(feed); err != nil {
 			logrus.Warnf("Failed to update feed with latest item date: %v", err)

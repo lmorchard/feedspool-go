@@ -2,6 +2,7 @@ package database
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -12,18 +13,18 @@ import (
 )
 
 type Feed struct {
-	URL                 string    `db:"url"`
-	Title               string    `db:"title"`
-	Description         string    `db:"description"`
-	LastUpdated         time.Time `db:"last_updated"`
-	ETag                string    `db:"etag"`
-	LastModified        string    `db:"last_modified"`
-	LastFetchTime       time.Time `db:"last_fetch_time"`
-	LastSuccessfulFetch time.Time `db:"last_successful_fetch"`
-	ErrorCount          int       `db:"error_count"`
-	LastError           string    `db:"last_error"`
-	LatestItemDate      time.Time `db:"latest_item_date"`
-	FeedJSON            JSON      `db:"feed_json"`
+	URL                 string       `db:"url"`
+	Title               string       `db:"title"`
+	Description         string       `db:"description"`
+	LastUpdated         time.Time    `db:"last_updated"`
+	ETag                string       `db:"etag"`
+	LastModified        string       `db:"last_modified"`
+	LastFetchTime       time.Time    `db:"last_fetch_time"`
+	LastSuccessfulFetch time.Time    `db:"last_successful_fetch"`
+	ErrorCount          int          `db:"error_count"`
+	LastError           string       `db:"last_error"`
+	LatestItemDate      sql.NullTime `db:"latest_item_date"`
+	FeedJSON            JSON         `db:"feed_json"`
 }
 
 type Item struct {
