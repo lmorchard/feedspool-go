@@ -10,6 +10,7 @@ A CLI tool for managing RSS/Atom feeds with SQLite storage.
 - Concurrent feed fetching with HTTP caching
 - SQLite database storage with feed history
 - Multiple output formats (table, JSON, CSV)
+- Static HTML site generation with responsive design and dark mode
 - Automatic archival of removed items and feed list cleanup
 - RSS/Atom feed autodiscovery from HTML pages
 - Configurable via YAML files with default feed list support
@@ -40,7 +41,21 @@ make build
 
 ### Initialize database
 ```bash
+# Initialize database only
 ./feedspool init
+
+# Initialize database and extract default templates for customization
+./feedspool init --extract-templates
+
+# Initialize database and extract default assets (CSS) for customization  
+./feedspool init --extract-assets
+
+# Extract both templates and assets
+./feedspool init --extract-templates --extract-assets
+
+# Extract to custom directories
+./feedspool init --extract-templates --templates-dir ./my-templates
+./feedspool init --extract-assets --assets-dir ./my-assets
 ```
 
 ### Unified Feed Fetching
@@ -91,6 +106,21 @@ make build
 
 # Remove unauthorized feeds (keep only those in feed list)
 ./feedspool purge --format opml --filename feeds.opml
+```
+
+### Generate static HTML site
+```bash
+# Generate HTML from all feeds in database
+./feedspool render
+
+# Generate HTML from specific feeds
+./feedspool render https://example.com/feed.xml
+
+# Generate HTML with custom output directory
+./feedspool render --output-dir /path/to/output
+
+# Use custom templates and assets (extract first with init command)
+./feedspool render --templates ./my-templates --assets ./my-assets
 ```
 
 ### Show version information
@@ -183,12 +213,45 @@ make test
 make lint
 ```
 
+## HTML Site Generation
+
+The `render` command generates a static HTML site from your feeds with the following features:
+
+- **Responsive design** that works on desktop and mobile devices
+- **Automatic dark mode** based on system preferences
+- **Compact layout** with collapsible feed items for easy browsing  
+- **Clean typography** with proper content formatting
+- **Skip empty feeds** to keep the page focused on content
+- **Accessible markup** with proper semantic HTML
+
+The generated site includes:
+- Main index page with all feeds and items
+- Embedded CSS for styling (no external dependencies)
+- Collapsible feed items using HTML `<details>` elements
+- Feed descriptions available as tooltips on feed titles
+
+### Customization
+
+Templates and assets can be extracted for customization:
+
+```bash
+# Extract default templates and assets to filesystem
+./feedspool init --extract-templates --extract-assets
+
+# Customize the files in ./templates/ and ./assets/ directories
+# Then use your custom files:
+./feedspool render --templates ./templates --assets ./assets
+```
+
+This allows you to:
+- Modify the HTML template structure in `templates/index.html`
+- Customize the CSS styling in `assets/style.css`
+- Add your own branding, colors, and layout changes
+- Create completely custom site designs while keeping the data structure
+
 ## TODO
 
 ### Future Enhancements
-- [ ] implement a static site generator to render HTML from feeds
 - [ ] implement a simple REST API server to access feeds data
 - [ ] implement a simple HTTP server to serve up static site and feeds API
-- [ ] enhance `init` command to create database, default config, and default feed list files
-- [ ] `init` can also dump static site generation templates to a directory for customization
 - [ ] add per feed fetch history log table
