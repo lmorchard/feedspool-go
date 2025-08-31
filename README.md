@@ -47,11 +47,7 @@ Download the latest release from the [GitHub Releases page](../../releases) for 
 
 ### Build from source
 
-```bash
-go build -o feedspool main.go
-```
-
-Or use the Makefile:
+Use the Makefile:
 
 ```bash
 make build
@@ -265,6 +261,9 @@ This allows you to:
 ## TODO
 
 ### Future Enhancements
+- [ ] feed item link unfurling for thumbnails
+- [ ] card / tile layout for feed rendering
+- [ ] more sophisticated site generation - pagination, per-feed 
+- [ ] support feed tags and/or folders?
 - [ ] implement a simple REST API server to access feeds data
-- [ ] implement a simple HTTP server to serve up static site and feeds API
-- [ ] add per feed fetch history log table
+- [ ] add per feed fetch history log table?
