@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/httpclient"
 	"github.com/mmcdole/gofeed"
 	"github.com/sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ type FetchResult struct {
 }
 
 type Fetcher struct {
-	client    *http.Client
+	client    *httpclient.Client
 	timeout   time.Duration
 	maxItems  int
 	forceFlag bool
@@ -31,10 +32,13 @@ type Fetcher struct {
 }
 
 func NewFetcher(db *database.DB, timeout time.Duration, maxItems int, force bool) *Fetcher {
+	httpClient := httpclient.NewClient(&httpclient.Config{
+		Timeout:   timeout,
+		UserAgent: httpclient.DefaultUserAgent,
+	})
+	
 	return &Fetcher{
-		client: &http.Client{
-			Timeout: timeout,
-		},
+		client:    httpClient,
 		timeout:   timeout,
 		maxItems:  maxItems,
 		forceFlag: force,
@@ -53,26 +57,25 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 		return result
 	}
 
+	headers := make(map[string]string)
+	if !f.forceFlag && existingFeed != nil {
+		if existingFeed.ETag != "" {
+			headers["If-None-Match"] = existingFeed.ETag
+		}
+		if existingFeed.LastModified != "" {
+			headers["If-Modified-Since"] = existingFeed.LastModified
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), f.timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, http.NoBody)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to create request: %w", err)
-		f.updateFeedError(existingFeed, result.Error.Error())
-		return result
-	}
-
-	if !f.forceFlag && existingFeed != nil {
-		if existingFeed.ETag != "" {
-			req.Header.Set("If-None-Match", existingFeed.ETag)
-		}
-		if existingFeed.LastModified != "" {
-			req.Header.Set("If-Modified-Since", existingFeed.LastModified)
-		}
-	}
-
-	resp, err := f.client.Do(req)
+	resp, err := f.client.Do(&httpclient.Request{
+		URL:     feedURL,
+		Method:  "GET",
+		Headers: headers,
+		Context: ctx,
+	})
 	if err != nil {
 		result.Error = fmt.Errorf("failed to fetch: %w", err)
 		f.updateFeedError(existingFeed, result.Error.Error())
@@ -91,7 +94,7 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 	}
 
 	parser := gofeed.NewParser()
-	gofeedData, err := parser.Parse(resp.Body)
+	gofeedData, err := parser.Parse(resp.BodyReader)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to parse: %w", err)
 		f.updateFeedError(existingFeed, result.Error.Error())
@@ -102,7 +105,7 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 }
 
 func (f *Fetcher) processParsedFeed(
-	result *FetchResult, gofeedData *gofeed.Feed, feedURL string, resp *http.Response,
+	result *FetchResult, gofeedData *gofeed.Feed, feedURL string, resp *httpclient.Response,
 ) *FetchResult {
 	feed, err := database.FeedFromGofeed(gofeedData, feedURL)
 	if err != nil {
