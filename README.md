@@ -8,8 +8,8 @@ I wanted a simple tool that takes OPML & text lists of feeds, fetches those feed
 periodically into a SQLite database, and produces static HTML as a report.
 
 I don't want an inbox of unread items like a to-do list. I want to scroll 
-through a personal newspaper of recent content from the web. This basically
-does that.
+through a personal newspaper of recent content from the web - I stop reading
+when I see stuff I saw before. This basically does that.
 
 I can also build other tools atop the SQLite database, so this serves as a basic
 foundation for other things.
@@ -20,7 +20,7 @@ Further feature highlights:
 - Feed subscription management (subscribe/unsubscribe)
 - External OPML and text lists are the source of truth for feed subscriptions
 - Database feeds are treated as ephemeral/cache
-- Concurrent feed fetching with HTTP caching
+- Concurrent feed fetching with conditional HTTP (304 Not Modified)
 - Static HTML site generation with responsive design and dark mode
 - RSS/Atom feed autodiscovery from HTML pages
 - Export database feeds to OPML or text formats
