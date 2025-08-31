@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -116,20 +117,31 @@ func (f *Fetcher) processParsedFeed(
 	feed.ErrorCount = 0
 	feed.LastError = ""
 
+	// Save feed first to satisfy foreign key constraints
 	if err := f.db.UpsertFeed(feed); err != nil {
 		result.Error = fmt.Errorf("failed to save feed: %w", err)
 		return result
 	}
 
-	itemCount := f.processFeedItems(gofeedData, feedURL)
+	// Process items and get the latest item date
+	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
+	if !latestItemDate.IsZero() {
+		feed.LatestItemDate = sql.NullTime{Time: latestItemDate, Valid: true}
+		// Update feed with latest item date
+		if err := f.db.UpsertFeed(feed); err != nil {
+			logrus.Warnf("Failed to update feed with latest item date: %v", err)
+		}
+	}
+
 	result.ItemCount = itemCount
 	result.Feed = feed
 	return result
 }
 
-func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int {
+func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int, time.Time) {
 	activeGUIDs := []string{}
 	itemCount := 0
+	var latestItemDate time.Time
 	maxItems := f.maxItems
 	if maxItems <= 0 {
 		maxItems = len(gofeedData.Items)
@@ -146,6 +158,11 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 			continue
 		}
 
+		// Track the latest item date
+		if latestItemDate.IsZero() || item.PublishedDate.After(latestItemDate) {
+			latestItemDate = item.PublishedDate
+		}
+
 		item.Archived = false
 		if err := f.db.UpsertItem(item); err != nil {
 			logrus.Warnf("Failed to save item: %v", err)
@@ -160,7 +177,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) int 
 		logrus.Warnf("Failed to mark archived items: %v", err)
 	}
 
-	return itemCount
+	return itemCount, latestItemDate
 }
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {
@@ -203,8 +220,13 @@ func FetchConcurrent(
 	completions := make(chan completionEvent, len(urls))
 	var wg sync.WaitGroup
 
+	// WaitGroup for the logging goroutine
+	var logWg sync.WaitGroup
+	logWg.Add(1)
+
 	// Start goroutine to handle completion logging in order
 	go func() {
+		defer logWg.Done()
 		completedCount := 0
 		nextExpected := 0
 		pending := make(map[int]completionEvent)
@@ -274,5 +296,9 @@ func FetchConcurrent(
 
 	wg.Wait()
 	close(completions)
+
+	// Wait for the logging goroutine to finish processing all events
+	logWg.Wait()
+
 	return results
 }

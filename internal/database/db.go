@@ -63,6 +63,11 @@ func (db *DB) InitSchema() error {
 		return fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
+	// Run any pending migrations
+	if err := db.RunMigrations(); err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	logrus.Debug("Database schema initialized")
 	return nil
 }
@@ -84,18 +89,29 @@ func (db *DB) IsInitialized() error {
 		return fmt.Errorf("database not initialized - run 'feedspool init' first")
 	}
 
+	// Run any pending migrations for existing databases
+	if err := db.RunMigrations(); err != nil {
+		logrus.Warnf("Failed to run migrations: %v", err)
+		// Don't fail here - the database is still usable even if migrations fail
+	}
+
 	return nil
 }
 
 // GetMigrationVersion returns the current migration version.
 func (db *DB) GetMigrationVersion() (int, error) {
-	var version int
+	var version sql.NullInt64
 	err := db.conn.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version)
 	if err != nil {
-		return 0, err
+		// Migrations table doesn't exist - this is an old database that needs migrations
+		// This is not an error condition, so we return 0 version
+		return 0, nil //nolint:nilerr
 	}
 
-	return version, nil
+	if !version.Valid {
+		return 0, nil
+	}
+	return int(version.Int64), nil
 }
 
 // GetConnection returns the underlying database connection for testing purposes.
@@ -128,6 +144,5 @@ func (db *DB) ApplyMigration(version int, migrationSQL string) error {
 		return fmt.Errorf("failed to commit migration %d: %w", version, err)
 	}
 
-	logrus.Infof("Applied migration version %d", version)
 	return nil
 }
