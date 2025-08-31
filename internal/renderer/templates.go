@@ -42,7 +42,10 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	iframeTemplateContent, err := fs.ReadFile(fsys, "iframe_content.html")
 	if err != nil {
 		// Fall back to embedded if custom doesn't exist
-		iframeTemplateContent, _ = fs.ReadFile(GetEmbeddedTemplates(), "iframe_content.html")
+		iframeTemplateContent, err = fs.ReadFile(GetEmbeddedTemplates(), "iframe_content.html")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	iframeTmpl, err := template.New("iframe").Parse(string(iframeTemplateContent))

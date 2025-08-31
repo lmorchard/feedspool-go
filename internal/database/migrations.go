@@ -10,7 +10,7 @@ import (
 func getMigrations() map[int]string {
 	return map[int]string{
 		1: `-- Initial schema migration (handled by InitSchema)`,
-		2: `-- Add latest_item_date column (handled specially in ApplyMigration)`,
+		2: `ALTER TABLE feeds ADD COLUMN latest_item_date DATETIME;`,
 	}
 }
 
@@ -92,7 +92,8 @@ func (db *DB) applySpecificMigration(version int) error {
 
 		if colCount == 0 {
 			// Column doesn't exist, add it
-			if err := db.ApplyMigration(version, "ALTER TABLE feeds ADD COLUMN latest_item_date DATETIME;"); err != nil {
+			migrations := getMigrations()
+			if err := db.ApplyMigration(version, migrations[version]); err != nil {
 				return err
 			}
 		} else {

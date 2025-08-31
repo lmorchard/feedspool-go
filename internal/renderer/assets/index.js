@@ -173,7 +173,7 @@ function setupSharedContentIsolationIframeMessageHandler() {
                     const contentIsolationIframe = contentIsolationIframeRegistry.get(event.source);
                     contentIsolationIframe.adjustHeight(contentIsolationIframe.iframe, event.data.height);
                 } else {
-                    console.log('contentIsolationIframe not found in registry for source:', event.source);
+                    console.warn('contentIsolationIframe not found in registry for source:', event.source);
                 }
             }
         };
