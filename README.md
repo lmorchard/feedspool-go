@@ -7,11 +7,14 @@ A CLI tool for managing RSS/Atom feeds with SQLite storage and static website ge
 I wanted a simple tool that takes OPML & text lists of feeds, fetches those feeds
 periodically into a SQLite database, and produces static HTML as a report.
 
-I don't want an inbox of read/unread items like a to-do list. I want a personal
-newspaper of recent content from the web. This basically does that thing.
+I don't want an inbox of unread items like a to-do list. I want to scroll 
+through a personal newspaper of recent content from the web. This basically
+does that.
 
 I can also build other tools atop the SQLite database, so this serves as a basic
 foundation for other things.
+
+Further feature highlights:
 
 - Feed fetching from single URLs, OPML files, or text lists
 - Feed subscription management (subscribe/unsubscribe)
@@ -56,23 +59,21 @@ make build
 
 ## Usage
 
+### Help
+
+You can get general help and subcommand-specific help with embedded documentation:
+
+```bash
+./feedspool --help
+./feedspool init --help
+./feedspool version
+```
+
 ### Initialize database
+
 ```bash
 # Initialize database only
 ./feedspool init
-
-# Initialize database and extract default templates for customization
-./feedspool init --extract-templates
-
-# Initialize database and extract default assets (CSS) for customization  
-./feedspool init --extract-assets
-
-# Extract both templates and assets
-./feedspool init --extract-templates --extract-assets
-
-# Extract to custom directories
-./feedspool init --extract-templates --templates-dir ./my-templates
-./feedspool init --extract-assets --assets-dir ./my-assets
 ```
 
 ### Feed Fetching
@@ -110,23 +111,14 @@ make build
 ./feedspool export --format text feeds.txt
 ```
 
-### Show items from a feed
+### Show items on the command line
 
 ```bash
 ./feedspool show https://example.com/feed.xml
 ```
 
-### Cleanup Operations
-
-```bash
-# Clean up old archived items that no longer appear in feeds
-./feedspool purge --age 30d
-
-# Remove unsubscribed feeds (keep only those in feed list)
-./feedspool purge --format opml --filename feeds.opml
-```
-
 ### Generate static HTML site
+
 ```bash
 # Generate HTML from all feeds in database
 ./feedspool render
@@ -145,12 +137,20 @@ make build
 ./feedspool render --templates ./my-templates --assets ./my-assets
 ```
 
-### Show version information
+### Cleanup Operations
+
 ```bash
-./feedspool version
+# Clean up old archived items that no longer appear in feeds
+./feedspool purge --age 30d
+
+# Remove unsubscribed feeds (keep only those in feed list)
+./feedspool purge --format opml --filename feeds.opml
 ```
 
 ## Configuration
+
+You can set defaults for just about every command line option in a YAML
+configuration file, aiming to make CLI usage simple.
 
 Create a `feedspool.yaml` file (see `feedspool.yaml.example`) or use command-line flags:
 
