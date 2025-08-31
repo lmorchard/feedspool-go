@@ -32,11 +32,13 @@ func (db *DB) RunMigrations() error {
 	}
 
 	migrations := getMigrations()
-	
+
 	// If this is an existing database (currentVersion = 0) with tables, record initial schema version
 	if currentVersion == 0 {
 		var feedsTableExists int
-		err := db.conn.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='feeds'").Scan(&feedsTableExists)
+		err := db.conn.QueryRow(
+			"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='feeds'",
+		).Scan(&feedsTableExists)
 		if err == nil && feedsTableExists > 0 {
 			// Record version 1 as applied for existing databases
 			logrus.Info("Existing database detected, marking initial schema as version 1")
@@ -84,11 +86,10 @@ func (db *DB) applySpecificMigration(version int) error {
 			SELECT COUNT(*) FROM pragma_table_info('feeds') 
 			WHERE name = 'latest_item_date'
 		`).Scan(&colCount)
-		
 		if err != nil {
 			return fmt.Errorf("failed to check column existence: %w", err)
 		}
-		
+
 		if colCount == 0 {
 			// Column doesn't exist, add it
 			if err := db.ApplyMigration(version, "ALTER TABLE feeds ADD COLUMN latest_item_date DATETIME;"); err != nil {
@@ -103,6 +104,6 @@ func (db *DB) applySpecificMigration(version int) error {
 	default:
 		return fmt.Errorf("unknown migration version: %d", version)
 	}
-	
+
 	return nil
 }

@@ -104,7 +104,8 @@ func (db *DB) GetMigrationVersion() (int, error) {
 	err := db.conn.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&version)
 	if err != nil {
 		// Migrations table doesn't exist - this is an old database that needs migrations
-		return 0, nil
+		// This is not an error condition, so we return 0 version
+		return 0, nil //nolint:nilerr
 	}
 
 	if !version.Valid {
