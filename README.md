@@ -4,16 +4,33 @@ A CLI tool for managing RSS/Atom feeds with SQLite storage and static website ge
 
 ## Features
 
+I wanted a simple tool that takes OPML & text lists of feeds, fetches those feeds
+periodically into a SQLite database, and produces static HTML as a report.
+
+I don't want an inbox of read/unread items like a to-do list. I want a personal
+newspaper of recent content from the web. This basically does that thing.
+
+I can also build other tools atop the SQLite database, so this serves as a basic
+foundation for other things.
+
 - Feed fetching from single URLs, OPML files, or text lists
+- Feed subscription management (subscribe/unsubscribe)
+- External OPML and text lists are the source of truth for feed subscriptions
+- Database feeds are treated as ephemeral/cache
 - Concurrent feed fetching with HTTP caching
 - Static HTML site generation with responsive design and dark mode
-- Feed subscription management (subscribe/unsubscribe)
 - RSS/Atom feed autodiscovery from HTML pages
 - Export database feeds to OPML or text formats
 - SQLite database storage with feed history
 - Multiple output formats (table, JSON, CSV)
 - Automatic archival of removed items and feed list cleanup
 - Configurable via YAML files with default feed list support
+
+## Why feed "spool"?
+
+The name is vaguely inspired by Usenet "spool" storage. [From Wikipedia](https://en.wikipedia.org/wiki/Spooling#Other_applications):
+
+> Some store and forward messaging systems, such as uucp, used "spool" to refer to their inbound and outbound message queues, and this terminology is still found in the documentation for email and Usenet software. 
 
 ## Installation
 
@@ -94,6 +111,7 @@ make build
 ```
 
 ### Show items from a feed
+
 ```bash
 ./feedspool show https://example.com/feed.xml
 ```
@@ -101,10 +119,10 @@ make build
 ### Cleanup Operations
 
 ```bash
-# Clean up old archived items
+# Clean up old archived items that no longer appear in feeds
 ./feedspool purge --age 30d
 
-# Remove unauthorized feeds (keep only those in feed list)
+# Remove unsubscribed feeds (keep only those in feed list)
 ./feedspool purge --format opml --filename feeds.opml
 ```
 
@@ -112,6 +130,10 @@ make build
 ```bash
 # Generate HTML from all feeds in database
 ./feedspool render
+
+# Generate HTML with a time range of feed items
+./feedspool render --max-age 24h
+./feedspool render --start 2023-01-01T00:00:00Z --end 2023-12-31T23:59:59Z
 
 # Generate HTML from specific feeds
 ./feedspool render https://example.com/feed.xml
@@ -194,7 +216,7 @@ make clean
 
 ### Code Quality
 
-This project maintains high code quality through:
+This project maintains code quality through:
 
 - **Formatting**: `gofumpt` for advanced Go formatting beyond standard `go fmt`
 - **Linting**: `golangci-lint` with comprehensive configuration (`.golangci.yml`)
@@ -215,24 +237,15 @@ make lint
 
 ## HTML Site Generation
 
-The `render` command generates a static HTML site from your feeds with the following features:
-
-- **Responsive design** that works on desktop and mobile devices
-- **Automatic dark mode** based on system preferences
-- **Compact layout** with collapsible feed items for easy browsing  
-- **Clean typography** with proper content formatting
-- **Skip empty feeds** to keep the page focused on content
-- **Accessible markup** with proper semantic HTML
-
-The generated site includes:
+The `render` command generates a static HTML site from your feeds. The generated site includes:
 - Main index page with all feeds and items
-- Embedded CSS for styling (no external dependencies)
 - Collapsible feed items using HTML `<details>` elements
 - Feed descriptions available as tooltips on feed titles
 
 ### Customization
 
-Templates and assets can be extracted for customization:
+There's a default template and static assets embedded in the binary.
+These can be extracted as files and customized:
 
 ```bash
 # Extract default templates and assets to filesystem
