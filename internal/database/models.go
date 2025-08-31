@@ -40,6 +40,20 @@ type Item struct {
 	ItemJSON      JSON      `db:"item_json"`
 }
 
+type URLMetadata struct {
+	URL             string         `db:"url" json:"url"`
+	Title           sql.NullString `db:"title" json:"title,omitempty"`
+	Description     sql.NullString `db:"description" json:"description,omitempty"`
+	ImageURL        sql.NullString `db:"image_url" json:"image_url,omitempty"`
+	FaviconURL      sql.NullString `db:"favicon_url" json:"favicon_url,omitempty"`
+	Metadata        JSON           `db:"metadata" json:"metadata,omitempty"`
+	LastFetchAt     sql.NullTime   `db:"last_fetch_at" json:"last_fetch_at,omitempty"`
+	FetchStatusCode sql.NullInt64  `db:"fetch_status_code" json:"fetch_status_code,omitempty"`
+	FetchError      sql.NullString `db:"fetch_error" json:"fetch_error,omitempty"`
+	CreatedAt       time.Time      `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time      `db:"updated_at" json:"updated_at"`
+}
+
 type JSON json.RawMessage
 
 func (j JSON) Value() (driver.Value, error) {
@@ -137,4 +151,61 @@ func generateGUID(link, title string) string {
 	h := sha256.New()
 	h.Write([]byte(link + title))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// SetMetadataField sets a field in the metadata JSON
+func (um *URLMetadata) SetMetadataField(key string, value interface{}) error {
+	var meta map[string]interface{}
+	
+	// Parse existing metadata or create new map
+	if len(um.Metadata) > 0 {
+		if err := json.Unmarshal([]byte(um.Metadata), &meta); err != nil {
+			return err
+		}
+	} else {
+		meta = make(map[string]interface{})
+	}
+	
+	// Set the field
+	meta[key] = value
+	
+	// Marshal back to JSON
+	data, err := json.Marshal(meta)
+	if err != nil {
+		return err
+	}
+	
+	um.Metadata = JSON(data)
+	return nil
+}
+
+// GetMetadataField gets a field from the metadata JSON
+func (um *URLMetadata) GetMetadataField(key string) (interface{}, bool) {
+	if len(um.Metadata) == 0 {
+		return nil, false
+	}
+	
+	var meta map[string]interface{}
+	if err := json.Unmarshal([]byte(um.Metadata), &meta); err != nil {
+		return nil, false
+	}
+	
+	value, exists := meta[key]
+	return value, exists
+}
+
+// ShouldRetryFetch checks if enough time has passed to retry a failed fetch
+func (um *URLMetadata) ShouldRetryFetch(retryAfter time.Duration) bool {
+	// If never fetched, should fetch
+	if !um.LastFetchAt.Valid {
+		return true
+	}
+	
+	// If last fetch was successful (2xx status), don't retry
+	if um.FetchStatusCode.Valid && um.FetchStatusCode.Int64 >= 200 && um.FetchStatusCode.Int64 < 300 {
+		return false
+	}
+	
+	// Check if enough time has passed since last fetch
+	return time.Since(um.LastFetchAt.Time) > retryAfter
 }
