@@ -11,6 +11,7 @@ import (
 
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
+	"github.com/lmorchard/feedspool-go/internal/unfurl"
 	"github.com/mmcdole/gofeed"
 	"github.com/sirupsen/logrus"
 )
@@ -24,11 +25,12 @@ type FetchResult struct {
 }
 
 type Fetcher struct {
-	client    *httpclient.Client
-	timeout   time.Duration
-	maxItems  int
-	forceFlag bool
-	db        *database.DB
+	client      *httpclient.Client
+	timeout     time.Duration
+	maxItems    int
+	forceFlag   bool
+	db          *database.DB
+	unfurlQueue *unfurl.UnfurlQueue
 }
 
 func NewFetcher(db *database.DB, timeout time.Duration, maxItems int, force bool) *Fetcher {
@@ -44,6 +46,11 @@ func NewFetcher(db *database.DB, timeout time.Duration, maxItems int, force bool
 		forceFlag: force,
 		db:        db,
 	}
+}
+
+// SetUnfurlQueue sets the unfurl queue for parallel unfurl operations.
+func (f *Fetcher) SetUnfurlQueue(queue *unfurl.UnfurlQueue) {
+	f.unfurlQueue = queue
 }
 
 func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
@@ -145,6 +152,8 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 	activeGUIDs := []string{}
 	itemCount := 0
 	var latestItemDate time.Time
+	var newItemURLs []string
+	
 	maxItems := f.maxItems
 	if maxItems <= 0 {
 		maxItems = len(gofeedData.Items)
@@ -166,6 +175,9 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 			latestItemDate = item.PublishedDate
 		}
 
+		// Check if this is a new item (before upserting)
+		isNewItem := f.isNewItem(feedURL, item.GUID)
+		
 		item.Archived = false
 		if err := f.db.UpsertItem(item); err != nil {
 			logrus.Warnf("Failed to save item: %v", err)
@@ -174,6 +186,20 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 
 		activeGUIDs = append(activeGUIDs, item.GUID)
 		itemCount++
+		
+		// If this is a new item and we have an unfurl queue, enqueue the item URL
+		if isNewItem && f.unfurlQueue != nil && item.Link != "" {
+			newItemURLs = append(newItemURLs, item.Link)
+		}
+	}
+
+	// Enqueue new item URLs for unfurl processing
+	if len(newItemURLs) > 0 && f.unfurlQueue != nil {
+		logrus.Debugf("Enqueuing %d new items for unfurl from feed %s", len(newItemURLs), feedURL)
+		for _, url := range newItemURLs {
+			f.unfurlQueue.Enqueue(unfurl.UnfurlJob{URL: url})
+		}
+		logrus.Infof("Enqueued %d items for unfurl", len(newItemURLs))
 	}
 
 	if err := f.db.MarkItemsArchived(feedURL, activeGUIDs); err != nil {
@@ -181,6 +207,18 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 	}
 
 	return itemCount, latestItemDate
+}
+
+// isNewItem checks if an item with the given GUID already exists for the feed.
+func (f *Fetcher) isNewItem(feedURL, guid string) bool {
+	query := `SELECT COUNT(*) FROM items WHERE feed_url = ? AND guid = ?`
+	var count int
+	err := f.db.GetConnection().QueryRow(query, feedURL, guid).Scan(&count)
+	if err != nil {
+		logrus.Debugf("Error checking if item is new: %v", err)
+		return false // Assume not new if we can't check
+	}
+	return count == 0
 }
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {
@@ -216,7 +254,18 @@ func FetchConcurrent(
 	db *database.DB, urls []string, concurrency int, timeout time.Duration,
 	maxItems int, maxAge time.Duration, force bool,
 ) []*FetchResult {
+	return FetchConcurrentWithUnfurl(db, urls, concurrency, timeout, maxItems, maxAge, force, nil)
+}
+
+// FetchConcurrentWithUnfurl is the same as FetchConcurrent but supports an optional unfurl queue.
+func FetchConcurrentWithUnfurl(
+	db *database.DB, urls []string, concurrency int, timeout time.Duration,
+	maxItems int, maxAge time.Duration, force bool, unfurlQueue *unfurl.UnfurlQueue,
+) []*FetchResult {
 	fetcher := NewFetcher(db, timeout, maxItems, force)
+	if unfurlQueue != nil {
+		fetcher.SetUnfurlQueue(unfurlQueue)
+	}
 	results := make([]*FetchResult, len(urls))
 
 	sem := make(chan struct{}, concurrency)

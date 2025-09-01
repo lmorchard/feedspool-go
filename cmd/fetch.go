@@ -21,6 +21,7 @@ var (
 	fetchRemoveMissing bool
 	fetchFormat        string
 	fetchFilename      string
+	fetchWithUnfurl    bool
 )
 
 var fetchCmd = &cobra.Command{
@@ -53,11 +54,15 @@ func init() {
 	fetchCmd.Flags().BoolVar(&fetchRemoveMissing, "remove-missing", false, "Delete feeds not in list (file mode only)")
 	fetchCmd.Flags().StringVar(&fetchFormat, "format", "", "Feed list format (opml or text)")
 	fetchCmd.Flags().StringVar(&fetchFilename, "filename", "", "Feed list filename")
+	fetchCmd.Flags().BoolVar(&fetchWithUnfurl, "with-unfurl", false, "Run unfurl operations in parallel with feed fetching")
 	rootCmd.AddCommand(fetchCmd)
 }
 
 func runFetch(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
+
+	// Determine final withUnfurl value: CLI flag takes precedence over config
+	withUnfurl := cfg.Fetch.WithUnfurl || fetchWithUnfurl
 
 	db, err := database.New(cfg.Database)
 	if err != nil {
@@ -72,19 +77,19 @@ func runFetch(_ *cobra.Command, args []string) error {
 	// Determine fetch mode
 	if len(args) == 1 {
 		// Single URL mode
-		return runSingleURLFetch(cfg, args[0])
+		return runSingleURLFetch(cfg, args[0], withUnfurl)
 	}
 
 	if fetchFormat != "" || fetchFilename != "" {
 		// File mode
-		return runFileFetch(cfg, db)
+		return runFileFetch(cfg, db, withUnfurl)
 	}
 
 	// Database mode (no args, no file flags)
-	return runDatabaseFetch(cfg, db)
+	return runDatabaseFetch(cfg, db, withUnfurl)
 }
 
-func runSingleURLFetch(cfg *config.Config, feedURL string) error {
+func runSingleURLFetch(cfg *config.Config, feedURL string, withUnfurl bool) error {
 	// We need a DB instance for single URL fetch too
 	db, err := database.New(cfg.Database)
 	if err != nil {
@@ -129,7 +134,7 @@ func runSingleURLFetch(cfg *config.Config, feedURL string) error {
 	return nil
 }
 
-func runFileFetch(cfg *config.Config, db *database.DB) error {
+func runFileFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 	format, filename, err := determineFetchFormatAndFilename(cfg, fetchFormat, fetchFilename)
 	if err != nil {
 		return err
@@ -180,7 +185,7 @@ func runFileFetch(cfg *config.Config, db *database.DB) error {
 	return nil
 }
 
-func runDatabaseFetch(cfg *config.Config, db *database.DB) error {
+func runDatabaseFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 	// Get all feeds from database
 	dbFeeds, err := db.GetAllFeeds()
 	if err != nil {
