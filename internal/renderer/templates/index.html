@@ -78,9 +78,9 @@
                             </span>
                             <div class="item-excerpt">
                                 {{if .Summary}}
-                                    {{printf "%.200s..." .Summary}}
+                                    {{printf "%.200s..." (.Summary | stripHTML)}}
                                 {{else if .Content}}
-                                    {{printf "%.200s..." .Content}}
+                                    {{printf "%.200s..." (.Content | stripHTML)}}
                                 {{end}}
                             </div>
                         </div>
