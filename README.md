@@ -261,9 +261,8 @@ This allows you to:
 ## TODO
 
 ### Future Enhancements
-- [ ] unfurl in parallel for new items while fetching feeds
+- [ ] more sophisticated site generation - index page, per-feed pages, time-based pagination? 
 - [ ] Merge OPML / text lists of feeds with de-dupe
-- [ ] more sophisticated site generation - pagination, per-feed 
 - [ ] support feed tags and/or folders?
 - [ ] implement a simple REST API server to access feeds data
 - [ ] add per feed fetch history log table?
