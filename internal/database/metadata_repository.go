@@ -15,7 +15,7 @@ func (db *DB) GetMetadata(url string) (*URLMetadata, error) {
 		FROM url_metadata
 		WHERE url = ?
 	`
-	
+
 	err := db.conn.QueryRow(query, url).Scan(
 		&metadata.URL,
 		&metadata.Title,
@@ -29,14 +29,14 @@ func (db *DB) GetMetadata(url string) (*URLMetadata, error) {
 		&metadata.CreatedAt,
 		&metadata.UpdatedAt,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metadata: %w", err)
 	}
-	
+
 	return &metadata, nil
 }
 
@@ -58,7 +58,7 @@ func (db *DB) UpsertMetadata(metadata *URLMetadata) error {
 			fetch_error = excluded.fetch_error,
 			updated_at = CURRENT_TIMESTAMP
 	`
-	
+
 	_, err := db.conn.Exec(query,
 		metadata.URL,
 		metadata.Title,
@@ -70,18 +70,17 @@ func (db *DB) UpsertMetadata(metadata *URLMetadata) error {
 		metadata.FetchStatusCode,
 		metadata.FetchError,
 	)
-	
 	if err != nil {
 		return fmt.Errorf("failed to upsert metadata: %w", err)
 	}
-	
+
 	return nil
 }
 
 // GetURLsNeedingFetch finds item URLs without metadata or due for retry
 func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string, error) {
 	retryTime := time.Now().Add(-retryAfter)
-	
+
 	query := `
 		SELECT DISTINCT i.link
 		FROM items i
@@ -97,17 +96,17 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 		)
 		ORDER BY i.published_date DESC
 	`
-	
+
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
-	
+
 	rows, err := db.conn.Query(query, retryTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get URLs needing fetch: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var urls []string
 	for rows.Next() {
 		var url string
@@ -116,7 +115,7 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 		}
 		urls = append(urls, url)
 	}
-	
+
 	return urls, rows.Err()
 }
 
@@ -128,12 +127,12 @@ func (db *DB) DeleteOrphanedMetadata() (int64, error) {
 			SELECT DISTINCT link FROM items WHERE link != ''
 		)
 	`
-	
+
 	result, err := db.conn.Exec(query)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete orphaned metadata: %w", err)
 	}
-	
+
 	return result.RowsAffected()
 }
 
@@ -147,13 +146,13 @@ func (db *DB) GetMetadataForItems(feedURL string) (map[string]*URLMetadata, erro
 		INNER JOIN items i ON i.link = um.url
 		WHERE i.feed_url = ? AND i.archived = 0
 	`
-	
+
 	rows, err := db.conn.Query(query, feedURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metadata for items: %w", err)
 	}
 	defer rows.Close()
-	
+
 	metadataMap := make(map[string]*URLMetadata)
 	for rows.Next() {
 		var metadata URLMetadata
@@ -175,7 +174,7 @@ func (db *DB) GetMetadataForItems(feedURL string) (map[string]*URLMetadata, erro
 		}
 		metadataMap[metadata.URL] = &metadata
 	}
-	
+
 	return metadataMap, rows.Err()
 }
 
@@ -193,17 +192,17 @@ func (db *DB) GetFeedFavicon(feedURL string) (string, error) {
 		ORDER BY COUNT(*) DESC
 		LIMIT 1
 	`
-	
+
 	var faviconURL sql.NullString
 	err := db.conn.QueryRow(query, feedURL).Scan(&faviconURL)
-	
+
 	if err == sql.ErrNoRows {
 		return "", nil
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to get feed favicon: %w", err)
 	}
-	
+
 	if faviconURL.Valid {
 		return faviconURL.String, nil
 	}

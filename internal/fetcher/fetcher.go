@@ -36,7 +36,7 @@ func NewFetcher(db *database.DB, timeout time.Duration, maxItems int, force bool
 		Timeout:   timeout,
 		UserAgent: httpclient.DefaultUserAgent,
 	})
-	
+
 	return &Fetcher{
 		client:    httpClient,
 		timeout:   timeout,

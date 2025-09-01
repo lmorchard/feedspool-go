@@ -156,7 +156,7 @@ func generateGUID(link, title string) string {
 // SetMetadataField sets a field in the metadata JSON
 func (um *URLMetadata) SetMetadataField(key string, value interface{}) error {
 	var meta map[string]interface{}
-	
+
 	// Parse existing metadata or create new map
 	if len(um.Metadata) > 0 {
 		if err := json.Unmarshal([]byte(um.Metadata), &meta); err != nil {
@@ -165,16 +165,16 @@ func (um *URLMetadata) SetMetadataField(key string, value interface{}) error {
 	} else {
 		meta = make(map[string]interface{})
 	}
-	
+
 	// Set the field
 	meta[key] = value
-	
+
 	// Marshal back to JSON
 	data, err := json.Marshal(meta)
 	if err != nil {
 		return err
 	}
-	
+
 	um.Metadata = JSON(data)
 	return nil
 }
@@ -184,12 +184,12 @@ func (um *URLMetadata) GetMetadataField(key string) (interface{}, bool) {
 	if len(um.Metadata) == 0 {
 		return nil, false
 	}
-	
+
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(um.Metadata), &meta); err != nil {
 		return nil, false
 	}
-	
+
 	value, exists := meta[key]
 	return value, exists
 }
@@ -200,12 +200,12 @@ func (um *URLMetadata) ShouldRetryFetch(retryAfter time.Duration) bool {
 	if !um.LastFetchAt.Valid {
 		return true
 	}
-	
+
 	// If last fetch was successful (2xx status), don't retry
 	if um.FetchStatusCode.Valid && um.FetchStatusCode.Int64 >= 200 && um.FetchStatusCode.Int64 < 300 {
 		return false
 	}
-	
+
 	// Check if enough time has passed since last fetch
 	return time.Since(um.LastFetchAt.Time) > retryAfter
 }

@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	unfurlLimit        int
-	unfurlFormat       string
-	unfurlConcurrency  int
-	unfurlRetryAfter   time.Duration
+	unfurlLimit       int
+	unfurlFormat      string
+	unfurlConcurrency int
+	unfurlRetryAfter  time.Duration
 )
 
 var unfurlCmd = &cobra.Command{
@@ -46,7 +46,8 @@ func init() {
 	unfurlCmd.Flags().IntVar(&unfurlLimit, "limit", 0, "Maximum URLs to process in batch mode")
 	unfurlCmd.Flags().StringVar(&unfurlFormat, "format", "", "Output format for single URL (json)")
 	unfurlCmd.Flags().IntVar(&unfurlConcurrency, "concurrency", config.DefaultConcurrency, "Maximum concurrent fetches")
-	unfurlCmd.Flags().DurationVar(&unfurlRetryAfter, "retry-after", 1*time.Hour, "Retry failed fetches after this duration")
+	unfurlCmd.Flags().DurationVar(&unfurlRetryAfter, "retry-after", 1*time.Hour, 
+		"Retry failed fetches after this duration")
 	rootCmd.AddCommand(unfurlCmd)
 }
 
@@ -94,7 +95,7 @@ func runSingleURLUnfurl(db *database.DB, unfurler *unfurl.Unfurler, targetURL st
 
 	var metadata *database.URLMetadata
 
-	if existing != nil && existing.FetchStatusCode.Valid && 
+	if existing != nil && existing.FetchStatusCode.Valid &&
 		existing.FetchStatusCode.Int64 >= 200 && existing.FetchStatusCode.Int64 < 300 {
 		// Use existing successful metadata
 		metadata = existing
@@ -221,18 +222,17 @@ func runBatchUnfurl(db *database.DB, unfurler *unfurl.Unfurler) error {
 
 			// Progress update every 10 items
 			if processed%10 == 0 {
-				fmt.Printf("Progress: %d/%d processed (%d successful, %d failed)\n", 
+				fmt.Printf("Progress: %d/%d processed (%d successful, %d failed)\n",
 					processed, len(urls), successful, failed)
 			}
 			mu.Unlock()
-
 		}(targetURL, i)
 	}
 
 	// Wait for all workers to complete
 	wg.Wait()
 
-	fmt.Printf("Batch unfurl complete: %d URLs processed (%d successful, %d failed)\n", 
+	fmt.Printf("Batch unfurl complete: %d URLs processed (%d successful, %d failed)\n",
 		processed, successful, failed)
 
 	return nil
