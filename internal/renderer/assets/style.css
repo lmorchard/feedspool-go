@@ -247,7 +247,7 @@ main {
     font-weight: 500;
 }
 
-.item-summary:hover {
+.item-summary:hover .item-title {
     color: var(--link-color);
 }
 
@@ -548,6 +548,7 @@ footer {
     flex-direction: column;
     padding: 1rem;
     position: relative;
+    min-width: 100%;
 }
 
 /* Title overlapping thumbnail with bottom alignment */
