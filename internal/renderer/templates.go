@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"html/template"
 	"io/fs"
+	"regexp"
+	"strings"
 )
 
 //go:embed templates
@@ -57,6 +59,15 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 		"html": func(s string) template.HTML {
 			// #nosec G203 - Intentional HTML output for template rendering
 			return template.HTML(s)
+		},
+		"stripHTML": func(s string) string {
+			// Remove HTML tags and clean up text for excerpts
+			re := regexp.MustCompile(`<[^>]*>`)
+			text := re.ReplaceAllString(s, "")
+			// Clean up extra whitespace and normalize
+			text = strings.TrimSpace(text)
+			text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+			return text
 		},
 		"iframeContent": func(content string) template.URL {
 			// Render the content through the iframe template

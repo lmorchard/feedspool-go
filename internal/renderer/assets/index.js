@@ -328,6 +328,335 @@ function getLazyImageSharedIntersectionObserver() {
 // Register the lazy image loader custom element
 customElements.define('lazy-image-loader', LazyImageLoader);
 
+/**
+ * Layout Controller Custom Element
+ * 
+ * Manages view mode switching and preference persistence for the feed reader.
+ * Handles:
+ * - View mode switching (list/card)
+ * - Thumbnail visibility toggle
+ * - localStorage persistence
+ * - CSS class management
+ */
+class LayoutController extends HTMLElement {
+    constructor() {
+        super();
+        
+        // Default preferences
+        this.preferences = {
+            viewMode: 'list',
+            showThumbnails: true
+        };
+        
+        // Form elements references
+        this.thumbnailCheckbox = null;
+        this.viewModeRadios = [];
+    }
+
+    connectedCallback() {
+        // Load preferences from localStorage
+        this.loadPreferences();
+        
+        // Apply initial CSS classes
+        this.updateClasses();
+        
+        // Find and setup form elements
+        this.setupFormElements();
+        
+        // Initialize form values to match current state
+        this.updateFormElements();
+        
+        // Setup event listeners
+        this.setupEventListeners();
+    }
+
+    /**
+     * Load preferences from localStorage with fallback to defaults
+     */
+    loadPreferences() {
+        try {
+            const saved = localStorage.getItem('feedspool-layout-preferences');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                this.preferences = {
+                    viewMode: parsed.viewMode || 'list',
+                    showThumbnails: parsed.showThumbnails !== undefined ? parsed.showThumbnails : true
+                };
+            }
+        } catch (error) {
+            console.warn('Failed to load layout preferences:', error);
+            // Use defaults on error
+        }
+    }
+
+    /**
+     * Save preferences to localStorage
+     */
+    savePreferences() {
+        try {
+            localStorage.setItem('feedspool-layout-preferences', JSON.stringify(this.preferences));
+        } catch (error) {
+            console.warn('Failed to save layout preferences:', error);
+        }
+    }
+
+    /**
+     * Update CSS classes based on current preferences
+     */
+    updateClasses() {
+        // Remove all view mode classes
+        this.classList.remove('view-list', 'view-card');
+        
+        // Add current view mode class
+        this.classList.add(`view-${this.preferences.viewMode}`);
+        
+        // Handle thumbnail visibility
+        if (this.preferences.showThumbnails) {
+            this.classList.remove('hide-thumbnails');
+        } else {
+            this.classList.add('hide-thumbnails');
+        }
+    }
+
+    /**
+     * Find form elements in the document
+     */
+    setupFormElements() {
+        this.thumbnailCheckbox = document.getElementById('show-thumbnails');
+        this.viewModeRadios = Array.from(document.querySelectorAll('input[name="view-mode"]'));
+    }
+
+    /**
+     * Update form elements to match current state
+     */
+    updateFormElements() {
+        if (this.thumbnailCheckbox) {
+            this.thumbnailCheckbox.checked = this.preferences.showThumbnails;
+        }
+        
+        this.viewModeRadios.forEach(radio => {
+            radio.checked = radio.value === this.preferences.viewMode;
+        });
+    }
+
+    /**
+     * Setup event listeners for form elements
+     */
+    setupEventListeners() {
+        // Thumbnail checkbox
+        if (this.thumbnailCheckbox) {
+            this.thumbnailCheckbox.addEventListener('change', (e) => {
+                this.preferences.showThumbnails = e.target.checked;
+                this.updateClasses();
+                this.savePreferences();
+            });
+        }
+        
+        // View mode radio buttons
+        this.viewModeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.preferences.viewMode = e.target.value;
+                    this.updateClasses();
+                    this.savePreferences();
+                }
+            });
+        });
+        
+        // Close options menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const optionsMenu = document.querySelector('.layout-options');
+            if (optionsMenu && optionsMenu.open) {
+                // Check if click was outside the options menu
+                if (!optionsMenu.contains(e.target)) {
+                    optionsMenu.open = false;
+                }
+            }
+        });
+    }
+}
+
+// Register the layout controller custom element
+customElements.define('layout-controller', LayoutController);
+
+/**
+ * Lightbox Overlay Custom Element
+ * 
+ * Handles modal dialog display for card view item descriptions.
+ * Only activates in card view mode.
+ */
+class LightboxOverlay extends HTMLElement {
+    constructor() {
+        super();
+        this.isVisible = false;
+        this.currentDetails = null;
+        this.layoutController = null;
+        
+        // Create overlay structure
+        this.innerHTML = `
+            <div class="lightbox-backdrop">
+                <div class="lightbox-content">
+                    <header class="lightbox-header">
+                        <div class="lightbox-title-section"></div>
+                        <button class="lightbox-close" aria-label="Close">×</button>
+                    </header>
+                    <main class="lightbox-body"></main>
+                </div>
+            </div>
+        `;
+        
+        this.backdrop = this.querySelector('.lightbox-backdrop');
+        this.content = this.querySelector('.lightbox-content');
+        this.header = this.querySelector('.lightbox-header');
+        this.titleSection = this.querySelector('.lightbox-title-section');
+        this.closeButton = this.querySelector('.lightbox-close');
+        this.body = this.querySelector('.lightbox-body');
+        
+        // Hide by default
+        this.style.display = 'none';
+    }
+
+    connectedCallback() {
+        // Find the parent layout controller
+        this.layoutController = this.closest('layout-controller');
+        
+        // Setup event listeners
+        this.setupEventListeners();
+        
+        // Monitor details elements
+        this.monitorDetailsElements();
+    }
+
+    setupEventListeners() {
+        // Close button
+        this.closeButton.addEventListener('click', () => {
+            this.closeLightbox();
+        });
+        
+        // Click outside to close
+        this.backdrop.addEventListener('click', (e) => {
+            if (e.target === this.backdrop) {
+                this.closeLightbox();
+            }
+        });
+        
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isVisible) {
+                this.closeLightbox();
+            }
+        });
+    }
+
+    monitorDetailsElements() {
+        // Find all item details elements
+        const detailsElements = document.querySelectorAll('.item');
+        
+        detailsElements.forEach(details => {
+            details.addEventListener('toggle', (e) => {
+                if (e.target.open && this.isCardView()) {
+                    // Close other details first
+                    this.closeAllDetails();
+                    // Open this one in lightbox
+                    this.openLightbox(e.target);
+                }
+            });
+        });
+    }
+
+    isCardView() {
+        return this.layoutController && this.layoutController.classList.contains('view-card');
+    }
+
+    closeAllDetails() {
+        const allDetails = document.querySelectorAll('.item[open]');
+        allDetails.forEach(details => {
+            if (details !== this.currentDetails) {
+                details.removeAttribute('open');
+            }
+        });
+    }
+
+    openLightbox(detailsElement) {
+        this.currentDetails = detailsElement;
+        
+        // Extract content from the details element
+        this.populateLightbox(detailsElement);
+        
+        // Show lightbox
+        this.style.display = 'flex';
+        this.isVisible = true;
+        
+        // Focus management
+        this.closeButton.focus();
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    }
+
+    populateLightbox(detailsElement) {
+        // Extract item information
+        const titleElement = detailsElement.querySelector('.item-title');
+        const dateElement = detailsElement.querySelector('.item-date');
+        const contentElement = detailsElement.querySelector('.item-content');
+        
+        // Clear previous content
+        this.titleSection.innerHTML = '';
+        this.body.innerHTML = '';
+        
+        // Add title and date to header
+        if (titleElement) {
+            const titleClone = titleElement.cloneNode(true);
+            this.titleSection.appendChild(titleClone);
+        }
+        
+        if (dateElement) {
+            const dateClone = dateElement.cloneNode(true);
+            dateClone.classList.add('lightbox-date');
+            this.titleSection.appendChild(dateClone);
+        }
+        
+        // Add content to body
+        if (contentElement) {
+            const contentClone = contentElement.cloneNode(true);
+            this.body.appendChild(contentClone);
+            
+            // Reinitialize any custom elements in the cloned content
+            const iframes = contentClone.querySelectorAll('content-isolation-iframe');
+            iframes.forEach(iframe => {
+                // Trigger reconnection for proper iframe handling
+                if (iframe.connectedCallback) {
+                    iframe.connectedCallback();
+                }
+            });
+        }
+    }
+
+    closeLightbox() {
+        if (!this.isVisible) return;
+        
+        // Hide lightbox
+        this.style.display = 'none';
+        this.isVisible = false;
+        
+        // Close the associated details element
+        if (this.currentDetails) {
+            this.currentDetails.removeAttribute('open');
+            this.currentDetails = null;
+        }
+        
+        // Restore body scrolling
+        document.body.style.overflow = '';
+        
+        // Clear content
+        this.titleSection.innerHTML = '';
+        this.body.innerHTML = '';
+    }
+}
+
+// Register the lightbox overlay custom element
+customElements.define('lightbox-overlay', LightboxOverlay);
+
 // Utility function to create a debounced version of a function
 function debounce(func, delay) {
     let timeoutId = null;
