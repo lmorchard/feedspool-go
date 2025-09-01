@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -61,9 +64,48 @@ func init() {
 	rootCmd.AddCommand(fetchCmd)
 }
 
+// setupGracefulShutdown sets up signal handling for graceful shutdown.
+func setupGracefulShutdown() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	
+	go func() {
+		sig := <-signals
+		logrus.Infof("Received signal %v, shutting down gracefully...", sig)
+		cancel()
+	}()
+	
+	return ctx, cancel
+}
+
+// validateUnfurlConfig validates the unfurl configuration and provides helpful warnings.
+func validateUnfurlConfig(cfg *config.Config) error {
+	if cfg.Unfurl.Concurrency < 0 {
+		return fmt.Errorf("unfurl concurrency cannot be negative")
+	}
+	if cfg.Unfurl.Concurrency > 100 {
+		logrus.Warnf("Unfurl concurrency %d is very high, consider reducing to avoid overwhelming servers", cfg.Unfurl.Concurrency)
+	}
+	if cfg.Unfurl.RetryAfter < 0 {
+		return fmt.Errorf("unfurl retry_after cannot be negative")
+	}
+	if cfg.Unfurl.RetryAfter > 24*time.Hour {
+		logrus.Warnf("Unfurl retry_after %v is very long, failed URLs will wait a long time before retry", cfg.Unfurl.RetryAfter)
+	}
+	return nil
+}
+
 // createUnfurlQueue creates and starts an unfurl queue if withUnfurl is enabled.
 func createUnfurlQueue(ctx context.Context, cfg *config.Config, db *database.DB, withUnfurl bool) *unfurl.UnfurlQueue {
 	if !withUnfurl {
+		return nil
+	}
+	
+	// Validate configuration
+	if err := validateUnfurlConfig(cfg); err != nil {
+		logrus.Errorf("Invalid unfurl configuration: %v", err)
 		return nil
 	}
 	
@@ -73,7 +115,12 @@ func createUnfurlQueue(ctx context.Context, cfg *config.Config, db *database.DB,
 		concurrency = config.DefaultConcurrency
 	}
 	
-	logrus.Infof("Starting unfurl queue with %d workers", concurrency)
+	logrus.Infof("Starting fetch with parallel unfurl (unfurl concurrency: %d)", concurrency)
+	if cfg.Unfurl.SkipRobots {
+		logrus.Debugf("Unfurl robots.txt checking disabled")
+	}
+	logrus.Debugf("Unfurl retry after: %v", cfg.Unfurl.RetryAfter)
+	
 	queue := unfurl.NewUnfurlQueue(
 		ctx, 
 		db, 
@@ -129,8 +176,9 @@ func runSingleURLFetch(cfg *config.Config, feedURL string, withUnfurl bool) erro
 		return err
 	}
 
-	// Create unfurl queue if needed
-	ctx := context.Background()
+	// Create unfurl queue if needed with graceful shutdown
+	ctx, cancel := setupGracefulShutdown()
+	defer cancel()
 	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
 	
 	fetcher := fetcher.NewFetcher(db, fetchTimeout, fetchMaxItems, fetchForce)
@@ -142,10 +190,26 @@ func runSingleURLFetch(cfg *config.Config, feedURL string, withUnfurl bool) erro
 	
 	// Handle unfurl queue completion
 	if unfurlQueue != nil {
-		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		enqueued, processed := unfurlQueue.Stats()
+		if enqueued > 0 {
+			logrus.Infof("Fetch completed, waiting for %d unfurl operations to complete", enqueued-processed)
+		} else {
+			logrus.Infof("Fetch completed, no items needed unfurl")
+		}
 		unfurlQueue.Close()
-		unfurlQueue.Wait()
-		logrus.Infof("All operations completed")
+		
+		// Check for cancellation while waiting
+		select {
+		case <-ctx.Done():
+			logrus.Infof("Shutdown signal received, cancelling unfurl operations")
+			unfurlQueue.Cancel()
+		default:
+			unfurlQueue.Wait()
+			finalEnqueued, finalProcessed := unfurlQueue.Stats()
+			if finalEnqueued > 0 {
+				logrus.Infof("All operations completed: %d unfurl operations processed", finalProcessed)
+			}
+		}
 	}
 
 	if result.Error != nil {
@@ -207,8 +271,9 @@ func runFileFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 		fmt.Printf("Found %d feeds in %s\n", len(feedURLs), filename)
 	}
 
-	// Create unfurl queue if needed
-	ctx := context.Background()
+	// Create unfurl queue if needed with graceful shutdown
+	ctx, cancel := setupGracefulShutdown()
+	defer cancel()
 	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
 
 	// Fetch feeds concurrently (with optional unfurl)
@@ -225,10 +290,26 @@ func runFileFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 	
 	// Handle unfurl queue completion
 	if unfurlQueue != nil {
-		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		enqueued, processed := unfurlQueue.Stats()
+		if enqueued > 0 {
+			logrus.Infof("Fetch completed, waiting for %d unfurl operations to complete", enqueued-processed)
+		} else {
+			logrus.Infof("Fetch completed, no items needed unfurl")
+		}
 		unfurlQueue.Close()
-		unfurlQueue.Wait()
-		logrus.Infof("All operations completed")
+		
+		// Check for cancellation while waiting
+		select {
+		case <-ctx.Done():
+			logrus.Infof("Shutdown signal received, cancelling unfurl operations")
+			unfurlQueue.Cancel()
+		default:
+			unfurlQueue.Wait()
+			finalEnqueued, finalProcessed := unfurlQueue.Stats()
+			if finalEnqueued > 0 {
+				logrus.Infof("All operations completed: %d unfurl operations processed", finalProcessed)
+			}
+		}
 	}
 
 	successCount, errorCount, cachedCount, totalItems := processFetchResults(results)
@@ -270,8 +351,9 @@ func runDatabaseFetch(cfg *config.Config, db *database.DB, withUnfurl bool) erro
 		fmt.Printf("Fetching %d feeds from database\n", len(feedURLs))
 	}
 
-	// Create unfurl queue if needed
-	ctx := context.Background()
+	// Create unfurl queue if needed with graceful shutdown
+	ctx, cancel := setupGracefulShutdown()
+	defer cancel()
 	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
 	
 	// Fetch feeds concurrently (with optional unfurl)
@@ -288,10 +370,26 @@ func runDatabaseFetch(cfg *config.Config, db *database.DB, withUnfurl bool) erro
 	
 	// Handle unfurl queue completion
 	if unfurlQueue != nil {
-		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		enqueued, processed := unfurlQueue.Stats()
+		if enqueued > 0 {
+			logrus.Infof("Fetch completed, waiting for %d unfurl operations to complete", enqueued-processed)
+		} else {
+			logrus.Infof("Fetch completed, no items needed unfurl")
+		}
 		unfurlQueue.Close()
-		unfurlQueue.Wait()
-		logrus.Infof("All operations completed")
+		
+		// Check for cancellation while waiting
+		select {
+		case <-ctx.Done():
+			logrus.Infof("Shutdown signal received, cancelling unfurl operations")
+			unfurlQueue.Cancel()
+		default:
+			unfurlQueue.Wait()
+			finalEnqueued, finalProcessed := unfurlQueue.Stats()
+			if finalEnqueued > 0 {
+				logrus.Infof("All operations completed: %d unfurl operations processed", finalProcessed)
+			}
+		}
 	}
 
 	successCount, errorCount, cachedCount, totalItems := processFetchResults(results)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -187,9 +188,13 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 		activeGUIDs = append(activeGUIDs, item.GUID)
 		itemCount++
 		
-		// If this is a new item and we have an unfurl queue, enqueue the item URL
+		// If this is a new item and we have an unfurl queue, validate and enqueue the item URL
 		if isNewItem && f.unfurlQueue != nil && item.Link != "" {
-			newItemURLs = append(newItemURLs, item.Link)
+			if f.isValidURL(item.Link) {
+				newItemURLs = append(newItemURLs, item.Link)
+			} else {
+				logrus.Debugf("Skipping malformed URL for unfurl: %s", item.Link)
+			}
 		}
 	}
 
@@ -257,6 +262,30 @@ func (f *Fetcher) filterURLsNeedingUnfurl(urls []string) ([]string, error) {
 	}
 	
 	return filtered, nil
+}
+
+// isValidURL checks if a URL is valid and suitable for unfurling.
+func (f *Fetcher) isValidURL(urlStr string) bool {
+	if urlStr == "" {
+		return false
+	}
+	
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return false
+	}
+	
+	// Only allow HTTP and HTTPS schemes
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return false
+	}
+	
+	// Must have a host
+	if parsedURL.Host == "" {
+		return false
+	}
+	
+	return true
 }
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {
