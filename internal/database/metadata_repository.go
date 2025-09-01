@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -207,4 +208,65 @@ func (db *DB) GetFeedFavicon(feedURL string) (string, error) {
 		return faviconURL.String, nil
 	}
 	return "", nil
+}
+
+// HasUnfurlMetadata checks if a URL already has unfurl metadata stored.
+func (db *DB) HasUnfurlMetadata(url string) (bool, error) {
+	query := `SELECT COUNT(*) FROM url_metadata WHERE url = ?`
+	var count int
+	err := db.conn.QueryRow(query, url).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check metadata existence: %w", err)
+	}
+	return count > 0, nil
+}
+
+// HasUnfurlMetadataBatch checks multiple URLs for existing unfurl metadata.
+// Returns a map where keys are URLs and values indicate if metadata exists.
+func (db *DB) HasUnfurlMetadataBatch(urls []string) (map[string]bool, error) {
+	if len(urls) == 0 {
+		return make(map[string]bool), nil
+	}
+
+	result := make(map[string]bool)
+
+	// Initialize all URLs as not having metadata
+	for _, url := range urls {
+		result[url] = false
+	}
+
+	// Build query with placeholders for all URLs
+	args := make([]interface{}, len(urls))
+	for i, url := range urls {
+		args[i] = url
+	}
+
+	// Build the query with proper placeholders
+	placeholders := strings.Repeat("?,", len(urls)-1) + "?"
+	//nolint:gosec // SQL injection safe: placeholders are properly parameterized
+	query := fmt.Sprintf(`
+		SELECT url FROM url_metadata 
+		WHERE url IN (%s)
+	`, placeholders)
+
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch check metadata: %w", err)
+	}
+	defer rows.Close()
+
+	// Mark URLs that have metadata as true
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, fmt.Errorf("failed to scan URL: %w", err)
+		}
+		result[url] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating results: %w", err)
+	}
+
+	return result, nil
 }

@@ -24,6 +24,7 @@ type Config struct {
 	Timeout     time.Duration
 	MaxItems    int
 	FeedList    FeedListConfig
+	Fetch       FetchConfig
 	Render      RenderConfig
 	Serve       ServeConfig
 	Init        InitConfig
@@ -33,6 +34,10 @@ type Config struct {
 type FeedListConfig struct {
 	Format   string
 	Filename string
+}
+
+type FetchConfig struct {
+	WithUnfurl bool `mapstructure:"with_unfurl"`
 }
 
 type RenderConfig struct {
@@ -77,6 +82,9 @@ func LoadConfig() *Config {
 			Format:   viper.GetString("feedlist.format"),
 			Filename: viper.GetString("feedlist.filename"),
 		},
+		Fetch: FetchConfig{
+			WithUnfurl: viper.GetBool("fetch.with_unfurl"),
+		},
 		Render: RenderConfig{
 			OutputDir:     viper.GetString("render.output_dir"),
 			TemplatesDir:  viper.GetString("render.templates_dir"),
@@ -108,6 +116,9 @@ func GetDefault() *Config {
 		FeedList: FeedListConfig{
 			Format:   "", // Empty strings indicate not configured
 			Filename: "",
+		},
+		Fetch: FetchConfig{
+			WithUnfurl: false, // Default to false
 		},
 		Render: RenderConfig{
 			OutputDir:     "./build",
