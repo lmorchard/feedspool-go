@@ -173,7 +173,23 @@ function setupSharedContentIsolationIframeMessageHandler() {
                     const contentIsolationIframe = contentIsolationIframeRegistry.get(event.source);
                     contentIsolationIframe.adjustHeight(contentIsolationIframe.iframe, event.data.height);
                 } else {
-                    console.warn('contentIsolationIframe not found in registry for source:', event.source);
+                    // Fallback: find the iframe by searching all content-isolation-iframe elements
+                    const allIframes = document.querySelectorAll('content-isolation-iframe iframe');
+                    
+                    for (const iframe of allIframes) {
+                        if (iframe.contentWindow === event.source) {
+                            const parent = iframe.closest('content-isolation-iframe');
+                            if (parent && parent.adjustHeight) {
+                                parent.adjustHeight(iframe, event.data.height);
+                                // Register for next time to avoid future fallback lookups
+                                contentIsolationIframeRegistry.set(event.source, parent);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Only warn if fallback also failed
+                    console.warn('contentIsolationIframe not found for source:', event.source);
                 }
             }
         };
