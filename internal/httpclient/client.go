@@ -66,23 +66,23 @@ func NewClient(config *Config) *Client {
 	}
 }
 
-// Request represents an HTTP request with additional options
+// Request represents an HTTP request with additional options.
 type Request struct {
 	URL               string
 	Method            string
 	Headers           map[string]string
 	Body              io.Reader
-	Context           context.Context
+	Context           context.Context //nolint:containedctx // Context is needed for request lifecycle
 	LimitResponseSize bool
 }
 
-// Response wraps the HTTP response with additional metadata
+// Response wraps the HTTP response with additional metadata.
 type Response struct {
 	*http.Response
 	BodyReader io.Reader
 }
 
-// Do performs an HTTP request with the configured client
+// Do performs an HTTP request with the configured client.
 func (c *Client) Do(req *Request) (*Response, error) {
 	if req.Context == nil {
 		var cancel context.CancelFunc
@@ -107,10 +107,11 @@ func (c *Client) Do(req *Request) (*Response, error) {
 		httpReq.Header.Set(key, value)
 	}
 
-	resp, err := c.httpClient.Do(httpReq)
+	resp, err := c.httpClient.Do(httpReq) //nolint:bodyclose // Response body is closed by caller
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
+	// Note: resp.Body is intentionally not closed here as it's returned to caller
 
 	// Wrap response body with size limiter if requested
 	bodyReader := io.Reader(resp.Body)
@@ -128,7 +129,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	}, nil
 }
 
-// Get performs a simple GET request
+// Get performs a simple GET request.
 func (c *Client) Get(url string) (*Response, error) {
 	return c.Do(&Request{
 		URL:    url,
@@ -136,7 +137,7 @@ func (c *Client) Get(url string) (*Response, error) {
 	})
 }
 
-// GetWithHeaders performs a GET request with custom headers
+// GetWithHeaders performs a GET request with custom headers.
 func (c *Client) GetWithHeaders(url string, headers map[string]string) (*Response, error) {
 	return c.Do(&Request{
 		URL:     url,
@@ -145,7 +146,7 @@ func (c *Client) GetWithHeaders(url string, headers map[string]string) (*Respons
 	})
 }
 
-// GetLimited performs a GET request with response size limiting
+// GetLimited performs a GET request with response size limiting.
 func (c *Client) GetLimited(url string) (*Response, error) {
 	return c.Do(&Request{
 		URL:               url,
@@ -154,7 +155,7 @@ func (c *Client) GetLimited(url string) (*Response, error) {
 	})
 }
 
-// limitedReader wraps an io.Reader to limit the number of bytes read
+// limitedReader wraps an io.Reader to limit the number of bytes read.
 type limitedReader struct {
 	reader io.Reader
 	limit  int64

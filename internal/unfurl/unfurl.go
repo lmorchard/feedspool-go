@@ -16,13 +16,17 @@ import (
 	"golang.org/x/net/html"
 )
 
-// Unfurler handles metadata extraction from URLs
+const (
+	descriptionMeta = "description"
+)
+
+// Unfurler handles metadata extraction from URLs.
 type Unfurler struct {
 	client        *httpclient.Client
 	robotsChecker *RobotsChecker
 }
 
-// NewUnfurler creates a new unfurler with the given HTTP client
+// NewUnfurler creates a new unfurler with the given HTTP client.
 func NewUnfurler(client *httpclient.Client) *Unfurler {
 	if client == nil {
 		client = httpclient.NewClient(&httpclient.Config{
@@ -37,7 +41,7 @@ func NewUnfurler(client *httpclient.Client) *Unfurler {
 	}
 }
 
-// Result contains the extracted metadata from a URL
+// Result contains the extracted metadata from a URL.
 type Result struct {
 	Title       string                 `json:"title,omitempty"`
 	Description string                 `json:"description,omitempty"`
@@ -46,8 +50,8 @@ type Result struct {
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// Unfurl fetches and extracts metadata from a URL
-func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
+// Unfurl fetches and extracts metadata from a URL.
+func (u *Unfurler) Unfurl(targetURL string) (*Result, error) { //nolint:cyclop // Complex metadata extraction logic
 	// Parse URL to ensure it's valid
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
@@ -56,11 +60,10 @@ func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
 
 	// Check robots.txt
 	allowed, err := u.robotsChecker.IsAllowed(targetURL)
-	if err != nil {
-		// Log but don't fail if robots.txt check fails - we'll proceed with the fetch
-	} else if !allowed {
+	if err == nil && !allowed {
 		return nil, fmt.Errorf("robots.txt disallows fetching this URL")
 	}
+	// If robots.txt check fails, we proceed with the fetch
 
 	// Fetch the page with size limit
 	resp, err := u.client.GetLimited(targetURL)
@@ -124,7 +127,7 @@ func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
 	}
 
 	// Store OpenGraph data in metadata
-	if og != nil {
+	if og != nil { //nolint:nestif
 		if og.Type != "" {
 			result.Metadata["og:type"] = og.Type
 		}
@@ -161,7 +164,7 @@ func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
 	return result, nil
 }
 
-// htmlMetadata holds metadata extracted from HTML
+// htmlMetadata holds metadata extracted from HTML.
 type htmlMetadata struct {
 	Title       string
 	Description string
@@ -169,8 +172,8 @@ type htmlMetadata struct {
 	FaviconURL  string
 }
 
-// parseHTMLMetadata extracts metadata from HTML document
-func (u *Unfurler) parseHTMLMetadata(r io.Reader, baseURL *url.URL) *htmlMetadata {
+// parseHTMLMetadata extracts metadata from HTML document.
+func (u *Unfurler) parseHTMLMetadata(r io.Reader, baseURL *url.URL) *htmlMetadata { //nolint:cyclop
 	meta := &htmlMetadata{}
 	doc, err := html.Parse(r)
 	if err != nil {
@@ -179,7 +182,7 @@ func (u *Unfurler) parseHTMLMetadata(r io.Reader, baseURL *url.URL) *htmlMetadat
 
 	var traverse func(*html.Node)
 	traverse = func(n *html.Node) {
-		if n.Type == html.ElementNode {
+		if n.Type == html.ElementNode { //nolint:nestif
 			switch n.Data {
 			case "title":
 				if n.FirstChild != nil && n.FirstChild.Type == html.TextNode {
@@ -198,7 +201,7 @@ func (u *Unfurler) parseHTMLMetadata(r io.Reader, baseURL *url.URL) *htmlMetadat
 					}
 				}
 				if content != "" {
-					if name == "description" || property == "description" {
+					if name == descriptionMeta || property == descriptionMeta {
 						meta.Description = content
 					}
 					// Twitter Card fallbacks
@@ -233,7 +236,7 @@ func (u *Unfurler) parseHTMLMetadata(r io.Reader, baseURL *url.URL) *htmlMetadat
 	return meta
 }
 
-// makeAbsoluteURL converts a potentially relative URL to absolute
+// makeAbsoluteURL converts a potentially relative URL to absolute.
 func (u *Unfurler) makeAbsoluteURL(href string, base *url.URL) string {
 	parsed, err := url.Parse(href)
 	if err != nil {
@@ -242,7 +245,7 @@ func (u *Unfurler) makeAbsoluteURL(href string, base *url.URL) string {
 	return base.ResolveReference(parsed).String()
 }
 
-// ToURLMetadata converts unfurl result to database URLMetadata model
+// ToURLMetadata converts unfurl result to database URLMetadata model.
 func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode int,
 	fetchError error,
 ) (*database.URLMetadata, error) {
@@ -251,7 +254,7 @@ func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode in
 		LastFetchAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
 
-	if result != nil {
+	if result != nil { //nolint:nestif
 		if result.Title != "" {
 			metadata.Title = sql.NullString{String: result.Title, Valid: true}
 		}

@@ -153,7 +153,7 @@ func generateGUID(link, title string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// SetMetadataField sets a field in the metadata JSON
+// SetMetadataField sets a field in the metadata JSON.
 func (um *URLMetadata) SetMetadataField(key string, value interface{}) error {
 	var meta map[string]interface{}
 
@@ -179,7 +179,7 @@ func (um *URLMetadata) SetMetadataField(key string, value interface{}) error {
 	return nil
 }
 
-// GetMetadataField gets a field from the metadata JSON
+// GetMetadataField gets a field from the metadata JSON.
 func (um *URLMetadata) GetMetadataField(key string) (interface{}, bool) {
 	if len(um.Metadata) == 0 {
 		return nil, false
@@ -194,7 +194,7 @@ func (um *URLMetadata) GetMetadataField(key string) (interface{}, bool) {
 	return value, exists
 }
 
-// ShouldRetryFetch checks if enough time has passed to retry a failed fetch
+// ShouldRetryFetch checks if enough time has passed to retry a failed fetch.
 func (um *URLMetadata) ShouldRetryFetch(retryAfter time.Duration) bool {
 	// If never fetched, should fetch
 	if !um.LastFetchAt.Valid {

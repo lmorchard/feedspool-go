@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -12,7 +13,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 )
 
-// RobotsChecker handles robots.txt checking with caching
+// RobotsChecker handles robots.txt checking with caching.
 type RobotsChecker struct {
 	client    *httpclient.Client
 	cache     map[string]*robotsEntry
@@ -32,7 +33,7 @@ type robotsRules struct {
 	crawlDelay      time.Duration
 }
 
-// NewRobotsChecker creates a new robots.txt checker
+// NewRobotsChecker creates a new robots.txt checker.
 func NewRobotsChecker(client *httpclient.Client, userAgent string) *RobotsChecker {
 	if userAgent == "" {
 		userAgent = "feedspool"
@@ -45,7 +46,7 @@ func NewRobotsChecker(client *httpclient.Client, userAgent string) *RobotsChecke
 	}
 }
 
-// IsAllowed checks if the URL is allowed according to robots.txt
+// IsAllowed checks if the URL is allowed according to robots.txt.
 func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
@@ -69,7 +70,7 @@ func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
 	rules, err := rc.fetchAndParseRobots(robotsURL)
 	if err != nil {
 		// If we can't fetch robots.txt, assume allowed
-		return true, nil
+		return true, err
 	}
 
 	// Cache the rules
@@ -83,7 +84,7 @@ func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
 	return rc.checkRules(rules, parsedURL.Path), nil
 }
 
-// fetchAndParseRobots fetches and parses robots.txt
+// fetchAndParseRobots fetches and parses robots.txt.
 func (rc *RobotsChecker) fetchAndParseRobots(robotsURL string) (*robotsRules, error) {
 	resp, err := rc.client.Get(robotsURL)
 	if err != nil {
@@ -91,20 +92,20 @@ func (rc *RobotsChecker) fetchAndParseRobots(robotsURL string) (*robotsRules, er
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == http.StatusNotFound {
 		// No robots.txt means everything is allowed
 		return &robotsRules{}, nil
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
 	return rc.parseRobots(resp.BodyReader)
 }
 
-// parseRobots parses robots.txt content
-func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) {
+// parseRobots parses robots.txt content.
+func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) { //nolint:cyclop // Complex robots.txt parsing
 	rules := &robotsRules{}
 	scanner := bufio.NewScanner(r)
 
@@ -132,7 +133,7 @@ func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) {
 		switch directive {
 		case "user-agent":
 			currentAgent = strings.ToLower(value)
-			applyToUs = currentAgent == strings.ToLower(rc.userAgent) ||
+			applyToUs = strings.EqualFold(currentAgent, rc.userAgent) ||
 				strings.HasPrefix(strings.ToLower(rc.userAgent), currentAgent)
 			applyToAll = currentAgent == "*"
 
@@ -158,7 +159,7 @@ func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) {
 	return rules, scanner.Err()
 }
 
-// checkRules checks if a path is allowed according to the rules
+// checkRules checks if a path is allowed according to the rules.
 func (rc *RobotsChecker) checkRules(rules *robotsRules, path string) bool {
 	if rules == nil {
 		return true
@@ -180,14 +181,14 @@ func (rc *RobotsChecker) checkRules(rules *robotsRules, path string) bool {
 	return true
 }
 
-// matchesPattern checks if a path matches a robots.txt pattern
+// matchesPattern checks if a path matches a robots.txt pattern.
 func (rc *RobotsChecker) matchesPattern(path, pattern string) bool {
 	// Simple pattern matching (robots.txt uses prefix matching)
 	// TODO: Could be enhanced to support * wildcards
 	return strings.HasPrefix(path, pattern)
 }
 
-// GetCrawlDelay returns the crawl delay for a URL's domain
+// GetCrawlDelay returns the crawl delay for a URL's domain.
 func (rc *RobotsChecker) GetCrawlDelay(targetURL string) time.Duration {
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
