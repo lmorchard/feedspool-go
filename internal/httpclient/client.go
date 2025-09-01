@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// DefaultUserAgent mimics a common browser to avoid blocking
+	// DefaultUserAgent mimics a common browser to avoid blocking.
 	DefaultUserAgent = "Mozilla/5.0 (compatible; feedspool/1.0; +https://github.com/lmorchard/feedspool-go)"
 	DefaultTimeout   = 30 * time.Second
 	MaxResponseSize  = 100 * 1024 // 100KB for metadata fetching
@@ -90,10 +90,10 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	logrus.Debugf("HTTP %s %s (timeout: %v)", req.Method, req.URL, c.timeout)
 
 	if req.Context == nil {
-		// Note: We don't use defer cancel() here because the context needs to remain
-		// valid while the caller reads the response body. The timeout will still
-		// apply to the overall HTTP client operation.
-		req.Context, _ = context.WithTimeout(context.Background(), c.timeout)
+		// Use the http.Client's timeout instead of context timeout to avoid
+		// cancellation issues while reading response body. The http.Client
+		// will handle the timeout for the entire request/response cycle.
+		req.Context = context.Background()
 	}
 
 	if req.Method == "" {

@@ -9,7 +9,7 @@ import (
 // getMigrations returns the database migration scripts.
 func getMigrations() map[int]string {
 	return map[int]string{
-		1: `-- Initial schema migration (handled by InitSchema)`,
+		// Migration 1 is handled by InitSchema, not listed here
 		2: `ALTER TABLE feeds ADD COLUMN latest_item_date DATETIME;`,
 		3: `CREATE TABLE IF NOT EXISTS url_metadata (
 			url TEXT PRIMARY KEY,
@@ -85,6 +85,9 @@ func (db *DB) RunMigrations() error {
 				return err
 			}
 			appliedCount++
+		} else {
+			// Migration doesn't exist - this is an error
+			return fmt.Errorf("unknown migration version: %d", version)
 		}
 	}
 

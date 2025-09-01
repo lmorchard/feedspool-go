@@ -224,8 +224,8 @@ func TestRunMigrationsOnProperlyInitializedDatabase(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 2 {
-		t.Errorf("After InitSchema + RunMigrations, version should be 2, got %d", version)
+	if version != 3 {
+		t.Errorf("After InitSchema + RunMigrations, version should be 3, got %d", version)
 	}
 
 	// Verify we have the latest_item_date column
@@ -240,6 +240,20 @@ func TestRunMigrationsOnProperlyInitializedDatabase(t *testing.T) {
 
 	if colCount != 1 {
 		t.Errorf("Should have latest_item_date column after full initialization, found %d", colCount)
+	}
+
+	// Verify we have the url_metadata table
+	var tableCount int
+	err = db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master 
+		WHERE type='table' AND name='url_metadata'
+	`).Scan(&tableCount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tableCount != 1 {
+		t.Errorf("Should have url_metadata table after full initialization, found %d", tableCount)
 	}
 }
 
@@ -272,8 +286,8 @@ func TestRunMigrationsOnExistingDatabase(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 2 {
-		t.Errorf("After migration, version should be 2, got %d", version)
+	if version != 3 {
+		t.Errorf("After migration, version should be 3, got %d", version)
 	}
 
 	// Verify latest_item_date column was added
@@ -319,8 +333,8 @@ func TestRunMigrationsIdempotent(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 2 {
-		t.Errorf("After double migration, version should be 2, got %d", version)
+	if version != 3 {
+		t.Errorf("After double migration, version should be 3, got %d", version)
 	}
 
 	// Should still have exactly one latest_item_date column
@@ -385,8 +399,8 @@ func TestRunMigrationsWithExistingColumn(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 2 {
-		t.Errorf("With existing column, version should be 2, got %d", version)
+	if version != 3 {
+		t.Errorf("With existing column, version should be 3, got %d", version)
 	}
 
 	// Verify column still exists and works
@@ -470,9 +484,9 @@ func TestGetMigrations(t *testing.T) {
 		t.Errorf("getMigrations() should return at least 2 migrations, got %d", len(migrations))
 	}
 
-	// Check migration 1
-	if _, exists := migrations[1]; !exists {
-		t.Errorf("Migration 1 should exist")
+	// Migration 1 is handled by InitSchema, not in getMigrations()
+	if _, exists := migrations[1]; exists {
+		t.Errorf("Migration 1 should not exist in getMigrations() (handled by InitSchema)")
 	}
 
 	// Check migration 2
