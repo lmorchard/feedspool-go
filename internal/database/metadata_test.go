@@ -30,13 +30,13 @@ func TestHasUnfurlMetadata(t *testing.T) {
 
 	// Add some metadata
 	metadata := &URLMetadata{
-		URL:              testURL,
-		Title:            sql.NullString{String: "Test Page", Valid: true},
-		Description:      sql.NullString{String: "A test page", Valid: true},
-		LastFetchAt:      sql.NullTime{Time: time.Now(), Valid: true},
-		FetchStatusCode:  sql.NullInt64{Int64: 200, Valid: true},
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		URL:             testURL,
+		Title:           sql.NullString{String: "Test Page", Valid: true},
+		Description:     sql.NullString{String: "A test page", Valid: true},
+		LastFetchAt:     sql.NullTime{Time: time.Now(), Valid: true},
+		FetchStatusCode: sql.NullInt64{Int64: 200, Valid: true},
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if err := db.UpsertMetadata(metadata); err != nil {
@@ -72,21 +72,21 @@ func TestHasUnfurlMetadataBatch(t *testing.T) {
 
 	// Add metadata for some URLs
 	metadata1 := &URLMetadata{
-		URL:              urls[0],
-		Title:            sql.NullString{String: "Exists", Valid: true},
-		LastFetchAt:      sql.NullTime{Time: time.Now(), Valid: true},
-		FetchStatusCode:  sql.NullInt64{Int64: 200, Valid: true},
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		URL:             urls[0],
+		Title:           sql.NullString{String: "Exists", Valid: true},
+		LastFetchAt:     sql.NullTime{Time: time.Now(), Valid: true},
+		FetchStatusCode: sql.NullInt64{Int64: 200, Valid: true},
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	metadata2 := &URLMetadata{
-		URL:              urls[2],
-		Title:            sql.NullString{String: "Also Exists", Valid: true},
-		LastFetchAt:      sql.NullTime{Time: time.Now(), Valid: true},
-		FetchStatusCode:  sql.NullInt64{Int64: 200, Valid: true},
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		URL:             urls[2],
+		Title:           sql.NullString{String: "Also Exists", Valid: true},
+		LastFetchAt:     sql.NullTime{Time: time.Now(), Valid: true},
+		FetchStatusCode: sql.NullInt64{Int64: 200, Valid: true},
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if err := db.UpsertMetadata(metadata1); err != nil {

@@ -26,6 +26,10 @@ feedlist:
   format: ""    # Default format for feed lists (opml or text)
   filename: ""  # Default filename for feed lists
 
+# Fetch settings
+fetch:
+  with_unfurl: false    # Run unfurl operations in parallel with feed fetching
+
 # Static site generator settings
 render:
   output_dir: "./build"      # Default output directory for rendered site

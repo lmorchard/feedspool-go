@@ -64,12 +64,12 @@ func TestFetcher_filterURLsNeedingUnfurl(t *testing.T) {
 
 	// Add metadata for one URL
 	metadata := &database.URLMetadata{
-		URL:              "https://example.com/existing",
-		Title:            sql.NullString{String: "Existing", Valid: true},
-		LastFetchAt:      sql.NullTime{Time: time.Now(), Valid: true},
-		FetchStatusCode:  sql.NullInt64{Int64: 200, Valid: true},
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		URL:             "https://example.com/existing",
+		Title:           sql.NullString{String: "Existing", Valid: true},
+		LastFetchAt:     sql.NullTime{Time: time.Now(), Valid: true},
+		FetchStatusCode: sql.NullInt64{Int64: 200, Valid: true},
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if err := db.UpsertMetadata(metadata); err != nil {

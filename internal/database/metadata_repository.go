@@ -227,31 +227,34 @@ func (db *DB) HasUnfurlMetadataBatch(urls []string) (map[string]bool, error) {
 	if len(urls) == 0 {
 		return make(map[string]bool), nil
 	}
-	
+
 	result := make(map[string]bool)
-	
+
 	// Initialize all URLs as not having metadata
 	for _, url := range urls {
 		result[url] = false
 	}
-	
+
 	// Build query with placeholders for all URLs
 	args := make([]interface{}, len(urls))
 	for i, url := range urls {
 		args[i] = url
 	}
-	
+
+	// Build the query with proper placeholders
+	placeholders := strings.Repeat("?,", len(urls)-1) + "?"
+	//nolint:gosec // SQL injection safe: placeholders are properly parameterized
 	query := fmt.Sprintf(`
 		SELECT url FROM url_metadata 
 		WHERE url IN (%s)
-	`, strings.Repeat("?,", len(urls)-1) + "?")
-	
+	`, placeholders)
+
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to batch check metadata: %w", err)
 	}
 	defer rows.Close()
-	
+
 	// Mark URLs that have metadata as true
 	for rows.Next() {
 		var url string
@@ -260,10 +263,10 @@ func (db *DB) HasUnfurlMetadataBatch(urls []string) (map[string]bool, error) {
 		}
 		result[url] = true
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating results: %w", err)
 	}
-	
+
 	return result, nil
 }

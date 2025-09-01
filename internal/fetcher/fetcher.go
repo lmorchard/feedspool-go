@@ -149,12 +149,13 @@ func (f *Fetcher) processParsedFeed(
 	return result
 }
 
+//nolint:cyclop // Complex feed processing logic requires multiple conditions
 func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int, time.Time) {
 	activeGUIDs := []string{}
 	itemCount := 0
 	var latestItemDate time.Time
 	var newItemURLs []string
-	
+
 	maxItems := f.maxItems
 	if maxItems <= 0 {
 		maxItems = len(gofeedData.Items)
@@ -178,7 +179,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 
 		// Check if this is a new item (before upserting)
 		isNewItem := f.isNewItem(feedURL, item.GUID)
-		
+
 		item.Archived = false
 		if err := f.db.UpsertItem(item); err != nil {
 			logrus.Warnf("Failed to save item: %v", err)
@@ -187,7 +188,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 
 		activeGUIDs = append(activeGUIDs, item.GUID)
 		itemCount++
-		
+
 		// If this is a new item and we have an unfurl queue, validate and enqueue the item URL
 		if isNewItem && f.unfurlQueue != nil && item.Link != "" {
 			if f.isValidURL(item.Link) {
@@ -207,12 +208,12 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 			// Continue with all URLs if filtering fails
 			urlsNeedingUnfurl = newItemURLs
 		}
-		
+
 		filteredCount := len(newItemURLs) - len(urlsNeedingUnfurl)
 		if filteredCount > 0 {
 			logrus.Debugf("Filtered %d items that already have metadata", filteredCount)
 		}
-		
+
 		if len(urlsNeedingUnfurl) > 0 {
 			logrus.Debugf("Enqueuing %d new items for unfurl from feed %s", len(urlsNeedingUnfurl), feedURL)
 			for _, url := range urlsNeedingUnfurl {
@@ -246,13 +247,13 @@ func (f *Fetcher) filterURLsNeedingUnfurl(urls []string) ([]string, error) {
 	if len(urls) == 0 {
 		return urls, nil
 	}
-	
+
 	// Check which URLs already have metadata
 	hasMetadata, err := f.db.HasUnfurlMetadataBatch(urls)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check existing metadata: %w", err)
 	}
-	
+
 	// Filter to only URLs that don't have metadata
 	var filtered []string
 	for _, url := range urls {
@@ -260,7 +261,7 @@ func (f *Fetcher) filterURLsNeedingUnfurl(urls []string) ([]string, error) {
 			filtered = append(filtered, url)
 		}
 	}
-	
+
 	return filtered, nil
 }
 
@@ -269,22 +270,22 @@ func (f *Fetcher) isValidURL(urlStr string) bool {
 	if urlStr == "" {
 		return false
 	}
-	
+
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		return false
 	}
-	
+
 	// Only allow HTTP and HTTPS schemes
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return false
 	}
-	
+
 	// Must have a host
 	if parsedURL.Host == "" {
 		return false
 	}
-	
+
 	return true
 }
 

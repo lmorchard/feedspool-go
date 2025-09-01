@@ -22,19 +22,19 @@ func TestUnfurlQueue_Basic(t *testing.T) {
 
 	ctx := context.Background()
 	queue := NewUnfurlQueue(ctx, db, 2, true, 1*time.Hour)
-	
+
 	if queue == nil {
 		t.Fatal("Failed to create unfurl queue")
 	}
-	
+
 	queue.Start()
 	defer queue.Cancel()
-	
+
 	// Test initial state
 	if queue.QueueDepth() != 0 {
 		t.Errorf("Expected queue depth 0, got %d", queue.QueueDepth())
 	}
-	
+
 	enqueued, processed := queue.Stats()
 	if enqueued != 0 || processed != 0 {
 		t.Errorf("Expected 0 enqueued and 0 processed, got %d enqueued, %d processed", enqueued, processed)
@@ -57,17 +57,17 @@ func TestUnfurlQueue_EnqueueAndProcess(t *testing.T) {
 	queue := NewUnfurlQueue(ctx, db, 1, true, 1*time.Hour)
 	queue.Start()
 	defer queue.Cancel()
-	
+
 	// Enqueue a test job
 	testURL := "https://example.com"
 	queue.Enqueue(UnfurlJob{URL: testURL})
-	
+
 	// Check stats
 	enqueued, _ := queue.Stats()
 	if enqueued != 1 {
 		t.Errorf("Expected 1 enqueued, got %d", enqueued)
 	}
-	
+
 	// Give it time to process (this is a basic test, real unfurl will likely fail for example.com)
 	time.Sleep(100 * time.Millisecond)
 }
