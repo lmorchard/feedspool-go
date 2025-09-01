@@ -29,11 +29,31 @@ type UnfurlQueue struct {
 	totalProcessed int64
 	skipRobots    bool
 	retryAfter    time.Duration
+	progressTicker *time.Ticker
+	progressDone   chan struct{}
 }
 
 // NewUnfurlQueue creates a new unfurl queue with the specified concurrency.
 func NewUnfurlQueue(ctx context.Context, db *database.DB, concurrency int, skipRobots bool, retryAfter time.Duration) *UnfurlQueue {
 	queueCtx, cancel := context.WithCancel(ctx)
+	
+	// Validate and adjust concurrency
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	if concurrency > 100 {
+		logrus.Warnf("Unfurl concurrency %d is very high, limiting to 100", concurrency)
+		concurrency = 100
+	}
+	
+	// Calculate reasonable buffer size (minimum 10, maximum 1000)
+	bufferSize := concurrency * 2
+	if bufferSize < 10 {
+		bufferSize = 10
+	}
+	if bufferSize > 1000 {
+		bufferSize = 1000
+	}
 	
 	// Create HTTP client for unfurl operations
 	httpClient := httpclient.NewClient(&httpclient.Config{
@@ -43,19 +63,24 @@ func NewUnfurlQueue(ctx context.Context, db *database.DB, concurrency int, skipR
 	})
 	
 	return &UnfurlQueue{
-		jobs:        make(chan UnfurlJob, concurrency*2), // Buffer to prevent blocking
-		ctx:         queueCtx,
-		cancel:      cancel,
-		service:     NewService(db, httpClient),
-		concurrency: concurrency,
-		skipRobots:  skipRobots,
-		retryAfter:  retryAfter,
+		jobs:         make(chan UnfurlJob, bufferSize),
+		ctx:          queueCtx,
+		cancel:       cancel,
+		service:      NewService(db, httpClient),
+		concurrency:  concurrency,
+		skipRobots:   skipRobots,
+		retryAfter:   retryAfter,
+		progressDone: make(chan struct{}),
 	}
 }
 
 // Start begins processing unfurl jobs with the configured number of workers.
 func (q *UnfurlQueue) Start() {
 	logrus.Infof("Starting unfurl queue with %d workers", q.concurrency)
+	
+	// Start progress ticker for periodic reports
+	q.progressTicker = time.NewTicker(30 * time.Second)
+	go q.progressReporter()
 	
 	for i := 0; i < q.concurrency; i++ {
 		q.wg.Add(1)
@@ -85,13 +110,30 @@ func (q *UnfurlQueue) Close() {
 func (q *UnfurlQueue) Wait() {
 	logrus.Debugf("Waiting for unfurl workers to complete")
 	q.wg.Wait()
-	logrus.Infof("All unfurl operations completed: %d total processed", atomic.LoadInt64(&q.totalProcessed))
+	
+	// Stop progress reporter
+	if q.progressTicker != nil {
+		q.progressTicker.Stop()
+		close(q.progressDone)
+	}
+	
+	totalProcessed := atomic.LoadInt64(&q.totalProcessed)
+	if totalProcessed > 0 {
+		logrus.Infof("All unfurl operations completed: %d total processed", totalProcessed)
+	}
 }
 
 // Cancel cancels all unfurl operations and waits for cleanup.
 func (q *UnfurlQueue) Cancel() {
 	logrus.Debugf("Cancelling unfurl operations")
 	q.cancel()
+	
+	// Stop progress reporter
+	if q.progressTicker != nil {
+		q.progressTicker.Stop()
+		close(q.progressDone)
+	}
+	
 	q.wg.Wait()
 }
 
@@ -126,6 +168,28 @@ func (q *UnfurlQueue) worker(workerID int) {
 		case <-q.ctx.Done():
 			// Context cancelled, worker should exit
 			logrus.Debugf("Unfurl worker %d exiting (context cancelled)", workerID)
+			return
+		}
+	}
+}
+
+// progressReporter provides periodic progress updates.
+func (q *UnfurlQueue) progressReporter() {
+	for {
+		select {
+		case <-q.progressTicker.C:
+			enqueued := atomic.LoadInt64(&q.totalEnqueued)
+			processed := atomic.LoadInt64(&q.totalProcessed)
+			queued := atomic.LoadInt64(&q.queueDepth)
+			
+			// Only report progress if there's something to report
+			if enqueued > 0 {
+				logrus.Infof("Unfurl progress: %d completed, %d pending, %d in queue", processed, enqueued-processed, queued)
+			}
+			
+		case <-q.progressDone:
+			return
+		case <-q.ctx.Done():
 			return
 		}
 	}
