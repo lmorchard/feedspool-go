@@ -462,6 +462,17 @@ class LayoutController extends HTMLElement {
                 }
             });
         });
+        
+        // Close options menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const optionsMenu = document.querySelector('.layout-options');
+            if (optionsMenu && optionsMenu.open) {
+                // Check if click was outside the options menu
+                if (!optionsMenu.contains(e.target)) {
+                    optionsMenu.open = false;
+                }
+            }
+        });
     }
 }
 
