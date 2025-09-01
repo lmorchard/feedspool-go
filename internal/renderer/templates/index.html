@@ -76,6 +76,13 @@
                                 {{$title}}
                                 {{end}}
                             </span>
+                            <div class="item-excerpt">
+                                {{if .Summary}}
+                                    {{printf "%.200s..." .Summary}}
+                                {{else if .Content}}
+                                    {{printf "%.200s..." .Content}}
+                                {{end}}
+                            </div>
                         </div>
                         <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006 15:04 UTC"}}</time>
                     </summary>
