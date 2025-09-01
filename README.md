@@ -261,8 +261,8 @@ This allows you to:
 ## TODO
 
 ### Future Enhancements
-- [ ] feed item link unfurling for thumbnails
-- [ ] card / tile layout for feed rendering
+- [ ] unfurl in parallel for new items while fetching feeds
+- [ ] Merge OPML / text lists of feeds with de-dupe
 - [ ] more sophisticated site generation - pagination, per-feed 
 - [ ] support feed tags and/or folders?
 - [ ] implement a simple REST API server to access feeds data
