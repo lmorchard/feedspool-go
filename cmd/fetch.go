@@ -108,13 +108,24 @@ func runFetch(_ *cobra.Command, args []string) error {
 	ctx, cancel := setupGracefulShutdown()
 	defer cancel()
 
+	// Use CLI flags if provided, otherwise fall back to config values
+	concurrency := fetchConcurrency
+	if fetchConcurrency == config.DefaultConcurrency {
+		concurrency = cfg.Fetch.Concurrency
+	}
+
+	maxItems := fetchMaxItems
+	if fetchMaxItems == config.DefaultMaxItems {
+		maxItems = cfg.Fetch.MaxItems
+	}
+
 	// Create fetch options
 	opts := fetcher.FetchOptions{
 		Timeout:       fetchTimeout,
-		MaxItems:      fetchMaxItems,
+		MaxItems:      maxItems,
 		MaxAge:        fetchMaxAge,
 		Force:         fetchForce,
-		Concurrency:   fetchConcurrency,
+		Concurrency:   concurrency,
 		WithUnfurl:    withUnfurl,
 		RemoveMissing: fetchRemoveMissing,
 	}
