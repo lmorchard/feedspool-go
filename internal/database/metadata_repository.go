@@ -90,7 +90,7 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 		AND (
 			um.url IS NULL  -- No metadata exists
 			OR (
-				um.fetch_status_code NOT BETWEEN 200 AND 299  -- Failed fetch
+				(um.fetch_status_code IS NULL OR um.fetch_status_code NOT BETWEEN 200 AND 299)  -- Failed fetch or no status
 				AND um.last_fetch_at < ?  -- And enough time has passed
 			)
 		)
