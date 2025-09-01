@@ -57,8 +57,7 @@ func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
 	// Check robots.txt
 	allowed, err := u.robotsChecker.IsAllowed(targetURL)
 	if err != nil {
-		// Log but don't fail if robots.txt check fails
-		// We'll proceed with the fetch
+		// Log but don't fail if robots.txt check fails - we'll proceed with the fetch
 	} else if !allowed {
 		return nil, fmt.Errorf("robots.txt disallows fetching this URL")
 	}
@@ -244,8 +243,9 @@ func (u *Unfurler) makeAbsoluteURL(href string, base *url.URL) string {
 }
 
 // ToURLMetadata converts unfurl result to database URLMetadata model
-func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode int, 
-	fetchError error) (*database.URLMetadata, error) {
+func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode int,
+	fetchError error,
+) (*database.URLMetadata, error) {
 	metadata := &database.URLMetadata{
 		URL:         targetURL,
 		LastFetchAt: sql.NullTime{Time: time.Now(), Valid: true},

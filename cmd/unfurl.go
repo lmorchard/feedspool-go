@@ -46,7 +46,7 @@ func init() {
 	unfurlCmd.Flags().IntVar(&unfurlLimit, "limit", 0, "Maximum URLs to process in batch mode")
 	unfurlCmd.Flags().StringVar(&unfurlFormat, "format", "", "Output format for single URL (json)")
 	unfurlCmd.Flags().IntVar(&unfurlConcurrency, "concurrency", config.DefaultConcurrency, "Maximum concurrent fetches")
-	unfurlCmd.Flags().DurationVar(&unfurlRetryAfter, "retry-after", 1*time.Hour, 
+	unfurlCmd.Flags().DurationVar(&unfurlRetryAfter, "retry-after", 1*time.Hour,
 		"Retry failed fetches after this duration")
 	rootCmd.AddCommand(unfurlCmd)
 }
@@ -177,7 +177,7 @@ func runBatchUnfurl(db *database.DB, unfurler *unfurl.Unfurler) error {
 	// Process URLs concurrently
 	for i, targetURL := range urls {
 		wg.Add(1)
-		go func(url string, index int) {
+		go func(url string, _ int) {
 			defer wg.Done()
 
 			// Acquire semaphore
