@@ -17,6 +17,8 @@ import (
 type TemplateContext struct {
 	Feeds       []database.Feed
 	Items       map[string][]database.Item
+	Metadata    map[string]*database.URLMetadata // URL -> metadata
+	FeedFavicon map[string]string                // feed URL -> favicon URL
 	GeneratedAt time.Time
 	TimeWindow  string
 }

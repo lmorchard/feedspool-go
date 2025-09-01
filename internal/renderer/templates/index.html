@@ -8,20 +8,23 @@
     <script src="index.js" defer></script>
 </head>
 <body>
-    <!--
     <header>
-        <h1>Feed Reader</h1>
+        <h1>feedspool</h1>
         <p>Generated at: {{.GeneratedAt.Format "2006-01-02 15:04:05"}} ({{.TimeWindow}})</p>
     </header>
-    -->
 
     <main>
         {{range .Feeds}}
         {{$items := index $.Items .URL}}
         {{if $items}}
         <article class="feed">
+            <lazy-image-loader>
             <header class="feed-header">
-                <h2{{if .Description}} title="{{.Description}}"{{end}}><a href="{{.URL}}" target="_blank">{{.Title}}</a></h2>
+                <h2{{if .Description}} title="{{.Description}}"{{end}}>
+                    {{$favicon := index $.FeedFavicon .URL}}
+                    {{if $favicon}}<img data-src="{{$favicon}}" alt="" class="feed-favicon" loading="lazy">{{end}}
+                    <a href="{{.URL}}" target="_blank">{{.Title}}</a>
+                </h2>
                 <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
             </header>
 
@@ -29,23 +32,31 @@
                 {{range $items}}
                 <details class="item">
                     <summary class="item-summary">
-                        <span class="item-title">
-                            {{$title := .Title}}
-                            {{if eq $title ""}}
-                                {{if .Summary}}
-                                    {{$title = printf "%.80s..." .Summary}}
-                                {{else if .Content}}
-                                    {{$title = printf "%.80s..." .Content}}
-                                {{else}}
-                                    {{$title = "Untitled"}}
+                        {{$metadata := index $.Metadata .Link}}
+                        {{if and $metadata $metadata.ImageURL.Valid}}
+                        <div class="item-thumbnail">
+                            <img data-src="{{$metadata.ImageURL.String}}" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        {{end}}
+                        <div class="item-info">
+                            <span class="item-title">
+                                {{$title := .Title}}
+                                {{if eq $title ""}}
+                                    {{if .Summary}}
+                                        {{$title = printf "%.80s..." .Summary}}
+                                    {{else if .Content}}
+                                        {{$title = printf "%.80s..." .Content}}
+                                    {{else}}
+                                        {{$title = "Untitled"}}
+                                    {{end}}
                                 {{end}}
-                            {{end}}
-                            {{if .Link}}
-                            <a href="{{.Link}}" target="_blank">{{$title}}</a>
-                            {{else}}
-                            {{$title}}
-                            {{end}}
-                        </span>
+                                {{if .Link}}
+                                <a href="{{.Link}}" target="_blank">{{$title}}</a>
+                                {{else}}
+                                {{$title}}
+                                {{end}}
+                            </span>
+                        </div>
                         <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006 15:04 UTC"}}</time>
                     </summary>
                     <div class="item-content">
@@ -64,6 +75,7 @@
                 </details>
                 {{end}}
             </div>
+            </lazy-image-loader>
         </article>
         {{end}}
         {{end}}

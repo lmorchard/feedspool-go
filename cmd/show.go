@@ -13,11 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	formatJSON  = "json"
-	formatTable = "table"
-)
-
 type FeedWithItems struct {
 	*database.Feed
 	Items []*database.Item `json:"Items"`

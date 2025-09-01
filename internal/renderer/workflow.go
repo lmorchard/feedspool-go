@@ -114,8 +114,35 @@ func queryData(
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
 	startTime, endTime time.Time,
 ) error {
+	// Setup database for metadata queries
+	db, err := database.New(config.Database)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
 	// Initialize renderer
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
+
+	// Fetch metadata for all item URLs
+	metadata := make(map[string]*database.URLMetadata)
+	for _, feedItems := range items {
+		for i := range feedItems {
+			if feedItems[i].Link != "" {
+				if meta, err := db.GetMetadata(feedItems[i].Link); err == nil && meta != nil {
+					metadata[feedItems[i].Link] = meta
+				}
+			}
+		}
+	}
+
+	// Fetch favicons for feeds
+	feedFavicon := make(map[string]string)
+	for i := range feeds {
+		if favicon, err := db.GetFeedFavicon(feeds[i].URL); err == nil && favicon != "" {
+			feedFavicon[feeds[i].URL] = favicon
+		}
+	}
 
 	// Prepare template context
 	timeWindow := fmt.Sprintf("From %s to %s", startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
@@ -126,6 +153,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	context := &TemplateContext{
 		Feeds:       feeds,
 		Items:       items,
+		Metadata:    metadata,
+		FeedFavicon: feedFavicon,
 		GeneratedAt: endTime,
 		TimeWindow:  timeWindow,
 	}

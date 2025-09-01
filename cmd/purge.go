@@ -200,13 +200,22 @@ func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 		}
 	}
 
+	// Clean up orphaned metadata after deleting feeds
+	metadataDeleted, err := db.DeleteOrphanedMetadata()
+	if err != nil {
+		fmt.Printf("Warning: Failed to clean up orphaned metadata: %v\n", err)
+	} else if metadataDeleted > 0 {
+		fmt.Printf("Cleaned up %d orphaned metadata entries\n", metadataDeleted)
+	}
+
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":     "feedlist",
-			"dryRun":   false,
-			"deleted":  deletedCount,
-			"filename": filename,
-			"format":   format,
+			"mode":            "feedlist",
+			"dryRun":          false,
+			"deleted":         deletedCount,
+			"filename":        filename,
+			"format":          format,
+			"metadataDeleted": metadataDeleted,
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
@@ -247,12 +256,21 @@ func runAgePurge(cfg *config.Config, db *database.DB) error {
 		return fmt.Errorf("failed to delete archived items: %w", err)
 	}
 
+	// Clean up orphaned metadata after deleting items
+	metadataDeleted, err := db.DeleteOrphanedMetadata()
+	if err != nil {
+		fmt.Printf("Warning: Failed to clean up orphaned metadata: %v\n", err)
+	} else if metadataDeleted > 0 {
+		fmt.Printf("Cleaned up %d orphaned metadata entries\n", metadataDeleted)
+	}
+
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":       "age",
-			"dryRun":     false,
-			"cutoffDate": cutoffTime.Format(time.RFC3339),
-			"deleted":    deleted,
+			"mode":            "age",
+			"dryRun":          false,
+			"cutoffDate":      cutoffTime.Format(time.RFC3339),
+			"deleted":         deleted,
+			"metadataDeleted": metadataDeleted,
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
