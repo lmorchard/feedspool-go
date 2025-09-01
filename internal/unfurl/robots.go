@@ -107,14 +107,14 @@ func (rc *RobotsChecker) fetchAndParseRobots(robotsURL string) (*robotsRules, er
 func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) {
 	rules := &robotsRules{}
 	scanner := bufio.NewScanner(r)
-	
+
 	var currentAgent string
 	applyToUs := false
 	applyToAll := false
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip comments and empty lines
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -132,20 +132,20 @@ func (rc *RobotsChecker) parseRobots(r io.Reader) (*robotsRules, error) {
 		switch directive {
 		case "user-agent":
 			currentAgent = strings.ToLower(value)
-			applyToUs = currentAgent == strings.ToLower(rc.userAgent) || 
-			           strings.HasPrefix(strings.ToLower(rc.userAgent), currentAgent)
+			applyToUs = currentAgent == strings.ToLower(rc.userAgent) ||
+				strings.HasPrefix(strings.ToLower(rc.userAgent), currentAgent)
 			applyToAll = currentAgent == "*"
-			
+
 		case "disallow":
 			if (applyToUs || (applyToAll && len(rules.disallowedPaths) == 0)) && value != "" {
 				rules.disallowedPaths = append(rules.disallowedPaths, value)
 			}
-			
+
 		case "allow":
 			if (applyToUs || (applyToAll && len(rules.allowedPaths) == 0)) && value != "" {
 				rules.allowedPaths = append(rules.allowedPaths, value)
 			}
-			
+
 		case "crawl-delay":
 			if applyToUs || applyToAll {
 				if delay, err := time.ParseDuration(value + "s"); err == nil {

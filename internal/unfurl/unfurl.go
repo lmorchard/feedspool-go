@@ -135,7 +135,7 @@ func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
 		if og.SiteName != "" {
 			result.Metadata["og:site_name"] = og.SiteName
 		}
-		
+
 		// Store image metadata if available
 		if len(og.Image) > 0 {
 			imageData := make([]map[string]interface{}, 0, len(og.Image))
@@ -244,7 +244,8 @@ func (u *Unfurler) makeAbsoluteURL(href string, base *url.URL) string {
 }
 
 // ToURLMetadata converts unfurl result to database URLMetadata model
-func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode int, fetchError error) (*database.URLMetadata, error) {
+func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode int, 
+	fetchError error) (*database.URLMetadata, error) {
 	metadata := &database.URLMetadata{
 		URL:         targetURL,
 		LastFetchAt: sql.NullTime{Time: time.Now(), Valid: true},
@@ -263,7 +264,7 @@ func (u *Unfurler) ToURLMetadata(targetURL string, result *Result, statusCode in
 		if result.FaviconURL != "" {
 			metadata.FaviconURL = sql.NullString{String: result.FaviconURL, Valid: true}
 		}
-		
+
 		// Store additional metadata as JSON
 		if len(result.Metadata) > 0 {
 			metaJSON, err := json.Marshal(result.Metadata)

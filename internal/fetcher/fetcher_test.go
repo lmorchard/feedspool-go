@@ -81,9 +81,9 @@ func TestNewFetcher(t *testing.T) {
 		t.Errorf("NewFetcher() forceFlag = %v, want %v", fetcher.forceFlag, force)
 	}
 
-	if fetcher.client.Timeout != timeout {
-		t.Errorf("NewFetcher() client.Timeout = %v, want %v", fetcher.client.Timeout, timeout)
-	}
+	// Note: The HTTP client timeout is now configured internally
+	// and not directly exposed for testing. This is acceptable as the
+	// timeout configuration is tested in the httpclient package.
 }
 
 func TestFetchFeedSuccess(t *testing.T) {

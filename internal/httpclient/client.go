@@ -121,6 +121,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 		}
 	}
 
+	// Note: Response.Body.Close() should be called by the caller
 	return &Response{
 		Response:   resp,
 		BodyReader: bodyReader,
