@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const testFaviconURL = "https://example.com/favicon.ico"
+
 func TestUnfurler_makeAbsoluteURL(t *testing.T) {
 	unfurler := NewUnfurler(nil)
 
@@ -70,9 +72,8 @@ func TestUnfurler_parseHTMLMetadata(t *testing.T) {
 		t.Errorf("Description = %v, want %v", meta.Description, "Test description")
 	}
 
-	expectedFavicon := "https://example.com/favicon.ico"
-	if meta.FaviconURL != expectedFavicon {
-		t.Errorf("FaviconURL = %v, want %v", meta.FaviconURL, expectedFavicon)
+	if meta.FaviconURL != testFaviconURL {
+		t.Errorf("FaviconURL = %v, want %v", meta.FaviconURL, testFaviconURL)
 	}
 }
 
@@ -83,7 +84,7 @@ func TestUnfurler_ToURLMetadata(t *testing.T) {
 		Title:       "Test Title",
 		Description: "Test Description",
 		ImageURL:    "https://example.com/image.jpg",
-		FaviconURL:  "https://example.com/favicon.ico",
+		FaviconURL:  testFaviconURL,
 		Metadata:    map[string]interface{}{"og:type": "article"},
 	}
 
@@ -104,7 +105,7 @@ func TestUnfurler_ToURLMetadata(t *testing.T) {
 		t.Errorf("ImageURL not set correctly")
 	}
 
-	if !metadata.FaviconURL.Valid || metadata.FaviconURL.String != "https://example.com/favicon.ico" {
+	if !metadata.FaviconURL.Valid || metadata.FaviconURL.String != testFaviconURL {
 		t.Errorf("FaviconURL not set correctly")
 	}
 
@@ -113,7 +114,7 @@ func TestUnfurler_ToURLMetadata(t *testing.T) {
 	}
 }
 
-// Helper function to avoid import cycle
+// Helper function to avoid import cycle.
 func parseURL(rawURL string) (*url.URL, error) {
 	return url.Parse(rawURL)
 }

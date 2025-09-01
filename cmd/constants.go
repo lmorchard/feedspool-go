@@ -8,4 +8,8 @@ const (
 	// Server constants.
 	defaultPort     = 8080
 	shutdownTimeout = 5
+
+	// Output format constants.
+	formatJSON  = "json"
+	formatTable = "table"
 )

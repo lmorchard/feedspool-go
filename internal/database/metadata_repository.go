@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// GetMetadata retrieves metadata for a URL
+// GetMetadata retrieves metadata for a URL.
 func (db *DB) GetMetadata(url string) (*URLMetadata, error) {
 	var metadata URLMetadata
 	query := `
@@ -40,7 +40,7 @@ func (db *DB) GetMetadata(url string) (*URLMetadata, error) {
 	return &metadata, nil
 }
 
-// UpsertMetadata inserts or updates URL metadata
+// UpsertMetadata inserts or updates URL metadata.
 func (db *DB) UpsertMetadata(metadata *URLMetadata) error {
 	query := `
 		INSERT INTO url_metadata (
@@ -77,7 +77,7 @@ func (db *DB) UpsertMetadata(metadata *URLMetadata) error {
 	return nil
 }
 
-// GetURLsNeedingFetch finds item URLs without metadata or due for retry
+// GetURLsNeedingFetch finds item URLs without metadata or due for retry.
 func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string, error) {
 	retryTime := time.Now().Add(-retryAfter)
 
@@ -119,7 +119,7 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 	return urls, rows.Err()
 }
 
-// DeleteOrphanedMetadata removes metadata for URLs with no item references
+// DeleteOrphanedMetadata removes metadata for URLs with no item references.
 func (db *DB) DeleteOrphanedMetadata() (int64, error) {
 	query := `
 		DELETE FROM url_metadata
@@ -136,7 +136,7 @@ func (db *DB) DeleteOrphanedMetadata() (int64, error) {
 	return result.RowsAffected()
 }
 
-// GetMetadataForItems retrieves metadata for multiple item URLs
+// GetMetadataForItems retrieves metadata for multiple item URLs.
 func (db *DB) GetMetadataForItems(feedURL string) (map[string]*URLMetadata, error) {
 	query := `
 		SELECT um.url, um.title, um.description, um.image_url, um.favicon_url, 
@@ -178,7 +178,7 @@ func (db *DB) GetMetadataForItems(feedURL string) (map[string]*URLMetadata, erro
 	return metadataMap, rows.Err()
 }
 
-// GetFeedFavicon retrieves the most common favicon URL for a feed's items
+// GetFeedFavicon retrieves the most common favicon URL for a feed's items.
 func (db *DB) GetFeedFavicon(feedURL string) (string, error) {
 	query := `
 		SELECT um.favicon_url
