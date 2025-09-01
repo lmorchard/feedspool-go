@@ -65,7 +65,7 @@ func (s *Service) ProcessSingleURL(
 			targetURL, existing.FetchStatusCode.Int64)
 		metadata = existing
 		if format == jsonFormat {
-			logrus.Infof("Using cached metadata for %s", targetURL)
+			logrus.Debugf("Using cached metadata for %s", targetURL)
 		}
 	} else if existing != nil && !retryImmediate && !existing.ShouldRetryFetch(retryAfter) {
 		// Previous failure, not time to retry yet (unless retryImmediate is true)
@@ -74,7 +74,7 @@ func (s *Service) ProcessSingleURL(
 		if format == jsonFormat {
 			return json.NewEncoder(os.Stdout).Encode(existing)
 		}
-		logrus.Infof("Previous fetch failed, retry after %v", retryAfter)
+		logrus.Debugf("Previous fetch failed, retry after %v", retryAfter)
 		return nil
 	} else {
 		// Fetch fresh metadata
@@ -83,7 +83,7 @@ func (s *Service) ProcessSingleURL(
 		}
 		logrus.Debugf("Starting unfurl process for %s", targetURL)
 		if format != jsonFormat {
-			logrus.Infof("Fetching metadata for %s...", targetURL)
+			logrus.Debugf("Fetching metadata for %s...", targetURL)
 		}
 
 		result, err := s.unfurler.UnfurlWithOptions(targetURL, skipRobots)
@@ -117,11 +117,11 @@ func (s *Service) ProcessSingleURL(
 		logrus.Debugf("Successfully stored metadata for %s", targetURL)
 
 		if format != jsonFormat && result != nil {
-			logrus.Info("Successfully fetched metadata:")
-			logrus.Infof("  Title: %s", result.Title)
-			logrus.Infof("  Description: %s", truncateString(result.Description, 100))
-			logrus.Infof("  Image: %s", result.ImageURL)
-			logrus.Infof("  Favicon: %s", result.FaviconURL)
+			logrus.Debug("Successfully fetched metadata:")
+			logrus.Debugf("  Title: %s", result.Title)
+			logrus.Debugf("  Description: %s", truncateString(result.Description, 100))
+			logrus.Debugf("  Image: %s", result.ImageURL)
+			logrus.Debugf("  Favicon: %s", result.FaviconURL)
 		}
 	}
 
