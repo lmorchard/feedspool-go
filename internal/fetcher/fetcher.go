@@ -195,11 +195,26 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 
 	// Enqueue new item URLs for unfurl processing
 	if len(newItemURLs) > 0 && f.unfurlQueue != nil {
-		logrus.Debugf("Enqueuing %d new items for unfurl from feed %s", len(newItemURLs), feedURL)
-		for _, url := range newItemURLs {
-			f.unfurlQueue.Enqueue(unfurl.UnfurlJob{URL: url})
+		// Filter out URLs that already have metadata
+		urlsNeedingUnfurl, err := f.filterURLsNeedingUnfurl(newItemURLs)
+		if err != nil {
+			logrus.Warnf("Error filtering URLs for unfurl: %v", err)
+			// Continue with all URLs if filtering fails
+			urlsNeedingUnfurl = newItemURLs
 		}
-		logrus.Infof("Enqueued %d items for unfurl", len(newItemURLs))
+		
+		filteredCount := len(newItemURLs) - len(urlsNeedingUnfurl)
+		if filteredCount > 0 {
+			logrus.Debugf("Filtered %d items that already have metadata", filteredCount)
+		}
+		
+		if len(urlsNeedingUnfurl) > 0 {
+			logrus.Debugf("Enqueuing %d new items for unfurl from feed %s", len(urlsNeedingUnfurl), feedURL)
+			for _, url := range urlsNeedingUnfurl {
+				f.unfurlQueue.Enqueue(unfurl.UnfurlJob{URL: url})
+			}
+			logrus.Infof("Enqueued %d items for unfurl", len(urlsNeedingUnfurl))
+		}
 	}
 
 	if err := f.db.MarkItemsArchived(feedURL, activeGUIDs); err != nil {
@@ -219,6 +234,29 @@ func (f *Fetcher) isNewItem(feedURL, guid string) bool {
 		return false // Assume not new if we can't check
 	}
 	return count == 0
+}
+
+// filterURLsNeedingUnfurl filters URLs to only include those that don't already have metadata.
+func (f *Fetcher) filterURLsNeedingUnfurl(urls []string) ([]string, error) {
+	if len(urls) == 0 {
+		return urls, nil
+	}
+	
+	// Check which URLs already have metadata
+	hasMetadata, err := f.db.HasUnfurlMetadataBatch(urls)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing metadata: %w", err)
+	}
+	
+	// Filter to only URLs that don't have metadata
+	var filtered []string
+	for _, url := range urls {
+		if !hasMetadata[url] {
+			filtered = append(filtered, url)
+		}
+	}
+	
+	return filtered, nil
 }
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {

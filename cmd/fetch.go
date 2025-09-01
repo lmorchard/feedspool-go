@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -9,6 +10,8 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/lmorchard/feedspool-go/internal/fetcher"
+	"github.com/lmorchard/feedspool-go/internal/unfurl"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -58,6 +61,31 @@ func init() {
 	rootCmd.AddCommand(fetchCmd)
 }
 
+// createUnfurlQueue creates and starts an unfurl queue if withUnfurl is enabled.
+func createUnfurlQueue(ctx context.Context, cfg *config.Config, db *database.DB, withUnfurl bool) *unfurl.UnfurlQueue {
+	if !withUnfurl {
+		return nil
+	}
+	
+	// Use unfurl config settings for concurrency and other options
+	concurrency := cfg.Unfurl.Concurrency
+	if concurrency <= 0 {
+		concurrency = config.DefaultConcurrency
+	}
+	
+	logrus.Infof("Starting unfurl queue with %d workers", concurrency)
+	queue := unfurl.NewUnfurlQueue(
+		ctx, 
+		db, 
+		concurrency, 
+		cfg.Unfurl.SkipRobots, 
+		cfg.Unfurl.RetryAfter,
+	)
+	queue.Start()
+	
+	return queue
+}
+
 func runFetch(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
 
@@ -101,8 +129,24 @@ func runSingleURLFetch(cfg *config.Config, feedURL string, withUnfurl bool) erro
 		return err
 	}
 
+	// Create unfurl queue if needed
+	ctx := context.Background()
+	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
+	
 	fetcher := fetcher.NewFetcher(db, fetchTimeout, fetchMaxItems, fetchForce)
+	if unfurlQueue != nil {
+		fetcher.SetUnfurlQueue(unfurlQueue)
+	}
+	
 	result := fetcher.FetchFeed(feedURL)
+	
+	// Handle unfurl queue completion
+	if unfurlQueue != nil {
+		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		unfurlQueue.Close()
+		unfurlQueue.Wait()
+		logrus.Infof("All operations completed")
+	}
 
 	if result.Error != nil {
 		return fmt.Errorf("failed to fetch feed: %w", result.Error)
@@ -157,10 +201,18 @@ func runFileFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 		return nil
 	}
 
-	fmt.Printf("Found %d feeds in %s\n", len(feedURLs), filename)
+	if withUnfurl {
+		fmt.Printf("Found %d feeds in %s - fetching with parallel unfurl\n", len(feedURLs), filename)
+	} else {
+		fmt.Printf("Found %d feeds in %s\n", len(feedURLs), filename)
+	}
 
-	// Fetch feeds concurrently
-	results := fetcher.FetchConcurrent(
+	// Create unfurl queue if needed
+	ctx := context.Background()
+	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
+
+	// Fetch feeds concurrently (with optional unfurl)
+	results := fetcher.FetchConcurrentWithUnfurl(
 		db,
 		feedURLs,
 		fetchConcurrency,
@@ -168,7 +220,16 @@ func runFileFetch(cfg *config.Config, db *database.DB, withUnfurl bool) error {
 		fetchMaxItems,
 		fetchMaxAge,
 		fetchForce,
+		unfurlQueue,
 	)
+	
+	// Handle unfurl queue completion
+	if unfurlQueue != nil {
+		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		unfurlQueue.Close()
+		unfurlQueue.Wait()
+		logrus.Infof("All operations completed")
+	}
 
 	successCount, errorCount, cachedCount, totalItems := processFetchResults(results)
 
@@ -203,10 +264,18 @@ func runDatabaseFetch(cfg *config.Config, db *database.DB, withUnfurl bool) erro
 		feedURLs = append(feedURLs, feed.URL)
 	}
 
-	fmt.Printf("Fetching %d feeds from database\n", len(feedURLs))
+	if withUnfurl {
+		fmt.Printf("Fetching %d feeds from database with parallel unfurl\n", len(feedURLs))
+	} else {
+		fmt.Printf("Fetching %d feeds from database\n", len(feedURLs))
+	}
 
-	// Fetch feeds concurrently
-	results := fetcher.FetchConcurrent(
+	// Create unfurl queue if needed
+	ctx := context.Background()
+	unfurlQueue := createUnfurlQueue(ctx, cfg, db, withUnfurl)
+	
+	// Fetch feeds concurrently (with optional unfurl)
+	results := fetcher.FetchConcurrentWithUnfurl(
 		db,
 		feedURLs,
 		fetchConcurrency,
@@ -214,7 +283,16 @@ func runDatabaseFetch(cfg *config.Config, db *database.DB, withUnfurl bool) erro
 		fetchMaxItems,
 		fetchMaxAge,
 		fetchForce,
+		unfurlQueue,
 	)
+	
+	// Handle unfurl queue completion
+	if unfurlQueue != nil {
+		logrus.Infof("Fetch completed, waiting for unfurl operations to complete")
+		unfurlQueue.Close()
+		unfurlQueue.Wait()
+		logrus.Infof("All operations completed")
+	}
 
 	successCount, errorCount, cachedCount, totalItems := processFetchResults(results)
 
