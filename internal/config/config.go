@@ -27,6 +27,7 @@ type Config struct {
 	Render      RenderConfig
 	Serve       ServeConfig
 	Init        InitConfig
+	Unfurl      UnfurlConfig
 }
 
 type FeedListConfig struct {
@@ -49,6 +50,12 @@ type ServeConfig struct {
 type InitConfig struct {
 	TemplatesDir string
 	AssetsDir    string
+}
+
+type UnfurlConfig struct {
+	SkipRobots  bool          `mapstructure:"skip_robots"`
+	RetryAfter  time.Duration `mapstructure:"retry_after"`
+	Concurrency int           `mapstructure:"concurrency"`
 }
 
 func LoadConfig() *Config {
@@ -84,6 +91,11 @@ func LoadConfig() *Config {
 			TemplatesDir: viper.GetString("init.templates_dir"),
 			AssetsDir:    viper.GetString("init.assets_dir"),
 		},
+		Unfurl: UnfurlConfig{
+			SkipRobots:  viper.GetBool("unfurl.skip_robots"),
+			RetryAfter:  viper.GetDuration("unfurl.retry_after"),
+			Concurrency: viper.GetInt("unfurl.concurrency"),
+		},
 	}
 }
 
@@ -110,6 +122,11 @@ func GetDefault() *Config {
 		Init: InitConfig{
 			TemplatesDir: "./templates",
 			AssetsDir:    "./assets",
+		},
+		Unfurl: UnfurlConfig{
+			SkipRobots:  false,
+			RetryAfter:  1 * time.Hour,
+			Concurrency: DefaultConcurrency,
 		},
 	}
 }

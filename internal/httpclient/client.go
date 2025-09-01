@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -84,6 +86,8 @@ type Response struct {
 
 // Do performs an HTTP request with the configured client.
 func (c *Client) Do(req *Request) (*Response, error) {
+	logrus.Debugf("HTTP %s %s (timeout: %v)", req.Method, req.URL, c.timeout)
+
 	if req.Context == nil {
 		var cancel context.CancelFunc
 		req.Context, cancel = context.WithTimeout(context.Background(), c.timeout)
@@ -96,6 +100,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 
 	httpReq, err := http.NewRequestWithContext(req.Context, req.Method, req.URL, req.Body)
 	if err != nil {
+		logrus.Debugf("Failed to create HTTP request for %s: %v", req.URL, err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -109,13 +114,18 @@ func (c *Client) Do(req *Request) (*Response, error) {
 
 	resp, err := c.httpClient.Do(httpReq) //nolint:bodyclose // Response body is closed by caller
 	if err != nil {
+		logrus.Debugf("HTTP request failed for %s: %v", req.URL, err)
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	// Note: resp.Body is intentionally not closed here as it's returned to caller
 
+	logrus.Debugf("HTTP %d %s %s (content-length: %d)",
+		resp.StatusCode, req.Method, req.URL, resp.ContentLength)
+
 	// Wrap response body with size limiter if requested
 	bodyReader := io.Reader(resp.Body)
 	if req.LimitResponseSize {
+		logrus.Debugf("Applying size limit of %d bytes for %s", c.maxResponseSize, req.URL)
 		bodyReader = &limitedReader{
 			reader: resp.Body,
 			limit:  c.maxResponseSize,

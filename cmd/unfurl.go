@@ -12,10 +12,12 @@ import (
 )
 
 var (
-	unfurlLimit       int
-	unfurlFormat      string
-	unfurlConcurrency int
-	unfurlRetryAfter  time.Duration
+	unfurlLimit          int
+	unfurlFormat         string
+	unfurlConcurrency    int
+	unfurlRetryAfter     time.Duration
+	unfurlRetryImmediate bool
+	unfurlSkipRobots     bool
 )
 
 var unfurlCmd = &cobra.Command{
@@ -30,9 +32,11 @@ Single URL:
 Batch mode:
   feedspool unfurl                           # Process all item URLs without metadata
   feedspool unfurl --limit 100              # Process only 100 URLs
+  feedspool unfurl --retry-immediate         # Retry all failed URLs immediately
+  feedspool unfurl --skip-robots             # Skip robots.txt checking
 
 The command extracts OpenGraph metadata, Twitter Cards, and favicons from web pages.
-It respects robots.txt and caches results in the database for efficient reuse.`,
+By default it respects robots.txt, but this can be disabled with --skip-robots.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runUnfurl,
 }
@@ -43,6 +47,10 @@ func init() {
 	unfurlCmd.Flags().IntVar(&unfurlConcurrency, "concurrency", config.DefaultConcurrency, "Maximum concurrent fetches")
 	unfurlCmd.Flags().DurationVar(&unfurlRetryAfter, "retry-after", 1*time.Hour,
 		"Retry failed fetches after this duration")
+	unfurlCmd.Flags().BoolVar(&unfurlRetryImmediate, "retry-immediate", false,
+		"Retry failed URLs immediately, ignoring retry delay")
+	unfurlCmd.Flags().BoolVar(&unfurlSkipRobots, "skip-robots", false,
+		"Skip robots.txt checking when fetching URLs")
 	rootCmd.AddCommand(unfurlCmd)
 }
 
@@ -68,19 +76,35 @@ func runUnfurl(_ *cobra.Command, args []string) error {
 
 	if len(args) == 1 {
 		// Single URL mode
-		return runSingleURLUnfurl(db, httpClient, args[0])
+		return runSingleURLUnfurl(db, httpClient, args[0], cfg)
 	}
 
 	// Batch mode
-	return runBatchUnfurl(db, httpClient)
+	return runBatchUnfurl(db, httpClient, cfg)
 }
 
-func runSingleURLUnfurl(db *database.DB, httpClient *httpclient.Client, targetURL string) error {
+func runSingleURLUnfurl(db *database.DB, httpClient *httpclient.Client, targetURL string, cfg *config.Config) error {
 	service := unfurl.NewService(db, httpClient)
-	return service.ProcessSingleURL(targetURL, unfurlFormat, unfurlRetryAfter)
+	// Use CLI flag if set, otherwise fall back to config
+	skipRobots := unfurlSkipRobots || cfg.Unfurl.SkipRobots
+	retryAfter := unfurlRetryAfter
+	if retryAfter == 1*time.Hour && cfg.Unfurl.RetryAfter > 0 {
+		retryAfter = cfg.Unfurl.RetryAfter
+	}
+	return service.ProcessSingleURL(targetURL, unfurlFormat, retryAfter, unfurlRetryImmediate, skipRobots)
 }
 
-func runBatchUnfurl(db *database.DB, httpClient *httpclient.Client) error {
+func runBatchUnfurl(db *database.DB, httpClient *httpclient.Client, cfg *config.Config) error {
 	service := unfurl.NewService(db, httpClient)
-	return service.ProcessBatchURLs(unfurlLimit, unfurlRetryAfter, unfurlConcurrency)
+	// Use CLI flag if set, otherwise fall back to config
+	skipRobots := unfurlSkipRobots || cfg.Unfurl.SkipRobots
+	retryAfter := unfurlRetryAfter
+	if retryAfter == 1*time.Hour && cfg.Unfurl.RetryAfter > 0 {
+		retryAfter = cfg.Unfurl.RetryAfter
+	}
+	concurrency := unfurlConcurrency
+	if concurrency == config.DefaultConcurrency && cfg.Unfurl.Concurrency > 0 {
+		concurrency = cfg.Unfurl.Concurrency
+	}
+	return service.ProcessBatchURLs(unfurlLimit, retryAfter, concurrency, unfurlRetryImmediate, skipRobots)
 }

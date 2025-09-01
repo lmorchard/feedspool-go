@@ -30,30 +30,47 @@ func NewService(db *database.DB, httpClient *httpclient.Client) *Service {
 }
 
 // ProcessSingleURL processes a single URL for metadata extraction.
-func (s *Service) ProcessSingleURL(targetURL, format string, retryAfter time.Duration) error { //nolint:cyclop
+//
+//nolint:cyclop // Complex URL processing logic
+func (s *Service) ProcessSingleURL(
+	targetURL, format string, retryAfter time.Duration, retryImmediate, skipRobots bool,
+) error {
 	// Validate URL
 	if _, err := url.Parse(targetURL); err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Check if we already have metadata
+	logrus.Debugf("Checking for existing metadata for URL: %s", targetURL)
 	existing, err := s.db.GetMetadata(targetURL)
 	if err != nil {
+		logrus.Debugf("Database query failed for %s: %v", targetURL, err)
 		return fmt.Errorf("failed to check existing metadata: %w", err)
 	}
 
 	var metadata *database.URLMetadata
 
+	if existing != nil {
+		logrus.Debugf("Found existing metadata for %s: status=%v, last_fetch=%v",
+			targetURL, existing.FetchStatusCode, existing.LastFetchAt)
+	} else {
+		logrus.Debugf("No existing metadata found for %s", targetURL)
+	}
+
 	//nolint:nestif // Complex condition check is necessary
 	if existing != nil && existing.FetchStatusCode.Valid &&
 		existing.FetchStatusCode.Int64 >= 200 && existing.FetchStatusCode.Int64 < 300 {
 		// Use existing successful metadata
+		logrus.Debugf("Using cached successful metadata for %s (status: %d)",
+			targetURL, existing.FetchStatusCode.Int64)
 		metadata = existing
 		if format == jsonFormat {
 			logrus.Infof("Using cached metadata for %s", targetURL)
 		}
-	} else if existing != nil && !existing.ShouldRetryFetch(retryAfter) {
-		// Previous failure, not time to retry yet
+	} else if existing != nil && !retryImmediate && !existing.ShouldRetryFetch(retryAfter) {
+		// Previous failure, not time to retry yet (unless retryImmediate is true)
+		logrus.Debugf("Skipping retry for %s - not enough time elapsed (retry after %v)",
+			targetURL, retryAfter)
 		if format == jsonFormat {
 			return json.NewEncoder(os.Stdout).Encode(existing)
 		}
@@ -61,29 +78,43 @@ func (s *Service) ProcessSingleURL(targetURL, format string, retryAfter time.Dur
 		return nil
 	} else {
 		// Fetch fresh metadata
+		if retryImmediate {
+			logrus.Debugf("Force retrying %s due to --retry-immediate flag", targetURL)
+		}
+		logrus.Debugf("Starting unfurl process for %s", targetURL)
 		if format != jsonFormat {
 			logrus.Infof("Fetching metadata for %s...", targetURL)
 		}
 
-		result, err := s.unfurler.Unfurl(targetURL)
+		result, err := s.unfurler.UnfurlWithOptions(targetURL, skipRobots)
 		statusCode := 0
 		if err != nil {
 			statusCode = extractStatusCodeFromError(err)
+			logrus.Debugf("Unfurl failed for %s: error=%v, extracted_status=%d",
+				targetURL, err, statusCode)
 			if format != jsonFormat {
 				logrus.Errorf("Failed to fetch metadata: %v", err)
 			}
+		} else {
+			logrus.Debugf("Unfurl succeeded for %s: title='%s', has_image=%v",
+				targetURL, result.Title, result.ImageURL != "")
 		}
 
 		// Convert to database model
+		logrus.Debugf("Converting unfurl result to database model for %s", targetURL)
 		metadata, err = s.unfurler.ToURLMetadata(targetURL, result, statusCode, err)
 		if err != nil {
+			logrus.Debugf("Failed to convert metadata for %s: %v", targetURL, err)
 			return fmt.Errorf("failed to convert metadata: %w", err)
 		}
 
 		// Store in database
+		logrus.Debugf("Storing metadata in database for %s", targetURL)
 		if err := s.db.UpsertMetadata(metadata); err != nil {
+			logrus.Debugf("Database storage failed for %s: %v", targetURL, err)
 			return fmt.Errorf("failed to store metadata: %w", err)
 		}
+		logrus.Debugf("Successfully stored metadata for %s", targetURL)
 
 		if format != jsonFormat && result != nil {
 			logrus.Info("Successfully fetched metadata:")
@@ -103,9 +134,20 @@ func (s *Service) ProcessSingleURL(targetURL, format string, retryAfter time.Dur
 }
 
 // ProcessBatchURLs processes multiple URLs concurrently.
-func (s *Service) ProcessBatchURLs(limit int, retryAfter time.Duration, concurrency int) error {
+//
+//nolint:funlen // Long function needed for batch processing logic
+func (s *Service) ProcessBatchURLs(
+	limit int, retryAfter time.Duration, concurrency int, retryImmediate, skipRobots bool,
+) error {
 	// Get URLs that need fetching
-	urls, err := s.db.GetURLsNeedingFetch(limit, retryAfter)
+	var urls []string
+	var err error
+	if retryImmediate {
+		// When retry immediate is enabled, use 0 duration to get all failed URLs
+		urls, err = s.db.GetURLsNeedingFetch(limit, 0)
+	} else {
+		urls, err = s.db.GetURLsNeedingFetch(limit, retryAfter)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get URLs needing fetch: %w", err)
 	}
@@ -136,7 +178,7 @@ func (s *Service) ProcessBatchURLs(limit int, retryAfter time.Duration, concurre
 			defer func() { <-semaphore }()
 
 			// Fetch metadata
-			result, fetchErr := s.unfurler.Unfurl(url)
+			result, fetchErr := s.unfurler.UnfurlWithOptions(url, skipRobots)
 			statusCode := 0
 			if fetchErr != nil {
 				statusCode = extractStatusCodeFromError(fetchErr)

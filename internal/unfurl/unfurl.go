@@ -13,6 +13,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 	"github.com/otiai10/opengraph/v2"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -51,47 +52,71 @@ type Result struct {
 }
 
 // Unfurl fetches and extracts metadata from a URL.
-func (u *Unfurler) Unfurl(targetURL string) (*Result, error) { //nolint:cyclop // Complex metadata extraction logic
+func (u *Unfurler) Unfurl(targetURL string) (*Result, error) {
+	return u.UnfurlWithOptions(targetURL, false)
+}
+
+// UnfurlWithOptions fetches and extracts metadata from a URL with configurable options.
+//
+//nolint:cyclop,funlen // Complex metadata extraction logic with detailed debug logging
+func (u *Unfurler) UnfurlWithOptions(targetURL string, skipRobots bool) (*Result, error) {
 	// Parse URL to ensure it's valid
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	// Check robots.txt
-	allowed, err := u.robotsChecker.IsAllowed(targetURL)
-	if err == nil && !allowed {
-		return nil, fmt.Errorf("robots.txt disallows fetching this URL")
+	// Check robots.txt (unless skipped)
+	if !skipRobots {
+		allowed, err := u.robotsChecker.IsAllowed(targetURL)
+		if err == nil && !allowed {
+			logrus.Debugf("Robots.txt blocks access to %s", targetURL)
+			return nil, fmt.Errorf("robots.txt disallows fetching this URL")
+		}
+		// If robots.txt check fails, we proceed with the fetch
+	} else {
+		logrus.Debugf("Skipping robots.txt check for %s (--skip-robots enabled)", targetURL)
 	}
-	// If robots.txt check fails, we proceed with the fetch
 
 	// Fetch the page with size limit
+	logrus.Debugf("Fetching page content from %s", targetURL)
 	resp, err := u.client.GetLimited(targetURL)
 	if err != nil {
+		logrus.Debugf("Failed to fetch page from %s: %v", targetURL, err)
 		return nil, fmt.Errorf("failed to fetch URL: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Check status code
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		logrus.Debugf("HTTP error response %d for %s", resp.StatusCode, targetURL)
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
 	// Read the limited response body
 	body, err := io.ReadAll(resp.BodyReader)
 	if err != nil {
+		logrus.Debugf("Failed to read response body from %s: %v", targetURL, err)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	logrus.Debugf("Read %d bytes from %s", len(body), targetURL)
 
 	// Parse OpenGraph metadata
+	logrus.Debugf("Parsing OpenGraph metadata for %s", targetURL)
 	og := opengraph.New(targetURL)
 	if err := og.Parse(bytes.NewReader(body)); err != nil {
 		// OpenGraph parsing failed, but we can still try to extract other metadata
+		logrus.Debugf("OpenGraph parsing failed for %s: %v", targetURL, err)
 		og = nil
+	} else {
+		logrus.Debugf("OpenGraph parsed successfully for %s: title='%s'", targetURL, og.Title)
 	}
 
 	// Parse HTML for additional metadata
+	logrus.Debugf("Parsing HTML metadata for %s", targetURL)
 	htmlMeta := u.parseHTMLMetadata(bytes.NewReader(body), parsedURL)
+	logrus.Debugf("HTML metadata parsed for %s: title='%s', favicon='%s'",
+		targetURL, htmlMeta.Title, htmlMeta.FaviconURL)
 
 	// Combine results
 	result := &Result{

@@ -42,3 +42,9 @@ serve:
 init:
   templates_dir: "./templates"  # Default directory for template extraction
   assets_dir: "./assets"        # Default directory for asset extraction
+
+# Unfurl settings  
+unfurl:
+  skip_robots: false    # Skip robots.txt checking when fetching URLs for metadata
+  retry_after: "1h"     # Retry failed fetches after this duration  
+  concurrency: 32       # Maximum concurrent fetches for unfurl operations

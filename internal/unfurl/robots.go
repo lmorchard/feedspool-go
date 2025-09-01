@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
+	"github.com/sirupsen/logrus"
 )
 
 // RobotsChecker handles robots.txt checking with caching.
@@ -48,13 +49,16 @@ func NewRobotsChecker(client *httpclient.Client, userAgent string) *RobotsChecke
 
 // IsAllowed checks if the URL is allowed according to robots.txt.
 func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
+	logrus.Debugf("Checking robots.txt permissions for %s", targetURL)
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
+		logrus.Debugf("Failed to parse URL for robots check: %s - %v", targetURL, err)
 		return false, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// Get robots.txt URL
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
+	logrus.Debugf("Robots.txt URL: %s", robotsURL)
 
 	// Check cache
 	rc.cacheMu.RLock()
@@ -63,15 +67,20 @@ func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
 
 	if exists && time.Since(entry.fetchedAt) < rc.cacheTTL {
 		// Use cached rules
-		return rc.checkRules(entry.rules, parsedURL.Path), nil
+		allowed := rc.checkRules(entry.rules, parsedURL.Path)
+		logrus.Debugf("Using cached robots.txt for %s: allowed=%v", targetURL, allowed)
+		return allowed, nil
 	}
 
 	// Fetch and parse robots.txt
+	logrus.Debugf("Fetching robots.txt from %s (cache miss)", robotsURL)
 	rules, err := rc.fetchAndParseRobots(robotsURL)
 	if err != nil {
 		// If we can't fetch robots.txt, assume allowed
+		logrus.Debugf("Failed to fetch robots.txt from %s: %v (assuming allowed)", robotsURL, err)
 		return true, err
 	}
+	logrus.Debugf("Successfully parsed robots.txt from %s", robotsURL)
 
 	// Cache the rules
 	rc.cacheMu.Lock()
@@ -81,23 +90,31 @@ func (rc *RobotsChecker) IsAllowed(targetURL string) (bool, error) {
 	}
 	rc.cacheMu.Unlock()
 
-	return rc.checkRules(rules, parsedURL.Path), nil
+	allowed := rc.checkRules(rules, parsedURL.Path)
+	logrus.Debugf("Robots.txt check result for %s: allowed=%v", targetURL, allowed)
+	return allowed, nil
 }
 
 // fetchAndParseRobots fetches and parses robots.txt.
 func (rc *RobotsChecker) fetchAndParseRobots(robotsURL string) (*robotsRules, error) {
+	logrus.Debugf("HTTP GET %s", robotsURL)
 	resp, err := rc.client.Get(robotsURL)
 	if err != nil {
+		logrus.Debugf("HTTP request failed for %s: %v", robotsURL, err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	logrus.Debugf("Robots.txt HTTP response: %d %s", resp.StatusCode, robotsURL)
+
 	if resp.StatusCode == http.StatusNotFound {
 		// No robots.txt means everything is allowed
+		logrus.Debugf("No robots.txt found at %s - allowing all", robotsURL)
 		return &robotsRules{}, nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		logrus.Debugf("Robots.txt fetch failed with status %d for %s", resp.StatusCode, robotsURL)
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
