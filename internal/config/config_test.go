@@ -14,9 +14,9 @@ func TestGetDefault(t *testing.T) {
 		expected interface{}
 	}{
 		{"Database", cfg.Database, "./feeds.db"},
-		{"Concurrency", cfg.Concurrency, 32},
 		{"Timeout", cfg.Timeout, 30 * time.Second},
-		{"MaxItems", cfg.MaxItems, 100},
+		{"Fetch.Concurrency", cfg.Fetch.Concurrency, 32},
+		{"Fetch.MaxItems", cfg.Fetch.MaxItems, 100},
 		{"Verbose", cfg.Verbose, false},
 		{"Debug", cfg.Debug, false},
 		{"JSON", cfg.JSON, false},
