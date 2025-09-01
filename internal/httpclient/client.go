@@ -14,7 +14,7 @@ const (
 	MaxResponseSize  = 100 * 1024 // 100KB for metadata fetching
 )
 
-// Client is a shared HTTP client for feedspool
+// Client is a shared HTTP client for feedspool.
 type Client struct {
 	httpClient      *http.Client
 	userAgent       string
@@ -22,14 +22,14 @@ type Client struct {
 	maxResponseSize int64
 }
 
-// Config holds configuration for the HTTP client
+// Config holds configuration for the HTTP client.
 type Config struct {
 	Timeout         time.Duration
 	UserAgent       string
 	MaxResponseSize int64
 }
 
-// NewClient creates a new HTTP client with the given configuration
+// NewClient creates a new HTTP client with the given configuration.
 func NewClient(config *Config) *Client {
 	if config == nil {
 		config = &Config{}
