@@ -46,7 +46,14 @@ From database:
   feedspool fetch                                         # Fetch all feeds in database
 
 The command supports all options from the former 'update' command including concurrency
-control, age filtering, and database cleanup based on feed lists.`,
+control, age filtering, and database cleanup based on feed lists.
+
+Parallel Unfurl:
+  feedspool fetch --with-unfurl                          # Fetch feeds and unfurl metadata in parallel
+  
+The --with-unfurl flag enables parallel metadata extraction for new feed items. This runs
+unfurl operations concurrently with feed fetching for improved performance. Only new items
+without existing metadata will be processed.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runFetch,
 }
