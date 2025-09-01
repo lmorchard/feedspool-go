@@ -56,21 +56,24 @@ body {
 
 header {
     background: var(--bg-secondary);
-    padding: 0.5rem;
+    padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px var(--shadow);
-    /* text-align: center; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 header h1 {
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin: 0;
 }
 
 header p {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    margin: 0;
 }
 
 main {
@@ -100,6 +103,16 @@ main {
 .feed-header h2 {
     margin-bottom: 0.125rem;
     padding: 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feed-favicon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-color: var(--bg-tertiary);
 }
 
 .feed-header h2 a {
@@ -150,14 +163,60 @@ main {
 .item-summary {
     cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
-    padding: 0.125rem 0;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
     font-weight: 500;
 }
 
 .item-summary:hover {
     color: var(--link-color);
+}
+
+.item-thumbnail {
+    flex-shrink: 0;
+}
+
+.thumbnail {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 4px;
+    background-color: var(--bg-tertiary);
+    display: block;
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-title {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .item-summary {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .thumbnail {
+        width: 100%;
+        max-width: 200px;
+        height: auto;
+        aspect-ratio: 1;
+    }
+    
+    .item-info {
+        width: 100%;
+    }
+    
+    .item-date {
+        margin-left: 0;
+        margin-top: 0.25rem;
+    }
 }
 
 .item-title a {
@@ -174,6 +233,8 @@ main {
     font-size: 0.8rem;
     font-weight: normal;
     white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .item-content {

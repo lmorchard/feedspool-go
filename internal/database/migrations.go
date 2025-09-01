@@ -9,8 +9,27 @@ import (
 // getMigrations returns the database migration scripts.
 func getMigrations() map[int]string {
 	return map[int]string{
-		1: `-- Initial schema migration (handled by InitSchema)`,
+		// Migration 1 is handled by InitSchema, not listed here
 		2: `ALTER TABLE feeds ADD COLUMN latest_item_date DATETIME;`,
+		3: `CREATE TABLE IF NOT EXISTS url_metadata (
+			url TEXT PRIMARY KEY,
+			title TEXT,
+			description TEXT,
+			image_url TEXT,
+			favicon_url TEXT,
+			metadata JSON,
+			last_fetch_at DATETIME,
+			fetch_status_code INTEGER,
+			fetch_error TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_url_metadata_url ON url_metadata(url);
+		CREATE TRIGGER IF NOT EXISTS update_url_metadata_updated_at
+		AFTER UPDATE ON url_metadata
+		BEGIN
+			UPDATE url_metadata SET updated_at = CURRENT_TIMESTAMP WHERE url = NEW.url;
+		END;`,
 	}
 }
 
@@ -49,7 +68,7 @@ func (db *DB) RunMigrations() error {
 		}
 	}
 
-	maxVersion := 2 // We know we have migrations 1 and 2
+	maxVersion := 3 // We know we have migrations 1, 2, and 3
 
 	// Check if any migrations are needed
 	if currentVersion >= maxVersion {
@@ -66,6 +85,9 @@ func (db *DB) RunMigrations() error {
 				return err
 			}
 			appliedCount++
+		} else {
+			// Migration doesn't exist - this is an error
+			return fmt.Errorf("unknown migration version: %d", version)
 		}
 	}
 
@@ -102,8 +124,32 @@ func (db *DB) applySpecificMigration(version int) error {
 				return fmt.Errorf("failed to record migration %d: %w", version, err)
 			}
 		}
+	case 3:
+		// Check if url_metadata table already exists
+		var tableCount int
+		err := db.conn.QueryRow(`
+			SELECT COUNT(*) FROM sqlite_master 
+			WHERE type='table' AND name='url_metadata'
+		`).Scan(&tableCount)
+		if err != nil {
+			return fmt.Errorf("failed to check table existence: %w", err)
+		}
+
+		// Apply migration regardless, as it uses IF NOT EXISTS
+		migrations := getMigrations()
+		if err := db.ApplyMigration(version, migrations[version]); err != nil {
+			return err
+		}
 	default:
-		return fmt.Errorf("unknown migration version: %d", version)
+		// For any new migrations, just apply them directly
+		migrations := getMigrations()
+		if migration, exists := migrations[version]; exists {
+			if err := db.ApplyMigration(version, migration); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("unknown migration version: %d", version)
+		}
 	}
 
 	return nil
