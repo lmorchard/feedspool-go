@@ -76,6 +76,84 @@ header p {
     margin: 0;
 }
 
+/* Layout Options Menu */
+.layout-options {
+    position: relative;
+    font-size: 0.9rem;
+}
+
+.options-trigger {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.options-trigger:hover {
+    background: var(--bg-accent);
+    color: var(--text-accent);
+}
+
+.options-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.options-trigger::marker {
+    content: none;
+}
+
+.options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px var(--shadow);
+    padding: 1rem;
+    min-width: 200px;
+    z-index: 1000;
+    margin-top: 0.25rem;
+}
+
+.option-item {
+    display: block;
+    padding: 0.25rem 0;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.option-item input {
+    margin-right: 0.5rem;
+}
+
+.option-group {
+    border: none;
+    padding: 0;
+    margin: 0.75rem 0 0 0;
+}
+
+.option-group legend {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    padding: 0;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .options-menu {
+        right: -1rem;
+        left: -1rem;
+        min-width: auto;
+    }
+}
+
 main {
     display: flex;
     flex-direction: column;
@@ -353,5 +431,111 @@ footer {
     
     .item-date {
         align-self: flex-end;
+    }
+}
+
+/* View Mode Classes */
+
+/* Default List View */
+.view-list .items {
+    /* Keep existing list layout */
+    display: block;
+}
+
+/* Card View */
+.view-card .items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.view-card .item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0;
+    box-shadow: 0 2px 4px var(--shadow);
+    transition: box-shadow 0.2s ease;
+}
+
+.view-card .item:hover {
+    box-shadow: 0 4px 8px var(--shadow);
+}
+
+.view-card .item-summary {
+    display: block;
+    padding: 0;
+    margin-bottom: 0.75rem;
+}
+
+.view-card .item-thumbnail {
+    float: left;
+    margin-right: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.view-card .thumbnail {
+    width: 80px;
+    height: 80px;
+}
+
+.view-card .item-info {
+    overflow: hidden;
+}
+
+.view-card .item-title {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.view-card .item-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    clear: both;
+}
+
+/* Hide content in card view (prepare for lightbox) */
+.view-card .item-content {
+    display: none;
+}
+
+/* Hide details markers in card view */
+.view-card .item summary::-webkit-details-marker {
+    display: none;
+}
+
+.view-card .item summary::marker {
+    content: none;
+}
+
+/* Thumbnail Toggle */
+.hide-thumbnails .item-thumbnail,
+.hide-thumbnails .feed-favicon {
+    display: none;
+}
+
+.hide-thumbnails .item-summary {
+    gap: 0.5rem;
+}
+
+/* Mobile adjustments for card view */
+@media (max-width: 768px) {
+    .view-card .items {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+    
+    .view-card .item {
+        padding: 0.75rem;
+    }
+    
+    .view-card .thumbnail {
+        width: 60px;
+        height: 60px;
     }
 }
