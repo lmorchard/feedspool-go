@@ -123,18 +123,46 @@ func queryData(
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
 	startTime, endTime time.Time,
 ) error {
-	// Setup database for metadata queries
 	db, err := database.New(config.Database)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
 
-	// Initialize renderer
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
 
-	// Fetch metadata for all item URLs
-	metadata := make(map[string]*database.URLMetadata)
+	// Fetch metadata and favicons
+	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
+
+	// Generate template context
+	context := createTemplateContext(feeds, items, metadata, feedFavicon, startTime, endTime, config.MaxAge)
+
+	// Render main index file
+	outputFile := filepath.Join(config.OutputDir, "index.html")
+	if err := renderIndexFile(r, outputFile, context); err != nil {
+		return err
+	}
+
+	// Copy assets
+	if err := r.CopyAssets(config.OutputDir); err != nil {
+		return fmt.Errorf("failed to copy assets: %w", err)
+	}
+
+	// Render individual feed pages
+	feedsDir := filepath.Join(config.OutputDir, "feeds")
+	if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
+		getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
+		return err
+	}
+
+	printSuccessMessage(len(feeds), config.OutputDir, outputFile)
+	return nil
+}
+
+func fetchMetadataAndFavicons(db *database.DB, feeds []database.Feed,
+	items map[string][]database.Item,
+) (metadata map[string]*database.URLMetadata, feedFavicon map[string]string) {
+	metadata = make(map[string]*database.URLMetadata)
 	for _, feedItems := range items {
 		for i := range feedItems {
 			if feedItems[i].Link != "" {
@@ -145,103 +173,120 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		}
 	}
 
-	// Fetch favicons for feeds
-	feedFavicon := make(map[string]string)
+	feedFavicon = make(map[string]string)
 	for i := range feeds {
 		if favicon, err := db.GetFeedFavicon(feeds[i].URL); err == nil && favicon != "" {
 			feedFavicon[feeds[i].URL] = favicon
 		}
 	}
 
-	// Prepare template context
-	timeWindow := fmt.Sprintf("From %s to %s", startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
-	if config.MaxAge != "" {
-		timeWindow = fmt.Sprintf("Last %s", config.MaxAge)
-	}
+	return metadata, feedFavicon
+}
 
-	// Wrap feeds with IDs
+func createTemplateContext(feeds []database.Feed, items map[string][]database.Item,
+	metadata map[string]*database.URLMetadata, feedFavicon map[string]string,
+	startTime, endTime time.Time, maxAge string,
+) *TemplateContext {
 	feedsWithIDs := make([]FeedWithID, len(feeds))
-	for i, feed := range feeds {
+	for i := range feeds {
 		feedsWithIDs[i] = FeedWithID{
-			Feed: feed,
-			ID:   generateFeedID(feed.URL),
+			Feed: feeds[i],
+			ID:   generateFeedID(feeds[i].URL),
 		}
 	}
 
-	context := &TemplateContext{
+	return &TemplateContext{
 		Feeds:       feedsWithIDs,
 		Items:       items,
 		Metadata:    metadata,
 		FeedFavicon: feedFavicon,
 		GeneratedAt: endTime,
-		TimeWindow:  timeWindow,
+		TimeWindow:  getTimeWindow(startTime, endTime, maxAge),
 	}
+}
 
-	// Render HTML
-	outputFile := filepath.Join(config.OutputDir, "index.html")
+func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext) error {
 	file, err := os.Create(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
+	defer file.Close()
 
 	if err := r.Render(file, "index.html", context); err != nil {
-		file.Close()
 		return fmt.Errorf("failed to render template: %w", err)
 	}
-	file.Close()
 
-	// Copy assets
-	if err := r.CopyAssets(config.OutputDir); err != nil {
-		return fmt.Errorf("failed to copy assets: %w", err)
-	}
+	return nil
+}
 
-	// Create feeds subdirectory
-	feedsDir := filepath.Join(config.OutputDir, "feeds")
+func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
+	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
+	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
+) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create feeds directory: %w", err)
 	}
 
-	// Render individual feed pages
-	for _, feed := range feeds {
+	for i := range feeds {
+		feed := &feeds[i]
 		feedItems := items[feed.URL]
 		if len(feedItems) == 0 {
 			continue
 		}
 
-		// Generate consistent ID from feed URL
-		feedID := generateFeedID(feed.URL)
-
-		// Create context for single feed
-		feedContext := &FeedTemplateContext{
-			Feed:        feed,
-			Items:       feedItems,
-			Metadata:    metadata,
-			FeedFavicon: feedFavicon[feed.URL],
-			GeneratedAt: endTime,
-			TimeWindow:  timeWindow,
-			FeedID:      feedID,
+		if err := renderSingleFeed(r, feedsDir, feed, feedItems, metadata,
+			feedFavicon[feed.URL], generatedAt, timeWindow); err != nil {
+			return err
 		}
-
-		// Create feed file
-		feedFile := filepath.Join(feedsDir, fmt.Sprintf("%s.html", feedID))
-		file, err := os.Create(feedFile)
-		if err != nil {
-			return fmt.Errorf("failed to create feed file %s: %w", feedFile, err)
-		}
-		defer file.Close()
-
-		if err := r.Render(file, "feed.html", feedContext); err != nil {
-			file.Close()
-			return fmt.Errorf("failed to render feed template for %s: %w", feed.Title, err)
-		}
-		file.Close()
 	}
 
-	fmt.Printf("Generated %d individual feed pages\n", len(feeds))                  //nolint:forbidigo // User-facing output
-	fmt.Printf("Multi-page site generated successfully in: %s\n", config.OutputDir) //nolint:forbidigo // User-facing output
-	fmt.Printf("Open %s in your browser to view the feed directory\n", outputFile)  //nolint:forbidigo // User-facing output
+	return nil
+}
+
+func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
+	feedItems []database.Item, metadata map[string]*database.URLMetadata,
+	favicon string, generatedAt time.Time, timeWindow string,
+) error {
+	feedID := generateFeedID(feed.URL)
+	feedContext := &FeedTemplateContext{
+		Feed:        *feed,
+		Items:       feedItems,
+		Metadata:    metadata,
+		FeedFavicon: favicon,
+		GeneratedAt: generatedAt,
+		TimeWindow:  timeWindow,
+		FeedID:      feedID,
+	}
+
+	feedFile := filepath.Join(feedsDir, fmt.Sprintf("%s.html", feedID))
+	file, err := os.Create(feedFile)
+	if err != nil {
+		return fmt.Errorf("failed to create feed file %s: %w", feedFile, err)
+	}
+	defer file.Close()
+
+	if err := r.Render(file, "feed.html", feedContext); err != nil {
+		return fmt.Errorf("failed to render feed template for %s: %w", feed.Title, err)
+	}
 
 	return nil
+}
+
+func getTimeWindow(startTime, endTime time.Time, maxAge string) string {
+	if maxAge != "" {
+		return fmt.Sprintf("Last %s", maxAge)
+	}
+	return fmt.Sprintf("From %s to %s",
+		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
+}
+
+func printSuccessMessage(feedCount int, outputDir, outputFile string) {
+	//nolint:forbidigo // User-facing output
+	fmt.Printf("Generated %d individual feed pages\n", feedCount)
+	//nolint:forbidigo // User-facing output
+	fmt.Printf("Multi-page site generated successfully in: %s\n", outputDir)
+	//nolint:forbidigo // User-facing output
+	fmt.Printf("Open %s in your browser to view the feed directory\n", outputFile)
 }
 
 // generateFeedID creates a consistent ID from a feed URL using SHA-256.
