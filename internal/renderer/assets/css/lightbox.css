@@ -64,10 +64,18 @@ lightbox-overlay {
     min-width: 0;
 }
 
-.lightbox-title-section .item-title {
+/* Higher specificity to override card view absolute positioning */
+lightbox-overlay .lightbox-title-section .item-title {
+    display: block;
+    position: static !important;
     margin-bottom: 0.5rem;
     font-size: 1.1rem;
     line-height: 1.4;
+    font-weight: 600;
+    padding: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
 }
 
 .lightbox-date {
