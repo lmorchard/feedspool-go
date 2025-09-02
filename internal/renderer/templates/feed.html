@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feed Reader</title>
-    <link rel="stylesheet" href="index.css">
-    <script type="module" src="index.js"></script>
+    <title>{{.Feed.Title}} - Feed Reader</title>
+    <link rel="stylesheet" href="../index.css">
+    <script type="module" src="../index.js"></script>
 </head>
 <body>
     <header>
@@ -34,22 +34,18 @@
 
     <layout-controller>
         <main>
-            {{range .Feeds}}
-            {{$items := index $.Items .URL}}
-            {{if $items}}
-            <article class="feed" id="feed-{{.ID}}">
+            <article class="feed" id="feed-{{.Feed.ID}}">
             <lazy-image-loader>
             <header class="feed-header">
-                <h2{{if .Description}} title="{{.Description}}"{{end}}>
-                    {{$favicon := index $.FeedFavicon .URL}}
-                    {{if $favicon}}<img data-src="{{$favicon}}" alt="" class="feed-favicon" loading="lazy">{{end}}
-                    <a href="{{.URL}}" target="_blank">{{.Title}}</a>
+                <h2{{if .Feed.Description}} title="{{.Feed.Description}}"{{end}}>
+                    {{if .FeedFavicon}}<img data-src="{{.FeedFavicon}}" alt="" class="feed-favicon" loading="lazy">{{end}}
+                    <a href="{{.Feed.URL}}" target="_blank">{{.Feed.Title}}</a>
                 </h2>
-                <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
+                <time class="feed-last-updated">{{if .Feed.LatestItemDate.Valid}}Latest: {{.Feed.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.Feed.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
             </header>
 
             <div class="items">
-                {{range $items}}
+                {{range .Items}}
                 <details class="item">
                     <summary class="item-summary">
                         {{$metadata := index $.Metadata .Link}}
@@ -104,8 +100,6 @@
             </div>
             </lazy-image-loader>
         </article>
-            {{end}}
-            {{end}}
         </main>
         <lightbox-overlay></lightbox-overlay>
     </layout-controller>
