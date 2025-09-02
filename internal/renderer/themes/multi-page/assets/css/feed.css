@@ -1,0 +1,121 @@
+/* Feed-specific Styles */
+
+/* Link Loader Component */
+link-loader {
+    display: block;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+link-loader .feed-header {
+    margin-bottom: 0.5rem;
+}
+
+link-loader a {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--accent-color);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+link-loader a:hover {
+    background: var(--accent-color-hover);
+}
+
+/* Loading state */
+link-loader a:disabled,
+link-loader a[aria-disabled="true"] {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+/* Error state */
+link-loader .error {
+    color: var(--error-color);
+    background: var(--error-bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--error-color);
+}
+
+/* Loaded content styling */
+link-loader .feed {
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+}
+
+.feed {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow);
+    overflow: hidden;
+}
+
+.feed-header {
+    padding: 0.125rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-accent);
+    color: var(--text-accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.feed-header h2 {
+    margin-bottom: 0.125rem;
+    padding: 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feed-favicon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    background-color: var(--bg-tertiary);
+}
+
+.feed-header h2 a {
+    color: var(--text-accent);
+    text-decoration: none;
+}
+
+.feed-header h2 a:hover {
+    text-decoration: underline;
+}
+
+.feed-last-updated {
+    color: var(--text-accent);
+    font-size: 0.8rem;
+    font-weight: normal;
+    white-space: nowrap;
+    padding: 0 0.5rem;
+    opacity: 0.8;
+}
+
+.feed-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.feed-meta {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+}
+
+.items {
+    padding: 1rem 1rem;
+}

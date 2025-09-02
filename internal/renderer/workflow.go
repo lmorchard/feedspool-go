@@ -148,14 +148,18 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		return fmt.Errorf("failed to copy assets: %w", err)
 	}
 
-	// Render individual feed pages
-	feedsDir := filepath.Join(config.OutputDir, "feeds")
-	if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
-		getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
-		return err
+	// Render individual feed pages (only if feed.html template exists)
+	feedsGenerated := 0
+	if hasFeedTemplate(config.TemplatesDir) {
+		feedsDir := filepath.Join(config.OutputDir, "feeds")
+		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
+			getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
+			return err
+		}
+		feedsGenerated = len(feeds)
 	}
 
-	printSuccessMessage(len(feeds), config.OutputDir, outputFile)
+	printSuccessMessage(feedsGenerated, config.OutputDir, outputFile)
 	return nil
 }
 
@@ -280,13 +284,32 @@ func getTimeWindow(startTime, endTime time.Time, maxAge string) string {
 		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
 }
 
+func hasFeedTemplate(templatesDir string) bool {
+	// If no custom template directory specified, embedded templates always have feed.html
+	if templatesDir == "" {
+		return true
+	}
+
+	// Check if feed.html exists in custom template directory
+	feedTemplatePath := filepath.Join(templatesDir, "feed.html")
+	_, err := os.Stat(feedTemplatePath)
+	return err == nil
+}
+
 func printSuccessMessage(feedCount int, outputDir, outputFile string) {
+	if feedCount > 0 {
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Generated %d individual feed pages\n", feedCount)
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Multi-page site generated successfully in: %s\n", outputDir)
+	} else {
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Single-page site generated successfully in: %s\n", outputDir)
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+	}
 	//nolint:forbidigo // User-facing output
-	fmt.Printf("Generated %d individual feed pages\n", feedCount)
-	//nolint:forbidigo // User-facing output
-	fmt.Printf("Multi-page site generated successfully in: %s\n", outputDir)
-	//nolint:forbidigo // User-facing output
-	fmt.Printf("Open %s in your browser to view the feed directory\n", outputFile)
+	fmt.Printf("Open %s in your browser to view the site\n", outputFile)
 }
 
 // generateFeedID creates a consistent ID from a feed URL using SHA-256.
