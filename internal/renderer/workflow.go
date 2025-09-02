@@ -22,10 +22,18 @@ type WorkflowConfig struct {
 	FeedsFile    string
 	Format       string
 	Database     string
+	Clean        bool
 }
 
 // ExecuteWorkflow performs the complete render operation with the given configuration.
 func ExecuteWorkflow(config *WorkflowConfig) error {
+	// Clean output directory if requested (do this early to avoid dependency issues)
+	if config.Clean {
+		if err := cleanOutputDirectory(config.OutputDir); err != nil {
+			return err
+		}
+	}
+
 	// Setup database
 	db, err := database.New(config.Database)
 	if err != nil {
@@ -178,6 +186,23 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 
 	fmt.Printf("Static site generated successfully in: %s\n", config.OutputDir) //nolint:forbidigo // User-facing output
 	fmt.Printf("Open %s in your browser to view the site\n", outputFile)        //nolint:forbidigo // User-facing output
+
+	return nil
+}
+
+func cleanOutputDirectory(outputDir string) error {
+	// Check if directory exists
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		// Directory doesn't exist, nothing to clean
+		return nil
+	}
+
+	fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
+
+	// Remove the entire directory
+	if err := os.RemoveAll(outputDir); err != nil {
+		return fmt.Errorf("failed to remove output directory: %w", err)
+	}
 
 	return nil
 }
