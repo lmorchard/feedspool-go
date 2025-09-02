@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>danbruno.net - Feed Reader</title>
+    <link rel="stylesheet" href="../index.css">
+    <script type="module" src="../index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <layout-controller>
+        <main>
+            <article class="feed" id="feed-c68b1972">
+            <lazy-image-loader>
+            <header class="feed-header">
+                <h2 title="Recent blog posts from danbruno.net">
+                    <img data-src="https://danbruno.net/favicon.ico" alt="" class="feed-favicon" loading="lazy">
+                    <a href="https://danbruno.net/feed.xml" target="_blank">danbruno.net</a>
+                </h2>
+                <time class="feed-last-updated">Latest: Sep 1, 2025 03:36 UTC</time>
+            </header>
+
+            <div class="items">
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://danbruno.net/blog/august-2025-media/" target="_blank">August 2025 media</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The Magician of Tiger Castle: Pitched as the first novel for adults from Louis Sachar (though personally I think it’s comfortably YA), this is a breezy fable about an immortal magician from a fictiona...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 03:36 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Cjx1bD4KPGxpPgo8cD48ZW0&#43;PHN0cm9uZz48YSBocmVmPSJodHRwczovL3d3dy5wZW5ndWlucmFuZG9taG91c2UuY29tL2Jvb2tzLzc3MzU4MS90aGUtbWFnaWNpYW4tb2YtdGlnZXItY2FzdGxlLWJ5LWxvdWlzLXNhY2hhci8iPlRoZSBNYWdpY2lhbiBvZiBUaWdlciBDYXN0bGU8L2E&#43;PC9zdHJvbmc&#43;PC9lbT46IFBpdGNoZWQgYXMgdGhlIGZpcnN0IG5vdmVsIGZvciBhZHVsdHMgZnJvbSBMb3VpcyBTYWNoYXIgKHRob3VnaCBwZXJzb25hbGx5IEkgdGhpbmsgaXTigJlzIGNvbWZvcnRhYmx5IFlBKSwgdGhpcyBpcyBhIGJyZWV6eSBmYWJsZSBhYm91dCBhbiBpbW1vcnRhbCBtYWdpY2lhbiBmcm9tIGEgZmljdGlvbmFsIEV1cm9wZWFuIGtpbmdkb20uIEl0IG9jY2FzaW9uYWxseSBldm9rZXMgU2FjaGFy4oCZcyBtYWdudW0gb3B1cyA8ZW0&#43;SG9sZXM8L2VtPiwgcGFydGljdWxhcmx5IGluIHRoZSB3YXkgdGhlIHBsb3Qgamlnc2F3cyB0b2dldGhlciwgdGhvdWdoIHdpdGggaXRzIG93biBkaXN0aW5jdCwgc2xpZ2h0bHkgc2FyZG9uaWMgZmxhdm9yLiBJIHJlYWQgdGhyb3VnaCBpdCBpbiBhIHNpbmdsZSBhZnRlcm5vb24sIGdyaW5uaW5nIHRoZSB3aG9sZSB0aW1lLjwvcD4KPC9saT4KPGxpPgo8cD48ZW0&#43;PHN0cm9uZz48YSBocmVmPSJodHRwczovL3d3dy5zaW1vbmFuZHNjaHVzdGVyLmNvbS9ib29rcy9UaGUtU2VydmljZWJlcnJ5L1JvYmluLVdhbGwtS2ltbWVyZXIvOTc4MTY2ODA3MjI0MCI&#43;VGhlIFNlcnZpY2ViZXJyeTwvYT48L3N0cm9uZz48L2VtPjogVGhpcyBpcyBieSBSb2JpbiBXYWxsIEtpbW1lcmVyLCB3aG8geW91IG1heSBrbm93IGZyb20gPGVtPkJyYWlkaW5nIFN3ZWV0Z3Jhc3M8L2VtPi4gSXQgbWFrZXMgYSBzdHJhaWdodGZvcndhcmQgYW5kIGNvbXBlbGxpbmcgY2FzZSBhZ2FpbnN0IHRoZSBleGNlc3NlcyBvZiBjYXBpdGFsaXNtLCB1c2luZyB0aGUgcmVjaXByb2NhbCBnaWZ0LWdpdmluZyBvZiBpbmRpZ2Vub3VzIHNvY2lldGllcyBhcyBoZXIgZXhhbXBsZSBhbmQgdGhlIG5vbmh1bWFuIG5hdHVyYWwgd29ybGQgYXMgaGVyIG1ldGFwaG9yLiBLaW1tZXJlciBoYXMgYSByZWFsIHRhbGVudCBmb3IgZXhwcmVzc2luZyBzdWJ0bGV0eSB3aXRoIHBsYWluIGxhbmd1YWdlLCBzdWNoIHRoYXQgaGVyIHBvaW50cyBzaGluZSB0aHJvdWdoIHdpdGhvdXQgdGhlIHByb3NlIGZlZWxpbmcgb3ZlcndvcmtlZC48L3A&#43;CjwvbGk&#43;CjwvdWw&#43;CjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+            </div>
+            </lazy-image-loader>
+        </article>
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+
+    <footer>
+        <p>Generated by feedspool at 2025-09-02 03:49:49 UTC</p>
+    </footer>
+</body>
+</html>

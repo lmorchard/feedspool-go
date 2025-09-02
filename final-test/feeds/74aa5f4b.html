@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John&#39;s World Wide Wall Display - Feed Reader</title>
+    <link rel="stylesheet" href="../index.css">
+    <script type="module" src="../index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <layout-controller>
+        <main>
+            <article class="feed" id="feed-74aa5f4b">
+            <lazy-image-loader>
+            <header class="feed-header">
+                <h2 title="Teaching, ict, and suchlike">
+                    <img data-src="https://johnjohnston.info/blog/wp-content/uploads/2017/07/cropped-ravenlogo-1-180x180.png" alt="" class="feed-favicon" loading="lazy">
+                    <a href="https://johnjohnston.info/blog/feed/" target="_blank">John&#39;s World Wide Wall Display</a>
+                </h2>
+                <time class="feed-last-updated">Latest: Sep 1, 2025 12:55 UTC</time>
+            </header>
+
+            <div class="items">
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://johnjohnston.info/blog/wp-content/uploads/2025/08/2025-08-26-Ardmoremap-square-1200-1024x1024.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://johnjohnston.info/blog/ardmore-2/" target="_blank">Getting to be a bit of a butterfly blog. Walked the RSPB site at Ardmore last Tu...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Getting to be a bit of a butterfly blog. Walked the RSPB site at Ardmore last Tuesday. Highish tide &amp; a strong breeze. The path was often protected by windward bushes. Lots of small tortoiseshells &amp; s...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 12:55 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Cgo8ZmlndXJlIGNsYXNzPSJ3cC1ibG9jay1pbWFnZSBzaXplLWxhcmdlIj48aW1nIGZldGNocHJpb3JpdHk9ImhpZ2giIGRlY29kaW5nPSJhc3luYyIgd2lkdGg9IjEwMjQiIGhlaWdodD0iMTAyNCIgZGF0YS1hdHRhY2htZW50LWlkPSIyMTEzMiIgZGF0YS1wZXJtYWxpbms9Imh0dHBzOi8vam9obmpvaG5zdG9uLmluZm8vYmxvZy9hcmRtb3JlLTIvMjAyNS0wOC0yNi1hcmRtb3JlbWFwLXNxdWFyZS0xMjAwLyIgZGF0YS1vcmlnLWZpbGU9Imh0dHBzOi8vam9obmpvaG5zdG9uLmluZm8vYmxvZy93cC1jb250ZW50L3VwbG9hZHMvMjAyNS8wOC8yMDI1LTA4LTI2LUFyZG1vcmVtYXAtc3F1YXJlLTEyMDAuanBnIiBkYXRhLW9yaWctc2l6ZT0iMTIwMCwxMjAwIiBkYXRhLWNvbW1lbnRzLW9wZW5lZD0iMSIgZGF0YS1pbWFnZS1tZXRhPSJ7ImFwZXJ0dXJlIjoiMCIsImNyZWRpdCI6IiIsImNhbWVyYSI6IiIsImNhcHRpb24iOiIiLCJjcmVhdGVkX3RpbWVzdGFtcCI6IjAiLCJjb3B5cmlnaHQiOiIiLCJmb2NhbF9sZW5ndGgiOiIwIiwiaXNvIjoiMCIsInNodXR0ZXJfc3BlZWQiOiIwIiwidGl0bGUiOiIiLCJvcmllbnRhdGlvbiI6IjAifSIgZGF0YS1pbWFnZS10aXRsZT0iMjAyNS0wOC0yNi1BcmRtb3JlbWFwLXNxdWFyZS0xMjAwIiBkYXRhLWltYWdlLWRlc2NyaXB0aW9uPSIiIGRhdGEtaW1hZ2UtY2FwdGlvbj0iIiBkYXRhLW1lZGl1bS1maWxlPSJodHRwczovL2pvaG5qb2huc3Rvbi5pbmZvL2Jsb2cvd3AtY29udGVudC91cGxvYWRzLzIwMjUvMDgvMjAyNS0wOC0yNi1BcmRtb3JlbWFwLXNxdWFyZS0xMjAwLTYyMHg2MjAuanBnIiBkYXRhLWxhcmdlLWZpbGU9Imh0dHBzOi8vam9obmpvaG5zdG9uLmluZm8vYmxvZy93cC1jb250ZW50L3VwbG9hZHMvMjAyNS8wOC8yMDI1LTA4LTI2LUFyZG1vcmVtYXAtc3F1YXJlLTEyMDAtMTAyNHgxMDI0LmpwZyIgc3JjPSJodHRwczovL2pvaG5qb2huc3Rvbi5pbmZvL2Jsb2cvd3AtY29udGVudC91cGxvYWRzLzIwMjUvMDgvMjAyNS0wOC0yNi1BcmRtb3JlbWFwLXNxdWFyZS0xMjAwLTEwMjR4MTAyNC5qcGciIGFsdD0iQSBjb2xsYWdlIG9mIG5pbmUgaW1hZ2VzIGZlYXR1cmluZyBidXR0ZXJmbGllcywgZmxvd2VycywgYW4gYWNvcm4sIGEgZGV2aWNlIG9uIGEgcm9jaywgYW5kIGEgbWFwLgpUb3AgbGVmdDogV2hpdGUgZmx1ZmZ5IHNvdyB0aGlzdGxlIHNlZWRzIGFuZCB5ZWxsb3cgZmxvd2Vycy4KVG9wIGNlbnRlcjogT2FrIGxlYXZlcyB3aXRoIGEgZ3JlZW4gYWNvcm4gaW4gdGhlIG1pZGRsZS4KVG9wIHJpZ2h0OiBBIGJsYWNrIGVsZWN0cm9uaWMgZGV2aWNlIGlzIG9uIGEgbGFyZ2UsIHJvdWdoIHN0b25lLgpNaWRkbGUgbGVmdDogQSBncmVlbi12ZWluZWQgd2hpdGUgYnV0dGVyZmx5IHBlcmNoZWQgb24gYSBkZXZpbHMtYml0IHNjYWJpb3VzIGZsb3dlci4gCk1pZGRsZSBjZW50ZXI6IEEgc2ltcGxlIG1hcCBpbmRpY2F0aW5nIGxvY2F0aW9ucyBhcm91bmQgQXJkbW9yZSAuIERpZmZlcmVudCBjb2xvdXJlZCBkb3RzIG1hcmsgdmFyaW91cyBwb2ludHMgb24gdGhlIG1hcC4KTWlkZGxlIHJpZ2h0OiBBIHNtYWxsIHRvcnRvaXNlc2hlbGwgYnV0dGVyZmx5IHNpdHMgb24gYSBkZXZpbHMtYml0IHNjYWJpb3VzIGZsb3dlci4KQm90dG9tIGxlZnQ6IEEgcGFpbnRlZCBsYWR5IG9uIHRoZSBwYXRoLgpCb3R0b20gY2VudHJlOiBBIGNvbW1vbiBjYXJkZXIgYmVlIGdhdGhlcnMgcG9sbGVuIGZyb20gYSBkZXZpbHMtYml0IHNjYWJpb3VzIGZsb3dlci4uCkJvdHRvbSByaWdodDogQSBzbWFsbCB3aGl0ZSBidXR0ZXJmbHkgaXMgb24gYSBiaW5kd2VlZCBmbG93ZXIuIiBjbGFzcz0id3AtaW1hZ2UtMjExMzIiIHNyY3NldD0iaHR0cHM6Ly9qb2huam9obnN0b24uaW5mby9ibG9nL3dwLWNvbnRlbnQvdXBsb2Fkcy8yMDI1LzA4LzIwMjUtMDgtMjYtQXJkbW9yZW1hcC1zcXVhcmUtMTIwMC0xMDI0eDEwMjQuanBnIDEwMjR3LCBodHRwczovL2pvaG5qb2huc3Rvbi5pbmZvL2Jsb2cvd3AtY29udGVudC91cGxvYWRzLzIwMjUvMDgvMjAyNS0wOC0yNi1BcmRtb3JlbWFwLXNxdWFyZS0xMjAwLTYyMHg2MjAuanBnIDYyMHcsIGh0dHBzOi8vam9obmpvaG5zdG9uLmluZm8vYmxvZy93cC1jb250ZW50L3VwbG9hZHMvMjAyNS8wOC8yMDI1LTA4LTI2LUFyZG1vcmVtYXAtc3F1YXJlLTEyMDAtMTUweDE1MC5qcGcgMTUwdywgaHR0cHM6Ly9qb2huam9obnN0b24uaW5mby9ibG9nL3dwLWNvbnRlbnQvdXBsb2Fkcy8yMDI1LzA4LzIwMjUtMDgtMjYtQXJkbW9yZW1hcC1zcXVhcmUtMTIwMC03Njh4NzY4LmpwZyA3Njh3LCBodHRwczovL2pvaG5qb2huc3Rvbi5pbmZvL2Jsb2cvd3AtY29udGVudC91cGxvYWRzLzIwMjUvMDgvMjAyNS0wOC0yNi1BcmRtb3JlbWFwLXNxdWFyZS0xMjAwLTY2OHg2NjguanBnIDY2OHcsIGh0dHBzOi8vam9obmpvaG5zdG9uLmluZm8vYmxvZy93cC1jb250ZW50L3VwbG9hZHMvMjAyNS8wOC8yMDI1LTA4LTI2LUFyZG1vcmVtYXAtc3F1YXJlLTEyMDAtNTB4NTAuanBnIDUwdywgaHR0cHM6Ly9qb2huam9obnN0b24uaW5mby9ibG9nL3dwLWNvbnRlbnQvdXBsb2Fkcy8yMDI1LzA4LzIwMjUtMDgtMjYtQXJkbW9yZW1hcC1zcXVhcmUtMTIwMC5qcGcgMTIwMHciIHNpemVzPSIobWF4LXdpZHRoOiAxMDI0cHgpIDEwMHZ3LCAxMDI0cHgiIC8&#43;PC9maWd1cmU&#43;CgoKCjxwPkdldHRpbmcgdG8gYmUgYSBiaXQgb2YgYSBidXR0ZXJmbHkgYmxvZy4gV2Fsa2VkIHRoZSBSU1BCIHNpdGUgYXQgQXJkbW9yZSBsYXN0IFR1ZXNkYXkuIEhpZ2hpc2ggdGlkZSAmIGEgc3Ryb25nIGJyZWV6ZS4gVGhlIHBhdGggd2FzIG9mdGVuIHByb3RlY3RlZCBieSB3aW5kd2FyZCBidXNoZXMuIExvdHMgb2Ygc21hbGwgdG9ydG9pc2VzaGVsbHMgJiBzb21lIHBhaW50ZWQgbGFkaWVzIGJhc2tpbmcuIERldmlscy1iaXQgc2NhYmlvdXMgZmxvd2VyaW5nLiBTb21lIHdoaXRlcyB0b28sIG1haW5seSBncmVlbi12ZWluZWQuPC9wPgoKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+            </div>
+            </lazy-image-loader>
+        </article>
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+
+    <footer>
+        <p>Generated by feedspool at 2025-09-02 03:49:49 UTC</p>
+    </footer>
+</body>
+</html>
