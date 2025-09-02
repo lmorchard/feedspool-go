@@ -7,8 +7,6 @@ class LinkLoader extends HTMLElement {
     }
 
     connectedCallback() {
-        console.log('LinkLoader connected');
-        
         // Find the first anchor tag within this element
         this.link = this.querySelector('a');
         if (!this.link) {
@@ -16,13 +14,10 @@ class LinkLoader extends HTMLElement {
             return;
         }
         
-        console.log('LinkLoader found link:', this.link.href);
-        
         // Set up intersection observer to detect when visible
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && !this.loaded) {
-                    console.log('LinkLoader entered viewport, starting load...');
                     this.loadContent();
                 }
             });
@@ -74,8 +69,6 @@ class LinkLoader extends HTMLElement {
             // Remove the link and replace with loaded content
             this.link.remove();
             this.appendChild(targetElement);
-            
-            console.log('LinkLoader successfully loaded content for:', fragmentId);
             
         } catch (error) {
             console.error('LinkLoader failed to load content:', error);
