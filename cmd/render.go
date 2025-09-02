@@ -19,6 +19,7 @@ var (
 	renderAssets    string
 	renderFeeds     string
 	renderFormat    string
+	renderClean     bool
 )
 
 var renderCmd = &cobra.Command{
@@ -39,6 +40,7 @@ Customization:
   --templates ./custom-templates    # Use custom templates directory
   --assets ./custom-assets          # Use custom static assets directory
   --output ./site                   # Output directory (default: ./build)
+  --clean                          # Remove output directory before building
 
 The command generates an index.html file with all matching feeds and their items
 grouped underneath. Static assets (CSS, JS) are copied to the output directory.
@@ -56,6 +58,7 @@ func init() {
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
 	renderCmd.Flags().StringVar(&renderFeeds, "feeds", "", "Feed list file")
 	renderCmd.Flags().StringVar(&renderFormat, "format", defaultFormat, "Feed list format (opml or text)")
+	renderCmd.Flags().BoolVar(&renderClean, "clean", false, "Remove output directory before building")
 
 	// Note: Config file values are loaded through the Config struct, not viper bindings
 
@@ -89,6 +92,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 		FeedsFile:    "",
 		Format:       cfg.FeedList.Format,
 		Database:     cfg.Database,
+		Clean:        cfg.Render.DefaultClean,
 	}
 
 	// Override with command line flags if provided
@@ -115,6 +119,9 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	}
 	if renderFormat != defaultFormat {
 		config.Format = renderFormat
+	}
+	if renderClean {
+		config.Clean = renderClean
 	}
 
 	return config

@@ -1,135 +1,12 @@
 package database
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
 
-func setupTestDB(t *testing.T) (db *DB, tempDir string) {
-	t.Helper()
-
-	// Create temporary database file
-	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "feedspool_test.db")
-
-	// Initialize database
-	db, err := New(dbPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := db.InitSchema(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Cleanup function
-	t.Cleanup(func() {
-		db.Close()
-		os.Remove(dbPath)
-	})
-
-	return db, dbPath
-}
-
-func TestUpsertAndGetFeed(t *testing.T) {
-	db, _ := setupTestDB(t)
-
-	feed := &Feed{
-		URL:          "https://example.com/feed.xml",
-		Title:        "Test Feed",
-		Description:  "Test Description",
-		LastUpdated:  time.Now().UTC().Truncate(time.Second),
-		ETag:         "test-etag",
-		LastModified: "Mon, 01 Jan 2024 00:00:00 GMT",
-		FeedJSON:     JSON(`{"title": "Test Feed"}`),
-	}
-
-	// Test Upsert
-	err := db.UpsertFeed(feed)
-	if err != nil {
-		t.Errorf("UpsertFeed() error = %v", err)
-	}
-
-	// Test Get
-	retrieved, err := db.GetFeed(feed.URL)
-	if err != nil {
-		t.Errorf("db.GetFeed() error = %v", err)
-	}
-
-	if retrieved == nil {
-		t.Fatal("db.GetFeed() returned nil")
-	}
-
-	if retrieved.URL != feed.URL {
-		t.Errorf("Retrieved feed URL = %v, want %v", retrieved.URL, feed.URL)
-	}
-
-	if retrieved.Title != feed.Title {
-		t.Errorf("Retrieved feed Title = %v, want %v", retrieved.Title, feed.Title)
-	}
-
-	if retrieved.ETag != feed.ETag {
-		t.Errorf("Retrieved feed ETag = %v, want %v", retrieved.ETag, feed.ETag)
-	}
-}
-
-func TestGetFeedNotFound(t *testing.T) {
-	db, _ := setupTestDB(t)
-
-	feed, err := db.GetFeed("https://nonexistent.com/feed.xml")
-	if err != nil {
-		t.Errorf("db.GetFeed() error = %v", err)
-	}
-
-	if feed != nil {
-		t.Errorf("db.GetFeed() should return nil for non-existent feed")
-	}
-}
-
-func TestGetAllFeeds(t *testing.T) {
-	db, _ := setupTestDB(t)
-
-	feeds := []*Feed{
-		{
-			URL:      "https://example1.com/feed.xml",
-			Title:    "Feed 1",
-			FeedJSON: JSON(`{"title": "Feed 1"}`),
-		},
-		{
-			URL:      "https://example2.com/feed.xml",
-			Title:    "Feed 2",
-			FeedJSON: JSON(`{"title": "Feed 2"}`),
-		},
-	}
-
-	// Insert feeds
-	for _, feed := range feeds {
-		err := db.UpsertFeed(feed)
-		if err != nil {
-			t.Errorf("UpsertFeed() error = %v", err)
-		}
-	}
-
-	// Get all feeds
-	retrieved, err := db.GetAllFeeds()
-	if err != nil {
-		t.Errorf("db.GetAllFeeds() error = %v", err)
-	}
-
-	if len(retrieved) != 2 {
-		t.Errorf("db.GetAllFeeds() returned %d feeds, want 2", len(retrieved))
-	}
-
-	// Check ordering (should be by URL)
-	if retrieved[0].URL != "https://example1.com/feed.xml" {
-		t.Errorf("First feed URL = %v, want %v", retrieved[0].URL, "https://example1.com/feed.xml")
-	}
-}
-
 func TestUpsertAndGetItem(t *testing.T) {
-	db, _ := setupTestDB(t)
+	db := setupTestDB(t)
 
 	// First insert a feed
 	feed := &Feed{
@@ -182,7 +59,7 @@ func TestUpsertAndGetItem(t *testing.T) {
 func TestUpsertItemDateStability(t *testing.T) {
 	const updatedTitle = "Updated Title"
 
-	db, _ := setupTestDB(t)
+	db := setupTestDB(t)
 
 	// Insert feed first
 	feed := &Feed{
@@ -262,7 +139,7 @@ func TestUpsertItemDateStability(t *testing.T) {
 func TestGetItemsForFeedWithFilters(t *testing.T) {
 	const testItem3GUID = "item3"
 
-	db, _ := setupTestDB(t)
+	db := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
@@ -341,7 +218,7 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 }
 
 func TestMarkItemsArchived(t *testing.T) {
-	db, _ := setupTestDB(t)
+	db := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
@@ -414,7 +291,7 @@ func TestMarkItemsArchived(t *testing.T) {
 }
 
 func TestDeleteArchivedItems(t *testing.T) {
-	db, _ := setupTestDB(t)
+	db := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{

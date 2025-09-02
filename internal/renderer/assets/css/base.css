@@ -1,0 +1,39 @@
+/* Base Reset and Typography */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    background: var(--bg-secondary);
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
