@@ -34,8 +34,7 @@
 
     <layout-controller>
         <main>
-            <article class="feed" id="feed-{{.FeedID}}">
-            <lazy-image-loader>
+            <article class="feed">
             <header class="feed-header">
                 <h2{{if .Feed.Description}} title="{{.Feed.Description}}"{{end}}>
                     {{if .FeedFavicon}}<img data-src="{{.FeedFavicon}}" alt="" class="feed-favicon" loading="lazy">{{end}}
@@ -44,6 +43,7 @@
                 <time class="feed-last-updated">{{if .Feed.LatestItemDate.Valid}}Latest: {{.Feed.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.Feed.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
             </header>
 
+            <lazy-image-loader id="feed-{{.FeedID}}">
             <div class="items">
                 {{range .Items}}
                 <details class="item">
