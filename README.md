@@ -302,7 +302,6 @@ This allows you to:
 ## TODO
 
 ### Future Enhancements
-- [ ] more sophisticated site generation - index page, per-feed pages, time-based pagination? 
 - [ ] switchable named theme directories
 - [ ] Merge OPML / text lists of feeds with de-dupe
 - [ ] support feed tags and/or folders?
