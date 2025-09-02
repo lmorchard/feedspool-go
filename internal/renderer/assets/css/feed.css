@@ -1,5 +1,59 @@
 /* Feed-specific Styles */
 
+/* Link Loader Component */
+link-loader {
+    display: block;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+link-loader .feed-header {
+    margin-bottom: 0.5rem;
+}
+
+link-loader a {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--accent-color);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+link-loader a:hover {
+    background: var(--accent-color-hover);
+}
+
+/* Loading state */
+link-loader a:disabled,
+link-loader a[aria-disabled="true"] {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+/* Error state */
+link-loader .error {
+    color: var(--error-color);
+    background: var(--error-bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--error-color);
+}
+
+/* Loaded content styling */
+link-loader .feed {
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+}
+
 .feed {
     background: var(--bg-secondary);
     border-radius: 8px;

@@ -15,6 +15,7 @@ import './js/content-isolation-iframe.js';
 import './js/lazy-image-loader.js';
 import './js/layout-controller.js';
 import './js/lightbox-overlay.js';
+import './link-loader.js';
 
 // All custom elements are automatically registered when their modules are imported
 // No additional initialization needed - the modules handle their own setup
