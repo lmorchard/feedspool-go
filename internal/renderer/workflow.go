@@ -184,7 +184,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 
-	if err := r.Render(file, "index.html", context); err != nil {
+	if err := r.Render(file, "index-directory.html", context); err != nil {
 		file.Close()
 		return fmt.Errorf("failed to render template: %w", err)
 	}
@@ -238,8 +238,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	}
 
 	fmt.Printf("Generated %d individual feed pages\n", len(feeds)) //nolint:forbidigo // User-facing output
-	fmt.Printf("Static site generated successfully in: %s\n", config.OutputDir) //nolint:forbidigo // User-facing output
-	fmt.Printf("Open %s in your browser to view the site\n", outputFile)        //nolint:forbidigo // User-facing output
+	fmt.Printf("Multi-page site generated successfully in: %s\n", config.OutputDir) //nolint:forbidigo // User-facing output
+	fmt.Printf("Open %s in your browser to view the feed directory\n", outputFile)        //nolint:forbidigo // User-facing output
 
 	return nil
 }
