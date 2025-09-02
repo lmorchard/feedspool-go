@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed Reader</title>
+    <link rel="stylesheet" href="index.css">
+    <script type="module" src="index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <layout-controller>
+        <main>
+            {{range .Feeds}}
+            {{$items := index $.Items .URL}}
+            {{if $items}}
+            <article class="feed">
+            <lazy-image-loader>
+            <header class="feed-header">
+                <h2{{if .Description}} title="{{.Description}}"{{end}}>
+                    {{$favicon := index $.FeedFavicon .URL}}
+                    {{if $favicon}}<img data-src="{{$favicon}}" alt="" class="feed-favicon" loading="lazy">{{end}}
+                    <a href="{{.URL}}" target="_blank">{{.Title}}</a>
+                </h2>
+                <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
+            </header>
+
+            <div class="items">
+                {{range $items}}
+                <details class="item">
+                    <summary class="item-summary">
+                        {{$metadata := index $.Metadata .Link}}
+                        {{if and $metadata $metadata.ImageURL.Valid}}
+                        <div class="item-thumbnail">
+                            <img data-src="{{$metadata.ImageURL.String}}" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        {{end}}
+                        <div class="item-info">
+                            <span class="item-title">
+                                {{$title := .Title}}
+                                {{if eq $title ""}}
+                                    {{if .Summary}}
+                                        {{$title = printf "%.80s..." .Summary}}
+                                    {{else if .Content}}
+                                        {{$title = printf "%.80s..." .Content}}
+                                    {{else}}
+                                        {{$title = "Untitled"}}
+                                    {{end}}
+                                {{end}}
+                                {{if .Link}}
+                                <a href="{{.Link}}" target="_blank">{{$title}}</a>
+                                {{else}}
+                                {{$title}}
+                                {{end}}
+                            </span>
+                            <div class="item-excerpt">
+                                {{if .Summary}}
+                                    {{printf "%.200s..." (.Summary | stripHTML)}}
+                                {{else if .Content}}
+                                    {{printf "%.200s..." (.Content | stripHTML)}}
+                                {{end}}
+                            </div>
+                        </div>
+                        <time class="item-date">{{.PublishedDate.Format "Jan 2, 2006 15:04 UTC"}}</time>
+                    </summary>
+                    <div class="item-content">
+                        {{if .Content}}
+                            <content-isolation-iframe>
+                                <iframe data-src="{{.Content | iframeContent}}" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        {{else if .Summary}}
+                            <content-isolation-iframe>
+                                <iframe data-src="{{.Summary | iframeContent}}" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        {{else}}
+                            <p><em>No content available</em></p>
+                        {{end}}
+                    </div>
+                </details>
+                {{end}}
+            </div>
+            </lazy-image-loader>
+        </article>
+            {{end}}
+            {{end}}
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+
+    <footer>
+        <p>Generated by feedspool at {{.GeneratedAt.Format "2006-01-02 15:04:05 UTC"}}</p>
+    </footer>
+</body>
+</html>
