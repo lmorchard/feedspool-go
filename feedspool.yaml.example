@@ -32,6 +32,7 @@ render:
   templates_dir: ""          # Custom templates directory (empty = use embedded)
   assets_dir: ""             # Custom assets directory (empty = use embedded)  
   default_max_age: "24h"     # Default time window for rendering
+  default_clean: false       # Default behavior for cleaning output directory before building
 
 # HTTP server settings
 serve:

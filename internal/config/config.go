@@ -53,6 +53,7 @@ type RenderConfig struct {
 	TemplatesDir  string
 	AssetsDir     string
 	DefaultMaxAge string
+	DefaultClean  bool `mapstructure:"default_clean"`
 }
 
 type ServeConfig struct {
@@ -98,6 +99,7 @@ func LoadConfig() *Config {
 			TemplatesDir:  viper.GetString("render.templates_dir"),
 			AssetsDir:     viper.GetString("render.assets_dir"),
 			DefaultMaxAge: viper.GetString("render.default_max_age"),
+			DefaultClean:  viper.GetBool("render.default_clean"),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
