@@ -21,7 +21,9 @@ Further feature highlights:
 - External OPML and text lists are the source of truth for feed subscriptions
 - Database feeds are treated as ephemeral/cache
 - Concurrent feed fetching with conditional HTTP (304 Not Modified)
-- Static HTML site generation with responsive design and dark mode
+- URL metadata extraction (unfurling) with OpenGraph, Twitter Cards, and favicons
+- Parallel unfurling during feed fetching for enhanced content presentation
+- Static HTML site generation with responsive design, dark mode, and rich metadata
 - RSS/Atom feed autodiscovery from HTML pages
 - Export database feeds to OPML or text formats
 - SQLite database storage with feed history
@@ -86,6 +88,9 @@ You can get general help and subcommand-specific help with embedded documentatio
 
 # Fetch all feeds in database
 ./feedspool fetch
+
+# Fetch feeds with parallel metadata extraction (unfurling)
+./feedspool fetch --with-unfurl
 ```
 
 ### Subscription Management
@@ -105,6 +110,25 @@ You can get general help and subcommand-specific help with embedded documentatio
 
 # Export database feeds to text list
 ./feedspool export --format text feeds.txt
+```
+
+### URL Metadata Extraction (Unfurling)
+
+Extract OpenGraph metadata, Twitter Cards, and favicons from web pages:
+
+```bash
+# Extract metadata from a single URL
+./feedspool unfurl https://example.com/article
+
+# Extract metadata from a single URL as JSON
+./feedspool unfurl https://example.com/article --format json
+
+# Process all item URLs in database without metadata  
+./feedspool unfurl
+
+# Process with custom limits and options
+./feedspool unfurl --limit 100 --concurrency 8
+./feedspool unfurl --retry-immediate --skip-robots
 ```
 
 ### Show items on the command line
@@ -161,12 +185,29 @@ feedlist:
   filename: "feeds.opml" # or "feeds.txt"
 ```
 
+### Fetch Configuration
+```yaml
+fetch:
+  with_unfurl: true     # Enable parallel unfurling during fetch
+  concurrency: 16       # Fetch-specific concurrency
+  max_items: 50         # Max items per feed
+```
+
+### Unfurl Configuration  
+```yaml
+unfurl:
+  skip_robots: false    # Respect robots.txt (default: true)
+  retry_after: "1h"     # Retry failed fetches after duration
+  concurrency: 8        # Unfurl-specific concurrency
+```
+
 ### Command Options
 - `--concurrency` - Max concurrent fetches (default: 32)
-- `--timeout` - Per-feed timeout (default: 30s)
+- `--timeout` - Per-feed timeout (default: 30s) 
 - `--max-items` - Max items per feed (default: 100)
 - `--force` - Ignore cache headers and fetch anyway
 - `--max-age` - Skip feeds fetched within this duration
+- `--with-unfurl` - Extract metadata in parallel with feed fetching
 - `--format` - Feed list format (opml or text)
 - `--filename` - Feed list filename
 

@@ -6,6 +6,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+// getIntWithDefault returns the viper int value or default if not set.
+func getIntWithDefault(key string, defaultValue int) int {
+	if viper.IsSet(key) {
+		return viper.GetInt(key)
+	}
+	return defaultValue
+}
+
 const (
 	defaultPort        = 8080
 	defaultOutputDir   = "./build"
@@ -16,19 +24,17 @@ const (
 )
 
 type Config struct {
-	Database    string
-	Verbose     bool
-	Debug       bool
-	JSON        bool
-	Concurrency int
-	Timeout     time.Duration
-	MaxItems    int
-	FeedList    FeedListConfig
-	Fetch       FetchConfig
-	Render      RenderConfig
-	Serve       ServeConfig
-	Init        InitConfig
-	Unfurl      UnfurlConfig
+	Database string
+	Verbose  bool
+	Debug    bool
+	JSON     bool
+	Timeout  time.Duration
+	FeedList FeedListConfig
+	Fetch    FetchConfig
+	Render   RenderConfig
+	Serve    ServeConfig
+	Init     InitConfig
+	Unfurl   UnfurlConfig
 }
 
 type FeedListConfig struct {
@@ -37,7 +43,9 @@ type FeedListConfig struct {
 }
 
 type FetchConfig struct {
-	WithUnfurl bool `mapstructure:"with_unfurl"`
+	WithUnfurl  bool `mapstructure:"with_unfurl"`
+	Concurrency int  `mapstructure:"concurrency"`
+	MaxItems    int  `mapstructure:"max_items"`
 }
 
 type RenderConfig struct {
@@ -45,6 +53,7 @@ type RenderConfig struct {
 	TemplatesDir  string
 	AssetsDir     string
 	DefaultMaxAge string
+	DefaultClean  bool `mapstructure:"default_clean"`
 }
 
 type ServeConfig struct {
@@ -71,25 +80,26 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Database:    viper.GetString("database"),
-		Verbose:     viper.GetBool("verbose"),
-		Debug:       viper.GetBool("debug"),
-		JSON:        viper.GetBool("json"),
-		Concurrency: viper.GetInt("concurrency"),
-		Timeout:     timeout,
-		MaxItems:    viper.GetInt("max_items"),
+		Database: viper.GetString("database"),
+		Verbose:  viper.GetBool("verbose"),
+		Debug:    viper.GetBool("debug"),
+		JSON:     viper.GetBool("json"),
+		Timeout:  timeout,
 		FeedList: FeedListConfig{
 			Format:   viper.GetString("feedlist.format"),
 			Filename: viper.GetString("feedlist.filename"),
 		},
 		Fetch: FetchConfig{
-			WithUnfurl: viper.GetBool("fetch.with_unfurl"),
+			WithUnfurl:  viper.GetBool("fetch.with_unfurl"),
+			Concurrency: getIntWithDefault("fetch.concurrency", DefaultConcurrency),
+			MaxItems:    getIntWithDefault("fetch.max_items", DefaultMaxItems),
 		},
 		Render: RenderConfig{
 			OutputDir:     viper.GetString("render.output_dir"),
 			TemplatesDir:  viper.GetString("render.templates_dir"),
 			AssetsDir:     viper.GetString("render.assets_dir"),
 			DefaultMaxAge: viper.GetString("render.default_max_age"),
+			DefaultClean:  viper.GetBool("render.default_clean"),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
@@ -109,16 +119,16 @@ func LoadConfig() *Config {
 
 func GetDefault() *Config {
 	return &Config{
-		Database:    "./feeds.db",
-		Concurrency: DefaultConcurrency,
-		Timeout:     DefaultTimeout,
-		MaxItems:    DefaultMaxItems,
+		Database: "./feeds.db",
+		Timeout:  DefaultTimeout,
 		FeedList: FeedListConfig{
 			Format:   "", // Empty strings indicate not configured
 			Filename: "",
 		},
 		Fetch: FetchConfig{
-			WithUnfurl: false, // Default to false
+			WithUnfurl:  false, // Default to false
+			Concurrency: DefaultConcurrency,
+			MaxItems:    DefaultMaxItems,
 		},
 		Render: RenderConfig{
 			OutputDir:     "./build",
