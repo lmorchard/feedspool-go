@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -158,8 +159,17 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		timeWindow = fmt.Sprintf("Last %s", config.MaxAge)
 	}
 
+	// Wrap feeds with IDs
+	feedsWithIDs := make([]FeedWithID, len(feeds))
+	for i, feed := range feeds {
+		feedsWithIDs[i] = FeedWithID{
+			Feed: feed,
+			ID:   generateFeedID(feed.URL),
+		}
+	}
+
 	context := &TemplateContext{
-		Feeds:       feeds,
+		Feeds:       feedsWithIDs,
 		Items:       items,
 		Metadata:    metadata,
 		FeedFavicon: feedFavicon,
@@ -173,21 +183,72 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer file.Close()
 
 	if err := r.Render(file, "index.html", context); err != nil {
+		file.Close()
 		return fmt.Errorf("failed to render template: %w", err)
 	}
+	file.Close()
 
 	// Copy assets
 	if err := r.CopyAssets(config.OutputDir); err != nil {
 		return fmt.Errorf("failed to copy assets: %w", err)
 	}
 
+	// Create feeds subdirectory
+	feedsDir := filepath.Join(config.OutputDir, "feeds")
+	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
+		return fmt.Errorf("failed to create feeds directory: %w", err)
+	}
+
+	// Render individual feed pages
+	for _, feed := range feeds {
+		feedItems := items[feed.URL]
+		if len(feedItems) == 0 {
+			continue
+		}
+
+		// Generate consistent ID from feed URL
+		feedID := generateFeedID(feed.URL)
+
+		// Create context for single feed
+		feedContext := &FeedTemplateContext{
+			Feed:        feed,
+			Items:       feedItems,
+			Metadata:    metadata,
+			FeedFavicon: feedFavicon[feed.URL],
+			GeneratedAt: endTime,
+			TimeWindow:  timeWindow,
+			FeedID:      feedID,
+		}
+
+		// Create feed file
+		feedFile := filepath.Join(feedsDir, fmt.Sprintf("%s.html", feedID))
+		file, err := os.Create(feedFile)
+		if err != nil {
+			return fmt.Errorf("failed to create feed file %s: %w", feedFile, err)
+		}
+		defer file.Close()
+
+		if err := r.Render(file, "feed.html", feedContext); err != nil {
+			file.Close()
+			return fmt.Errorf("failed to render feed template for %s: %w", feed.Title, err)
+		}
+		file.Close()
+	}
+
+	fmt.Printf("Generated %d individual feed pages\n", len(feeds)) //nolint:forbidigo // User-facing output
 	fmt.Printf("Static site generated successfully in: %s\n", config.OutputDir) //nolint:forbidigo // User-facing output
 	fmt.Printf("Open %s in your browser to view the site\n", outputFile)        //nolint:forbidigo // User-facing output
 
 	return nil
+}
+
+// generateFeedID creates a consistent ID from a feed URL using SHA-256.
+// Returns first 8 characters of the hex-encoded hash.
+func generateFeedID(feedURL string) string {
+	hash := sha256.Sum256([]byte(feedURL))
+	return fmt.Sprintf("%x", hash)[:8]
 }
 
 func cleanOutputDirectory(outputDir string) error {

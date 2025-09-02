@@ -13,14 +13,31 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 )
 
+// FeedWithID wraps a Feed with a generated ID.
+type FeedWithID struct {
+	database.Feed
+	ID string
+}
+
 // TemplateContext contains all data passed to templates.
 type TemplateContext struct {
-	Feeds       []database.Feed
+	Feeds       []FeedWithID
 	Items       map[string][]database.Item
 	Metadata    map[string]*database.URLMetadata // URL -> metadata
 	FeedFavicon map[string]string                // feed URL -> favicon URL
 	GeneratedAt time.Time
 	TimeWindow  string
+}
+
+// FeedTemplateContext contains data for a single feed template.
+type FeedTemplateContext struct {
+	Feed        database.Feed
+	Items       []database.Item
+	Metadata    map[string]*database.URLMetadata // URL -> metadata
+	FeedFavicon string
+	GeneratedAt time.Time
+	TimeWindow  string
+	FeedID      string // Hash-based ID for the feed
 }
 
 // Renderer handles template loading and rendering.
@@ -38,7 +55,7 @@ func NewRenderer(templateDir, assetsDir string) *Renderer {
 }
 
 // Render generates HTML output using the specified template and context.
-func (r *Renderer) Render(writer io.Writer, templateName string, context *TemplateContext) error {
+func (r *Renderer) Render(writer io.Writer, templateName string, context interface{}) error {
 	var tmpl *template.Template
 	var err error
 
@@ -47,10 +64,10 @@ func (r *Renderer) Render(writer io.Writer, templateName string, context *Templa
 		tmpl, err = LoadCustomTemplate(r.templateDir, templateName)
 		if err != nil {
 			// If custom template fails, fall back to embedded
-			tmpl, err = LoadDefaultTemplate()
+			tmpl, err = LoadDefaultTemplateByName(templateName)
 		}
 	} else {
-		tmpl, err = LoadDefaultTemplate()
+		tmpl, err = LoadDefaultTemplateByName(templateName)
 	}
 
 	if err != nil {
