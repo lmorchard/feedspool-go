@@ -3,14 +3,8 @@
 # Database file path
 database: ./feeds.db
 
-# Number of concurrent feed fetches
-concurrency: 32
-
-# Timeout for individual feed fetches
+# Timeout for individual feed fetches (shared by fetch and unfurl)
 timeout: 30s
-
-# Maximum number of items to keep per feed
-max_items: 100
 
 # Verbose output
 verbose: false
@@ -29,6 +23,8 @@ feedlist:
 # Fetch settings
 fetch:
   with_unfurl: false    # Run unfurl operations in parallel with feed fetching
+  concurrency: 32       # Maximum concurrent feed fetches
+  max_items: 100        # Maximum number of items to keep per feed
 
 # Static site generator settings
 render:
