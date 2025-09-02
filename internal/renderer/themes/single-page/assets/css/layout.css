@@ -1,0 +1,85 @@
+/* Main Layout and Options Menu */
+
+/* Layout Options Menu */
+.layout-options {
+    position: relative;
+    font-size: 0.9rem;
+}
+
+.options-trigger {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.options-trigger:hover {
+    background: var(--bg-accent);
+    color: var(--text-accent);
+}
+
+.options-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.options-trigger::marker {
+    content: none;
+}
+
+.options-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px var(--shadow);
+    padding: 1rem;
+    min-width: 200px;
+    z-index: 1000;
+    margin-top: 0.25rem;
+}
+
+.option-item {
+    display: block;
+    padding: 0.25rem 0;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.option-item input {
+    margin-right: 0.5rem;
+}
+
+.option-group {
+    border: none;
+    padding: 0;
+    margin: 0.75rem 0 0 0;
+}
+
+.option-group legend {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    padding: 0;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .options-menu {
+        right: -1rem;
+        left: -1rem;
+        min-width: auto;
+    }
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
