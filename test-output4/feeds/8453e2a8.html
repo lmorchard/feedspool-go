@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBC News - Feed Reader</title>
+    <link rel="stylesheet" href="../index.css">
+    <script type="module" src="../index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <layout-controller>
+        <main>
+            <article class="feed" id="feed-8453e2a8">
+            <lazy-image-loader>
+            <header class="feed-header">
+                <h2 title="BBC News - News Front Page">
+                    <img data-src="https://static.files.bbci.co.uk/bbcdotcom/web/20250828-055926-c20c0c03f5-2.28.1-2/safari-pinned-tab.svg" alt="" class="feed-favicon" loading="lazy">
+                    <a href="https://feeds.bbci.co.uk/news/rss.xml" target="_blank">BBC News</a>
+                </h2>
+                <time class="feed-last-updated">Latest: Sep 2, 2025 00:26 UTC</time>
+            </header>
+
+            <div class="items">
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/a04c/live/54c59e10-8786-11f0-b391-6936825093bd.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c62w2915n2xo?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;No 10 shake-up&#39; and Labour&#39;s &#39;asylum crackdown&#39;</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Sir Keir Starmer&#39;s shake-up of his No 10 team as Parliament returns from recess dominates Tuesday&#39;s papers....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 2, 2025 00:26 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClNpciBLZWlyIFN0YXJtZXIncyBzaGFrZS11cCBvZiBoaXMgTm8gMTAgdGVhbSBhcyBQYXJsaWFtZW50IHJldHVybnMgZnJvbSByZWNlc3MgZG9taW5hdGVzIFR1ZXNkYXkncyBwYXBlcnMuCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/f8b5/live/00b8a8f0-7ece-11f0-ab3e-bd52082cd0ae.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/clyr1qr529xo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Body seen in secret mortuary could solve 50-year mystery of vanished religious leader</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Compelling evidence to suggest Lebanese Shia leader Musa al-Sadr was killed in Libya is uncovered by BBC....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 2, 2025 00:18 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkNvbXBlbGxpbmcgZXZpZGVuY2UgdG8gc3VnZ2VzdCBMZWJhbmVzZSBTaGlhIGxlYWRlciBNdXNhIGFsLVNhZHIgd2FzIGtpbGxlZCBpbiBMaWJ5YSBpcyB1bmNvdmVyZWQgYnkgQkJDLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/2539/live/a3479700-8740-11f0-b391-6936825093bd.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/crkz1j18g0do?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;Parliament building inaccessible to me,&#39; MP says</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Marie Tidball MP was born with a congenital disability and wants Parliament to be more accessible....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 23:56 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck1hcmllIFRpZGJhbGwgTVAgd2FzIGJvcm4gd2l0aCBhIGNvbmdlbml0YWwgZGlzYWJpbGl0eSBhbmQgd2FudHMgUGFybGlhbWVudCB0byBiZSBtb3JlIGFjY2Vzc2libGUuCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/ea0c/live/7c846a60-8733-11f0-9ea1-07d888221746.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cx23ez7dm1ko?at_medium=RSS&amp;at_campaign=rss" target="_blank">Tom Odell on the lesson he learnt from Billie Eilish and Finneas</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Tom Odell talks touring with Billie Eilish and the &#34;anguish&#34; behind his new album, A Wonderful Life....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 23:46 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRvbSBPZGVsbCB0YWxrcyB0b3VyaW5nIHdpdGggQmlsbGllIEVpbGlzaCBhbmQgdGhlICJhbmd1aXNoIiBiZWhpbmQgaGlzIG5ldyBhbGJ1bSwgQSBXb25kZXJmdWwgTGlmZS4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/211a/live/a39259d0-877b-11f0-84c8-99de564f0440.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cn848g3ll09o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Justice secretary to get power to veto sentencing guidance</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Shabana Mahmood has introduced a requirement for any new rules to be approved by her....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 23:04 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClNoYWJhbmEgTWFobW9vZCBoYXMgaW50cm9kdWNlZCBhIHJlcXVpcmVtZW50IGZvciBhbnkgbmV3IHJ1bGVzIHRvIGJlIGFwcHJvdmVkIGJ5IGhlci4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/481a/live/b9030840-8781-11f0-9cf6-cbf3e73ce2b9.png" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/c20755y05ydo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Premier League summer spending surpasses record £3bn</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Premier League clubs splash out more than ever before in a transfer window after spending this summer surpassed £3bn....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 22:50 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClByZW1pZXIgTGVhZ3VlIGNsdWJzIHNwbGFzaCBvdXQgbW9yZSB0aGFuIGV2ZXIgYmVmb3JlIGluIGEgdHJhbnNmZXIgd2luZG93IGFmdGVyIHNwZW5kaW5nIHRoaXMgc3VtbWVyIHN1cnBhc3NlZCDCozNibi4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/9d2b/live/200cfff0-877d-11f0-b741-69bd001a3e49.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/c0r7rg4z55yo?at_medium=RSS&amp;at_campaign=rss" target="_blank">From &#39;not possible&#39; to record spenders - Liverpool&#39;s transfer window</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Jurgen Klopp once suggested it was impossible for Liverpool to match their richest rivals in the transfer market. But no-one has spent more in this transfer window then they have....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 22:30 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ckp1cmdlbiBLbG9wcCBvbmNlIHN1Z2dlc3RlZCBpdCB3YXMgaW1wb3NzaWJsZSBmb3IgTGl2ZXJwb29sIHRvIG1hdGNoIHRoZWlyIHJpY2hlc3Qgcml2YWxzIGluIHRoZSB0cmFuc2ZlciBtYXJrZXQuIEJ1dCBuby1vbmUgaGFzIHNwZW50IG1vcmUgaW4gdGhpcyB0cmFuc2ZlciB3aW5kb3cgdGhlbiB0aGV5IGhhdmUuCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/44d2/live/5a0e4fc0-8731-11f0-84c8-99de564f0440.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c626k017je2o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Dwayne Johnson: I was pigeon-holed as box office star</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The Hollywood star plays UFC fighter Mark Kerr in his latest film The Smashing Machine....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 22:04 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBIb2xseXdvb2Qgc3RhciBwbGF5cyBVRkMgZmlnaHRlciBNYXJrIEtlcnIgaW4gaGlzIGxhdGVzdCBmaWxtIFRoZSBTbWFzaGluZyBNYWNoaW5lLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/9337/live/1c66d5f0-876a-11f0-b391-6936825093bd.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c5yey8l59p1o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Northern Lights potentially visible across much of the UK</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The Met Office says those with clear and dark skies could be get &#34;a rare and memorable display&#34;....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:36 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBNZXQgT2ZmaWNlIHNheXMgdGhvc2Ugd2l0aCBjbGVhciBhbmQgZGFyayBza2llcyBjb3VsZCBiZSBnZXQgImEgcmFyZSBhbmQgbWVtb3JhYmxlIGRpc3BsYXkiLiAKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/047b/live/735f4b30-876f-11f0-84c8-99de564f0440.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/c3wnw63d13lo?at_medium=RSS&amp;at_campaign=rss" target="_blank">The player power fallout: &#39;Despicable&#39; stars or &#39;hypocritical&#39; clubs?</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    After Alexander Isak and Yoane Wissa both forced moves with their behaviour, will we see an increase in players doing the same? And is it ever defensible?...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:31 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkFmdGVyIEFsZXhhbmRlciBJc2FrIGFuZCBZb2FuZSBXaXNzYSBib3RoIGZvcmNlZCBtb3ZlcyB3aXRoIHRoZWlyIGJlaGF2aW91ciwgd2lsbCB3ZSBzZWUgYW4gaW5jcmVhc2UgaW4gcGxheWVycyBkb2luZyB0aGUgc2FtZT8gQW5kIGlzIGl0IGV2ZXIgZGVmZW5zaWJsZT8KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/99e8/live/73eeeec0-8774-11f0-9ba5-971e818a6b8b.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/ce939gy19nxo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Rudy Giuliani to receive Presidential Medal of Freedom, Trump says</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    America&#39;s highest civilian honour is awarded to those with &#34;exceptionally meritorious contributions&#34; to society....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:21 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkFtZXJpY2EncyBoaWdoZXN0IGNpdmlsaWFuIGhvbm91ciBpcyBhd2FyZGVkIHRvIHRob3NlIHdpdGggImV4Y2VwdGlvbmFsbHkgbWVyaXRvcmlvdXMgY29udHJpYnV0aW9ucyIgdG8gc29jaWV0eS4gCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/7318/live/c165f5d0-877a-11f0-899b-9ba806b70f02.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/cly4my21lz7o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Isak joins Liverpool in £125m British record deal</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Liverpool sign striker Alexander Isak from Newcastle United for a British record transfer fee of £125m....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:12 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkxpdmVycG9vbCBzaWduIHN0cmlrZXIgQWxleGFuZGVyIElzYWsgZnJvbSBOZXdjYXN0bGUgVW5pdGVkIGZvciBhIEJyaXRpc2ggcmVjb3JkIHRyYW5zZmVyIGZlZSBvZiDCozEyNW0uCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/eb7a/live/5c0f70d0-6139-11ee-ac8c-9d18dbc280ea.png" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/cr5r5m9p99mo?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;He is convinced he can be number one&#39; - Lammens joins Man Utd</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Manchester United sign Belgian goalkeeper Senne Lammens from Royal Antwerp for an initial 21m euros (£18.1m) plus add-ons....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:01 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck1hbmNoZXN0ZXIgVW5pdGVkIHNpZ24gQmVsZ2lhbiBnb2Fsa2VlcGVyIFNlbm5lIExhbW1lbnMgZnJvbSBSb3lhbCBBbnR3ZXJwIGZvciBhbiBpbml0aWFsIDIxbSBldXJvcyAowqMxOC4xbSkgcGx1cyBhZGQtb25zLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/d8b3/live/c1e68bc0-875f-11f0-ac15-0be71ebd833b.png" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/ce93klk0jpzo?at_medium=RSS&amp;at_campaign=rss" target="_blank">CEO who snatched boy&#39;s hat at US Open says he made &#39;huge mistake&#39;</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Piotr Szczerek was &#34;convinced&#34; tennis star Kamil Majchrzak was passing him the hat, he says while apologising for the viral incident....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 20:43 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBpb3RyIFN6Y3plcmVrIHdhcyAiY29udmluY2VkIiB0ZW5uaXMgc3RhciBLYW1pbCBNYWpjaHJ6YWsgd2FzIHBhc3NpbmcgaGltIHRoZSBoYXQsIGhlIHNheXMgd2hpbGUgYXBvbG9naXNpbmcgZm9yIHRoZSB2aXJhbCBpbmNpZGVudC4gCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/52e8/live/d8ef1da0-8778-11f0-84c8-99de564f0440.png" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/football/articles/cp37e3qeev9o?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;Good business rather than late business&#39; - Villa sign Sancho &amp; Elliott</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Aston Villa complete loan deals to bring in Liverpool midfielder Harvey Elliott and Manchester United forward Jadon Sancho on deadline day....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 20:39 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkFzdG9uIFZpbGxhIGNvbXBsZXRlIGxvYW4gZGVhbHMgdG8gYnJpbmcgaW4gTGl2ZXJwb29sIG1pZGZpZWxkZXIgSGFydmV5IEVsbGlvdHQgYW5kIE1hbmNoZXN0ZXIgVW5pdGVkIGZvcndhcmQgSmFkb24gU2FuY2hvIG9uIGRlYWRsaW5lIGRheS4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/2cc8/live/a5929470-876c-11f0-b391-6936825093bd.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/golf/articles/c8e1ekr946do?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;Donald banking on experience for Ryder Cup bear pit&#39;</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Europe captain Luke Donald goes for continuity as he looks to find the formula to secure a first away win since the &#39;Miracle at Medinah&#39; in 2012, writes Iain Carter....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 19:57 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkV1cm9wZSBjYXB0YWluIEx1a2UgRG9uYWxkIGdvZXMgZm9yIGNvbnRpbnVpdHkgYXMgaGUgbG9va3MgdG8gZmluZCB0aGUgZm9ybXVsYSB0byBzZWN1cmUgYSBmaXJzdCBhd2F5IHdpbiBzaW5jZSB0aGUgJ01pcmFjbGUgYXQgTWVkaW5haCcgaW4gMjAxMiwgd3JpdGVzIElhaW4gQ2FydGVyLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/40d2/live/65469e70-876c-11f0-a4c8-d381adcec3ce.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/tennis/articles/ce838191m9vo?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;The moments I play tennis for&#39; - Osaka beats Gauff at US Open</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Two-time US Open champion Naomi Osaka earns her most impressive win since returning to the tour by knocking out third seed Coco Gauff....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 19:50 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClR3by10aW1lIFVTIE9wZW4gY2hhbXBpb24gTmFvbWkgT3Nha2EgZWFybnMgaGVyIG1vc3QgaW1wcmVzc2l2ZSB3aW4gc2luY2UgcmV0dXJuaW5nIHRvIHRoZSB0b3VyIGJ5IGtub2NraW5nIG91dCB0aGlyZCBzZWVkIENvY28gR2F1ZmYuCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/4271/live/bebf9420-875d-11f0-ac15-0be71ebd833b.png" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c1mpm9ee9p9o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Nestle fires boss after romantic relationship with employee</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The food giant says Laurent Freixe had an &#34;undisclosed&#34; relationship with &#34;a direct subordinate&#34;....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 19:37 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBmb29kIGdpYW50IHNheXMgTGF1cmVudCBGcmVpeGUgaGFkIGFuICJ1bmRpc2Nsb3NlZCIgcmVsYXRpb25zaGlwIHdpdGggImEgZGlyZWN0IHN1Ym9yZGluYXRlIi4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/9543/live/3934ca20-875b-11f0-ac15-0be71ebd833b.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cm2vm2r6dzdo?at_medium=RSS&amp;at_campaign=rss" target="_blank">&#39;Covered in dust and too shocked to speak&#39;: Afghan villagers reel at scale of quake&#39;s devastation</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Cut off by rock falls in the mountains, locals who survived the tremors help pull injured and dead from the rubble....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 17:46 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkN1dCBvZmYgYnkgcm9jayBmYWxscyBpbiB0aGUgbW91bnRhaW5zLCBsb2NhbHMgd2hvIHN1cnZpdmVkIHRoZSB0cmVtb3JzIGhlbHAgcHVsbCBpbmp1cmVkIGFuZCBkZWFkIGZyb20gdGhlIHJ1YmJsZS4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/5245/live/04a00ae0-8756-11f0-ac15-0be71ebd833b.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cde3eyzdr63o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Israel committing genocide in Gaza, world&#39;s leading experts say</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The world&#39;s leading association of genocide scholars cited several actions by Israel, including attacks on the healthcare sector and the killing of children....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 17:22 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSB3b3JsZCdzIGxlYWRpbmcgYXNzb2NpYXRpb24gb2YgZ2Vub2NpZGUgc2Nob2xhcnMgY2l0ZWQgc2V2ZXJhbCBhY3Rpb25zIGJ5IElzcmFlbCwgaW5jbHVkaW5nIGF0dGFja3Mgb24gdGhlIGhlYWx0aGNhcmUgc2VjdG9yIGFuZCB0aGUga2lsbGluZyBvZiBjaGlsZHJlbi4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/35b8/live/e7dbcdf0-8754-11f0-84c8-99de564f0440.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/videos/cn0r02zgjj4o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Watch: BBC analyses the warmth and hand-holding at Xi, Modi and Putin&#39;s summit</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The Chinese, Indian and Russian leaders were among those attending a regional security summit in China over the weekend....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 17:09 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBDaGluZXNlLCBJbmRpYW4gYW5kIFJ1c3NpYW4gbGVhZGVycyB3ZXJlIGFtb25nIHRob3NlIGF0dGVuZGluZyBhIHJlZ2lvbmFsIHNlY3VyaXR5IHN1bW1pdCBpbiBDaGluYSBvdmVyIHRoZSB3ZWVrZW5kLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/30c8/live/b0bf99f0-8722-11f0-95ce-ab02c3c61297.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c9d07z1439zo?at_medium=RSS&amp;at_campaign=rss" target="_blank">EU chief von der Leyen&#39;s plane hit by suspected Russian GPS jamming</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The European Commission said the plane&#39;s navigation was disrupted in Bulgaria on Sunday....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 16:31 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBFdXJvcGVhbiBDb21taXNzaW9uIHNhaWQgdGhlIHBsYW5lJ3MgbmF2aWdhdGlvbiB3YXMgZGlzcnVwdGVkIGluIEJ1bGdhcmlhIG9uIFN1bmRheS4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/988b/live/60451fa0-8758-11f0-9cf6-cbf3e73ce2b9.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/czxp9zl0k90o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Scotland scraps peak rail fares - will the rest of the UK follow?</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Working patterns have changed since Covid so could peak train pricing be phased out altogether?...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 16:24 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CldvcmtpbmcgcGF0dGVybnMgaGF2ZSBjaGFuZ2VkIHNpbmNlIENvdmlkIHNvIGNvdWxkIHBlYWsgdHJhaW4gcHJpY2luZyBiZSBwaGFzZWQgb3V0IGFsdG9nZXRoZXI/CjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/ba27/live/f9e2bbf0-8743-11f0-8a2b-11820b610ec0.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cp8908jd3n1o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Scandal-hit ex-MP dies suddenly in London flat at 59</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    David Warburton was an MP from 2015 to 2023 – he resigned after admitting taking cocaine....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 16:10 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkRhdmlkIFdhcmJ1cnRvbiB3YXMgYW4gTVAgZnJvbSAyMDE1IHRvIDIwMjMg4oCTIGhlIHJlc2lnbmVkIGFmdGVyIGFkbWl0dGluZyB0YWtpbmcgY29jYWluZS4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/d86e/live/a980d7c0-867e-11f0-af95-c3af73b5d9bf.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c1kz9kemgnjo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Teen arrested after boy&#39;s fatal roundabout fall</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Cheshire Police is looking into reports the wheels of an e-bike were used to propel a roundabout....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 15:55 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkNoZXNoaXJlIFBvbGljZSBpcyBsb29raW5nIGludG8gcmVwb3J0cyB0aGUgd2hlZWxzIG9mIGFuIGUtYmlrZSB3ZXJlIHVzZWQgdG8gcHJvcGVsIGEgcm91bmRhYm91dC4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/02b1/live/b09a6ca0-874c-11f0-9cf6-cbf3e73ce2b9.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cwye0lpj9z6o?at_medium=RSS&amp;at_campaign=rss" target="_blank">What we know about Afghanistan earthquake - and what we don&#39;t</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Hundreds of people are thought to have died in the quake, which struck in a mountainous eastern region....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 15:49 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ckh1bmRyZWRzIG9mIHBlb3BsZSBhcmUgdGhvdWdodCB0byBoYXZlIGRpZWQgaW4gdGhlIHF1YWtlLCB3aGljaCBzdHJ1Y2sgaW4gYSBtb3VudGFpbm91cyBlYXN0ZXJuIHJlZ2lvbi4gCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_sport/1200/cpsprodpb/bc91/live/7641a1e0-8733-11f0-9ea1-07d888221746.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/sport/boxing/articles/cjw6jjqljeeo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Two-time Ali challenger Bugner dies aged 75</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Former British heavyweight boxer Joe Bugner - who faced Muhammad Ali and Joe Frazier - has died at the age of 75....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 15:45 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkZvcm1lciBCcml0aXNoIGhlYXZ5d2VpZ2h0IGJveGVyIEpvZSBCdWduZXIgLSB3aG8gZmFjZWQgTXVoYW1tYWQgQWxpIGFuZCBKb2UgRnJhemllciAtIGhhcyBkaWVkIGF0IHRoZSBhZ2Ugb2YgNzUuCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/a998/live/d740e0f0-8742-11f0-8a2b-11820b610ec0.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cvgv2j7dz1vo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Warwick Davis to reprise role in Harry Potter TV series</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The English actor will return as Professor Filius Flitwick, HBO has confirmed....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 12:15 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBFbmdsaXNoIGFjdG9yIHdpbGwgcmV0dXJuIGFzIFByb2Zlc3NvciBGaWxpdXMgRmxpdHdpY2ssIEhCTyBoYXMgY29uZmlybWVkLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/ace/branded_weather/1200/cpsprodpb/42f6/live/e15fb480-8729-11f0-9ea1-07d888221746.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/weather/articles/c8jp4dm2mv2o?at_medium=RSS&amp;at_campaign=rss" target="_blank">Is a UK heatwave in the weather forecast for September?</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Simon King guides us through the weather we&#39;re expecting as we start meteorological autumn...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 11:57 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClNpbW9uIEtpbmcgZ3VpZGVzIHVzIHRocm91Z2ggdGhlIHdlYXRoZXIgd2UncmUgZXhwZWN0aW5nIGFzIHdlIHN0YXJ0IG1ldGVvcm9sb2dpY2FsIGF1dHVtbgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/c236/live/04c0e180-8723-11f0-95ce-ab02c3c61297.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/cd0d195md5eo?at_medium=RSS&amp;at_campaign=rss" target="_blank">Starmer shakes up No 10 team - but what is he hoping to achieve?</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    The PM&#39;s revamp aims to build clearer structures and bolster economic expertise ahead of the Budget....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 11:11 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClRoZSBQTSdzIHJldmFtcCBhaW1zIHRvIGJ1aWxkIGNsZWFyZXIgc3RydWN0dXJlcyBhbmQgYm9sc3RlciBlY29ub21pYyBleHBlcnRpc2UgYWhlYWQgb2YgdGhlIEJ1ZGdldC4KPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://ichef.bbci.co.uk/news/1024/branded_news/39cf/live/a3c91480-876b-11f0-a4c8-d381adcec3ce.jpg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                
+                                <a href="https://www.bbc.com/news/articles/c626p66d6jxo?at_medium=RSS&amp;at_campaign=rss" target="_blank">UK suspends refugee family reunion applications</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Yvette Cooper outlines her plans as MPs return to Parliament after a summer of protests at asylum hotels....
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 01:23 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Cll2ZXR0ZSBDb29wZXIgb3V0bGluZXMgaGVyIHBsYW5zIGFzIE1QcyByZXR1cm4gdG8gUGFybGlhbWVudCBhZnRlciBhIHN1bW1lciBvZiBwcm90ZXN0cyBhdCBhc3lsdW0gaG90ZWxzLgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+            </div>
+            </lazy-image-loader>
+        </article>
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+
+    <footer>
+        <p>Generated by feedspool at 2025-09-02 03:46:46 UTC</p>
+    </footer>
+</body>
+</html>

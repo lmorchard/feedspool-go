@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Great art on Bluesky - Feed Reader</title>
+    <link rel="stylesheet" href="../index.css">
+    <script type="module" src="../index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <layout-controller>
+        <main>
+            <article class="feed" id="feed-7478ab7d">
+            <lazy-image-loader>
+            <header class="feed-header">
+                <h2 title="A beautiful work of art every hour.">
+                    <img data-src="https://web-cdn.bsky.app/static/safari-pinned-tab.svg" alt="" class="feed-favicon" loading="lazy">
+                    <a href="https://art.feediverse.org/" target="_blank">Great art on Bluesky</a>
+                </h2>
+                <time class="feed-last-updated">Latest: Sep 2, 2025 01:00 UTC</time>
+            </header>
+
+            <div class="items">
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreigxwhzlnenb5iayn2iwubx2zlhdh4v7hdeljo4dgi3dz7ad3aspti@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxsw32vuc22p" target="_blank">Concorde and Rue Royale #postimpressionism #cortes...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Concorde and Rue Royale #postimpressionism #cortes...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 2, 2025 01:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkNvbmNvcmRlIGFuZCBSdWUgUm95YWxlICNwb3N0aW1wcmVzc2lvbmlzbSAjY29ydGVzCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreih2kp3gjc2jttl73smrmi3xe6vy7dqtfrbxe4a74juggwiszhpqmq@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxssprsnhd22" target="_blank">Boulevard Montmartre, Spring, 1897 #pissarro #danishart...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Boulevard Montmartre, Spring, 1897 #pissarro #danishart...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 2, 2025 00:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkJvdWxldmFyZCBNb250bWFydHJlLCBTcHJpbmcsIDE4OTcgI3Bpc3NhcnJvICNkYW5pc2hhcnQKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiffwlps7wndh3u62557vg2ywyjzv4ked7ifjqcgz7jmfz5zgcvqnm@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxspehmmb52d" target="_blank">Vasily Kandinsky, Vignette next to &#34;Artwork and Artist&#34; (&#34;Kunstwerk und Künstler...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Vasily Kandinsky, Vignette next to &#34;Artwork and Artist&#34; (&#34;Kunstwerk und Künstler&#34;) (headpiece, page 95) from Über das Geistige in der Kunst (Concerning the Spiritual in Art), 1911 #museumofmodernart #...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 23:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClZhc2lseSBLYW5kaW5za3ksIFZpZ25ldHRlIG5leHQgdG8gIkFydHdvcmsgYW5kIEFydGlzdCIgKCJLdW5zdHdlcmsgdW5kIEvDvG5zdGxlciIpIChoZWFkcGllY2UsIHBhZ2UgOTUpIGZyb20gw5xiZXIgZGFzIEdlaXN0aWdlIGluIGRlciBLdW5zdCAoQ29uY2VybmluZyB0aGUgU3Bpcml0dWFsIGluIEFydCksIDE5MTEgI211c2V1bW9mbW9kZXJuYXJ0ICNtdXNldW1hcmNoaXZlCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiapeft2odrmb3hdripth4pb7dsmdqmsfb5yv6wuprj2lqhlczhqwu@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxslz5ul5f2n" target="_blank">Paul Klee, Portrait of Mrs. Bl., 1931 #museumarchive #paulklee...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Paul Klee, Portrait of Mrs. Bl., 1931 #museumarchive #paulklee...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 22:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBhdWwgS2xlZSwgUG9ydHJhaXQgb2YgTXJzLiBCbC4sIDE5MzEgI211c2V1bWFyY2hpdmUgI3BhdWxrbGVlCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiceitop374exzkcy7y7xyc2vafpcnrwo3jxuliaqifkm3u2rcxk24@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxsinuxzt52n" target="_blank">John Singer Sargent, Botzen (from Switzerland 1869 Sketchbook), May 29, 1869 #jo...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    John Singer Sargent, Botzen (from Switzerland 1869 Sketchbook), May 29, 1869 #johnsingersargent #themet...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 21:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkpvaG4gU2luZ2VyIFNhcmdlbnQsIEJvdHplbiAoZnJvbSBTd2l0emVybGFuZCAxODY5IFNrZXRjaGJvb2spLCBNYXkgMjksIDE4NjkgI2pvaG5zaW5nZXJzYXJnZW50ICN0aGVtZXQKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreicnacaq7d3typwko46lmp352b7quovad2ftf236prw2dlfxro7wxi@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxsfcmdnly2v" target="_blank">Berthe Morisot, Landscape (Tree-trunks near a River), 1888 #drawingsandprints #t...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Berthe Morisot, Landscape (Tree-trunks near a River), 1888 #drawingsandprints #themet...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 20:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkJlcnRoZSBNb3Jpc290LCBMYW5kc2NhcGUgKFRyZWUtdHJ1bmtzIG5lYXIgYSBSaXZlciksIDE4ODggI2RyYXdpbmdzYW5kcHJpbnRzICN0aGVtZXQKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreigqyrzsejs6vg2nlazsuygxsqrw5e7gwgd4gtl23poumy4z6f23lu@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxsbxcsdlb2s" target="_blank">Paul Klee, Underbrush (Gestrüpp), 1928 #museumofmodernart #museumarchive...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Paul Klee, Underbrush (Gestrüpp), 1928 #museumofmodernart #museumarchive...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 19:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBhdWwgS2xlZSwgVW5kZXJicnVzaCAoR2VzdHLDvHBwKSwgMTkyOCAjbXVzZXVtb2Ztb2Rlcm5hcnQgI211c2V1bWFyY2hpdmUKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreihjyiqwz77zrdazqvfynrtgrly5mlhlaxynlazmgtxksx74imlnke@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxs6lznpae2y" target="_blank">Woman with attributes of Saint Catherine, so called Catherina Sforza Sandro Bott...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Woman with attributes of Saint Catherine, so called Catherina Sforza Sandro Botticelli, 1475 #botticelli #earlyrenaissance...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 18:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CldvbWFuIHdpdGggYXR0cmlidXRlcyBvZiBTYWludCBDYXRoZXJpbmUsIHNvIGNhbGxlZCBDYXRoZXJpbmEgU2ZvcnphIFNhbmRybyBCb3R0aWNlbGxpLCAxNDc1ICNib3R0aWNlbGxpICNlYXJseXJlbmFpc3NhbmNlCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiak7ckzwujt5pbnnhkfigq4pzttkglu4wr7csuyxaxk6pv2jz5vmq@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxs3aqiqge2y" target="_blank">Excavation, 1950 #willemdekooning #dekooning...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Excavation, 1950 #willemdekooning #dekooning...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 17:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkV4Y2F2YXRpb24sIDE5NTAgI3dpbGxlbWRla29vbmluZyAjZGVrb29uaW5nCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiajr3oswljizvilyhy54yrxryguvdfpkqsarhokpeutw25774ysk4@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrxvh4zcm24" target="_blank">Henri Matisse, Reclining Nude, July 1938 #museumofmodernart #henrimatisse...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Henri Matisse, Reclining Nude, July 1938 #museumofmodernart #henrimatisse...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 16:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkhlbnJpIE1hdGlzc2UsIFJlY2xpbmluZyBOdWRlLCBKdWx5IDE5MzggI211c2V1bW9mbW9kZXJuYXJ0ICNoZW5yaW1hdGlzc2UKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreigs66l7q7wbpnrijhvfimep3j72gtp6k7em23xrnezms2a6yikgqy@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxruk57xuz26" target="_blank">Portrait of Paulo as Pierrot, 1929 #pablopicasso #picasso...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Portrait of Paulo as Pierrot, 1929 #pablopicasso #picasso...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 15:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBvcnRyYWl0IG9mIFBhdWxvIGFzIFBpZXJyb3QsIDE5MjkgI3BhYmxvcGljYXNzbyAjcGljYXNzbwo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreifwgjgsfykk6ktyvv64pvwxmrp6rz2k6bl6wgxxhc4ilekjqa5gvm@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrr6uhub32n" target="_blank">@Jay21041741 Check out Metropolitan Museum of Art: Arts of Africa, Oceania, and ...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    @Jay21041741 Check out Metropolitan Museum of Art: Arts of Africa, Oceania, and the Americas @met_africanart Cheers, @andreitr...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 14:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkBKYXkyMTA0MTc0MSBDaGVjayBvdXQgTWV0cm9wb2xpdGFuIE11c2V1bSBvZiBBcnQ6IEFydHMgb2YgQWZyaWNhLCBPY2VhbmlhLCBhbmQgdGhlIEFtZXJpY2FzIEBtZXRfYWZyaWNhbmFydCBDaGVlcnMsIEBhbmRyZWl0cgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreic2dkki2xgpvm2cm5snmhfhsaouzxoqbqhm24b5fmt4s4z3fnt7au@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrntlcgnn26" target="_blank">Pont Neuf #cortes #postimpressionism...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Pont Neuf #cortes #postimpressionism...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 13:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBvbnQgTmV1ZiAjY29ydGVzICNwb3N0aW1wcmVzc2lvbmlzbQo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreibe77jjsozdevw7fcrmr2sqehojruij5vsrot2pdo2cc5zceymdja@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrkibggos24" target="_blank">Victor Brauner, Alphabet de la Tête, 1938 #modernart #museumarchive...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Victor Brauner, Alphabet de la Tête, 1938 #modernart #museumarchive...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 12:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClZpY3RvciBCcmF1bmVyLCBBbHBoYWJldCBkZSBsYSBUw6p0ZSwgMTkzOCAjbW9kZXJuYXJ0ICNtdXNldW1hcmNoaXZlCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreifkg7ovj5eox4eubh5bateknjv5pxdw22jwlubng5f3rz5ywwddea@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrh4yuvxs24" target="_blank">Marcel Duchamp, Untitled from The Bride Stripped Bare by Her Bachelors, Even (Th...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Marcel Duchamp, Untitled from The Bride Stripped Bare by Her Bachelors, Even (The Green Box) (La mariée mise à nu par ses célibataires, même [Boîte verte]), 1934 #marcelduchamp #museumarchive...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 11:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck1hcmNlbCBEdWNoYW1wLCBVbnRpdGxlZCBmcm9tIFRoZSBCcmlkZSBTdHJpcHBlZCBCYXJlIGJ5IEhlciBCYWNoZWxvcnMsIEV2ZW4gKFRoZSBHcmVlbiBCb3gpIChMYSBtYXJpw6llIG1pc2Ugw6AgbnUgcGFyIHNlcyBjw6lsaWJhdGFpcmVzLCBtw6ptZSBbQm/DrnRlIHZlcnRlXSksIDE5MzQgI21hcmNlbGR1Y2hhbXAgI211c2V1bWFyY2hpdmUKPC9kaXY&#43;CjxzY3JpcHQ&#43;CgpsZXQgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gMDsKbGV0IHJlcG9ydFRpbWVvdXQgPSBudWxsOwoKZnVuY3Rpb24gcmVwb3J0SGVpZ2h0KCkgewogICAgY29uc3QgY29udGFpbmVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2NvbnRlbnQtY29udGFpbmVyJyk7CiAgICBpZiAoIWNvbnRhaW5lcikgcmV0dXJuOwogICAgCiAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIub2Zmc2V0SGVpZ2h0OwogICAgCiAgICAKICAgIGlmIChNYXRoLmFicyhoZWlnaHQgLSBsYXN0UmVwb3J0ZWRIZWlnaHQpIDwgNSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgIAogICAgCiAgICBpZiAocmVwb3J0VGltZW91dCkgewogICAgICAgIGNsZWFyVGltZW91dChyZXBvcnRUaW1lb3V0KTsKICAgIH0KICAgIAogICAgcmVwb3J0VGltZW91dCA9IHNldFRpbWVvdXQoKCkgPT4gewogICAgICAgIAogICAgICAgIGlmICh3aW5kb3cucGFyZW50ICE9PSB3aW5kb3cpIHsKICAgICAgICAgICAgbGFzdFJlcG9ydGVkSGVpZ2h0ID0gaGVpZ2h0OwogICAgICAgICAgICAKICAgICAgICAgICAgd2luZG93LnBhcmVudC5wb3N0TWVzc2FnZSh7CiAgICAgICAgICAgICAgICB0eXBlOiAnaWZyYW1lLWhlaWdodCcsCiAgICAgICAgICAgICAgICBoZWlnaHQ6IGhlaWdodCwKICAgICAgICAgICAgfSwgJyonKTsKICAgICAgICB9CiAgICB9LCA3NSk7Cn0KCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CgoKZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKCkgewogICAgY29uc3QgaW1hZ2VzID0gZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoJ2ltZycpOwogICAgZm9yIChsZXQgaW1nIG9mIGltYWdlcykgewogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignZXJyb3InLCByZXBvcnRIZWlnaHQpOwogICAgfQp9KTsKCgp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgcmVwb3J0SGVpZ2h0KTsKCgpyZXBvcnRIZWlnaHQoKTsKPC9zY3JpcHQ&#43;CjwvYm9keT4KPC9odG1sPg==" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreidnq6qjkbztkx23rvzkpjn4ktow6huoglz7wcx3xl64r4664aoqt4@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxrdrpbcwt24" target="_blank">Woman and Child, 1894 #impressionism #morisot...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Woman and Child, 1894 #impressionism #morisot...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 10:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CldvbWFuIGFuZCBDaGlsZCwgMTg5NCAjaW1wcmVzc2lvbmlzbSAjbW9yaXNvdAo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreictyoeks6e76pvoubayvmcsix4g54cm2quuvo3iewoildqn2rvqyy@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxraggdytr2p" target="_blank">Portrait of a man wearing a lavalliere, 1888 #cloisonnism #gauguin...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Portrait of a man wearing a lavalliere, 1888 #cloisonnism #gauguin...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 09:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBvcnRyYWl0IG9mIGEgbWFuIHdlYXJpbmcgYSBsYXZhbGxpZXJlLCAxODg4ICNjbG9pc29ubmlzbSAjZ2F1Z3Vpbgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiaf454gyf5sj3mtmyve2zmtdlkuwem5bpd76zkxhlhn5gozimy4zi@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxr534krm32p" target="_blank">Mascot, 1917 #mcescher #escher...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Mascot, 1917 #mcescher #escher...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 08:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck1hc2NvdCwgMTkxNyAjbWNlc2NoZXIgI2VzY2hlcgo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreibya2ob7onspnijxpdtaoxlziutydorq4lo6j7ucuinsbsvano4ke@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqzptwqft2h" target="_blank">Paul Klee, Street Children (Gassenkinder), 1912 #paulklee #museumarchive...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Paul Klee, Street Children (Gassenkinder), 1912 #paulklee #museumarchive...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 07:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBhdWwgS2xlZSwgU3RyZWV0IENoaWxkcmVuIChHYXNzZW5raW5kZXIpLCAxOTEyICNwYXVsa2xlZSAjbXVzZXVtYXJjaGl2ZQo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreifdgsidfptd7wn3pwjquwutx4wri4tqniodpp2knimctbqr5qovi4@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqwekewn72b" target="_blank">Bathers, 1894 #postimpressionism #paulcezanne...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Bathers, 1894 #postimpressionism #paulcezanne...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 06:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkJhdGhlcnMsIDE4OTQgI3Bvc3RpbXByZXNzaW9uaXNtICNwYXVsY2V6YW5uZQo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreifq6xxo3mn5zw6iirncla4b5iahxrdlldzfgvswdhyzwnlmikh5ja@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqszbgefa2v" target="_blank">John Singer Sargent, All&#39; Ave Maria, ca. 1902-1904 #johnsingersargent #museumarc...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    John Singer Sargent, All&#39; Ave Maria, ca. 1902-1904 #johnsingersargent #museumarchive...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 05:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkpvaG4gU2luZ2VyIFNhcmdlbnQsIEFsbCcgQXZlIE1hcmlhLCBjYS4gMTkwMi0xOTA0ICNqb2huc2luZ2Vyc2FyZ2VudCAjbXVzZXVtYXJjaGl2ZQo8L2Rpdj4KPHNjcmlwdD4KCmxldCBsYXN0UmVwb3J0ZWRIZWlnaHQgPSAwOwpsZXQgcmVwb3J0VGltZW91dCA9IG51bGw7CgpmdW5jdGlvbiByZXBvcnRIZWlnaHQoKSB7CiAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY29udGVudC1jb250YWluZXInKTsKICAgIGlmICghY29udGFpbmVyKSByZXR1cm47CiAgICAKICAgIGNvbnN0IGhlaWdodCA9IGNvbnRhaW5lci5vZmZzZXRIZWlnaHQ7CiAgICAKICAgIAogICAgaWYgKE1hdGguYWJzKGhlaWdodCAtIGxhc3RSZXBvcnRlZEhlaWdodCkgPCA1KSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgCiAgICAKICAgIGlmIChyZXBvcnRUaW1lb3V0KSB7CiAgICAgICAgY2xlYXJUaW1lb3V0KHJlcG9ydFRpbWVvdXQpOwogICAgfQogICAgCiAgICByZXBvcnRUaW1lb3V0ID0gc2V0VGltZW91dCgoKSA9PiB7CiAgICAgICAgCiAgICAgICAgaWYgKHdpbmRvdy5wYXJlbnQgIT09IHdpbmRvdykgewogICAgICAgICAgICBsYXN0UmVwb3J0ZWRIZWlnaHQgPSBoZWlnaHQ7CiAgICAgICAgICAgIAogICAgICAgICAgICB3aW5kb3cucGFyZW50LnBvc3RNZXNzYWdlKHsKICAgICAgICAgICAgICAgIHR5cGU6ICdpZnJhbWUtaGVpZ2h0JywKICAgICAgICAgICAgICAgIGhlaWdodDogaGVpZ2h0LAogICAgICAgICAgICB9LCAnKicpOwogICAgICAgIH0KICAgIH0sIDc1KTsKfQoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgcmVwb3J0SGVpZ2h0KTsKCgpkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdET01Db250ZW50TG9hZGVkJywgZnVuY3Rpb24oKSB7CiAgICBjb25zdCBpbWFnZXMgPSBkb2N1bWVudC5nZXRFbGVtZW50c0J5VGFnTmFtZSgnaW1nJyk7CiAgICBmb3IgKGxldCBpbWcgb2YgaW1hZ2VzKSB7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwogICAgICAgIGltZy5hZGRFdmVudExpc3RlbmVyKCdlcnJvcicsIHJlcG9ydEhlaWdodCk7CiAgICB9Cn0pOwoKCndpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdyZXNpemUnLCByZXBvcnRIZWlnaHQpOwoKCnJlcG9ydEhlaWdodCgpOwo8L3NjcmlwdD4KPC9ib2R5Pgo8L2h0bWw&#43;" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreia7r4l6fpfb4yluiu4ia2bfetyhai3thhvyehmeafsggnvt4phvsy@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqpnxnx6e24" target="_blank">Otto Dix, Dance of Death 1917 (Dead Man Heights) (Totentanz anno 17 [Höhe Toter ...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Otto Dix, Dance of Death 1917 (Dead Man Heights) (Totentanz anno 17 [Höhe Toter Mann]) from The War (Der Krieg), 1924 #museumofmodernart #ottodix...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 04:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck90dG8gRGl4LCBEYW5jZSBvZiBEZWF0aCAxOTE3IChEZWFkIE1hbiBIZWlnaHRzKSAoVG90ZW50YW56IGFubm8gMTcgW0jDtmhlIFRvdGVyIE1hbm5dKSBmcm9tIFRoZSBXYXIgKERlciBLcmllZyksIDE5MjQgI211c2V1bW9mbW9kZXJuYXJ0ICNvdHRvZGl4CjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreibo7r26gbtkpdssrvte4qn4djczouqpv2xgpoevyfojjl4eqtmfae@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqmcp2mjs2h" target="_blank">French Window at Collioure, 1914 #matisse #expressionism...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    French Window at Collioure, 1914 #matisse #expressionism...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 03:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;CkZyZW5jaCBXaW5kb3cgYXQgQ29sbGlvdXJlLCAxOTE0ICNtYXRpc3NlICNleHByZXNzaW9uaXNtCjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreiebpb4mzuaqgg7qifb6yeisjy2mtjl66p5zxz3og2atu4dnqk7aju@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqixf2ilu2h" target="_blank">Portrait of Paul Signac, 1890 #pointillism #seurat...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Portrait of Paul Signac, 1890 #pointillism #seurat...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 02:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;ClBvcnRyYWl0IG9mIFBhdWwgU2lnbmFjLCAxODkwICNwb2ludGlsbGlzbSAjc2V1cmF0CjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+                <details class="item">
+                    <summary class="item-summary">
+                        
+                        
+                        <div class="item-thumbnail">
+                            <img data-src="https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:iwl32vekohccji6khfdt3clw/bafkreidbn4fstwhvbu5fl2qxtunwqjwdxpzpvea3kwfzasaaszwbamm44a@jpeg" alt="" loading="lazy" class="thumbnail">
+                        </div>
+                        
+                        <div class="item-info">
+                            <span class="item-title">
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                
+                                <a href="https://bsky.app/profile/did:plc:iwl32vekohccji6khfdt3clw/post/3lxqfm4czqz2n" target="_blank">Marcel Duchamp, Network of Stoppages, Paris, 1914 #museumarchive #museumofmodern...</a>
+                                
+                            </span>
+                            <div class="item-excerpt">
+                                
+                                    Marcel Duchamp, Network of Stoppages, Paris, 1914 #museumarchive #museumofmodernart...
+                                
+                            </div>
+                        </div>
+                        <time class="item-date">Sep 1, 2025 01:00 UTC</time>
+                    </summary>
+                    <div class="item-content">
+                        
+                            <content-isolation-iframe>
+                                <iframe data-src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw&#43;CjxodG1sPgo8aGVhZD4KPG1ldGEgY2hhcnNldD0idXRmLTgiPgo8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPgo8c3R5bGU&#43;CiogeyAKICAgIG1hcmdpbjogMDsgCiAgICBwYWRkaW5nOiAwOyAKICAgIGJveC1zaXppbmc6IGJvcmRlci1ib3g7IAp9CgpodG1sLCBib2R5IHsgCiAgICB3aWR0aDogMTAwJTsgCiAgICBtYXJnaW46IDA7IAogICAgcGFkZGluZzogMDsgCn0KCmJvZHkgewogICAgZm9udC1mYW1pbHk6IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgJ1NlZ29lIFVJJywgUm9ib3RvLCBPeHlnZW4sIFVidW50dSwgQ2FudGFyZWxsLCBzYW5zLXNlcmlmOwogICAgbGluZS1oZWlnaHQ6IDEuNjsKICAgIGNvbG9yOiAjMzMzOwogICAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7CiAgICB3b3JkLXdyYXA6IGJyZWFrLXdvcmQ7CiAgICBvdmVyZmxvdy14OiBoaWRkZW47Cn0KCmltZyB7IAogICAgbWF4LXdpZHRoOiAxMDAlOyAKICAgIGhlaWdodDogYXV0bzsgCiAgICBkaXNwbGF5OiBibG9jazsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCmEgeyAKICAgIGNvbG9yOiAjMzQ5OGRiOyAKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsgCn0KCmE6aG92ZXIgeyAKICAgIHRleHQtZGVjb3JhdGlvbjogdW5kZXJsaW5lOyAKfQoKcCB7IAogICAgbWFyZ2luLWJvdHRvbTogMXJlbTsgCn0KCmgxLCBoMiwgaDMsIGg0LCBoNSwgaDYgeyAKICAgIG1hcmdpbjogMXJlbSAwIDAuNXJlbSAwOyAKfQoKdWwsIG9sIHsgCiAgICBtYXJnaW46IDAgMCAxcmVtIDJyZW07IAp9CgpwcmUgewogICAgYmFja2dyb3VuZDogIzJjM2U1MDsKICAgIGNvbG9yOiAjZWNmMGYxOwogICAgcGFkZGluZzogMXJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDRweDsKICAgIG92ZXJmbG93LXg6IGF1dG87CiAgICBtYXJnaW46IDFyZW0gMDsKfQoKY29kZSB7CiAgICBiYWNrZ3JvdW5kOiAjZWNmMGYxOwogICAgcGFkZGluZzogMC4ycmVtIDAuNHJlbTsKICAgIGJvcmRlci1yYWRpdXM6IDNweDsKICAgIGZvbnQtc2l6ZTogMC45cmVtOwp9CgpwcmUgY29kZSB7CiAgICBiYWNrZ3JvdW5kOiBub25lOwogICAgcGFkZGluZzogMDsKfQoKYmxvY2txdW90ZSB7CiAgICBib3JkZXItbGVmdDogNHB4IHNvbGlkICMzNDk4ZGI7CiAgICBwYWRkaW5nLWxlZnQ6IDFyZW07CiAgICBtYXJnaW46IDFyZW0gMDsKICAgIGNvbG9yOiAjN2Y4YzhkOwp9Cgp0YWJsZSB7IAogICAgd2lkdGg6IDEwMCU7IAogICAgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgCiAgICBtYXJnaW46IDFyZW0gMDsgCn0KCnRoLCB0ZCB7IAogICAgcGFkZGluZzogMC41cmVtOyAKICAgIGJvcmRlcjogMXB4IHNvbGlkICNkZGQ7IAogICAgdGV4dC1hbGlnbjogbGVmdDsKfQoKdGggewogICAgYmFja2dyb3VuZDogI2Y1ZjVmNTsKICAgIGZvbnQtd2VpZ2h0OiA2MDA7Cn0KCiAKQG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTogZGFyaykgewogICAgYm9keSB7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYSB7IAogICAgICAgIGNvbG9yOiAjNjNiM2VkOyAKICAgIH0KICAgIAogICAgY29kZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICM0YTU1Njg7IAogICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgIH0KICAgIAogICAgYmxvY2txdW90ZSB7IAogICAgICAgIGNvbG9yOiAjYTBhZWMwOyAKICAgICAgICBib3JkZXItbGVmdC1jb2xvcjogIzYzYjNlZDsgCiAgICB9CiAgICAKICAgIHByZSB7IAogICAgICAgIGJhY2tncm91bmQ6ICMxYTFhMWE7IAogICAgfQogICAgCiAgICB0aCwgdGQgeyAKICAgICAgICBib3JkZXItY29sb3I6ICM0YTU1Njg7IAogICAgfQogICAgCiAgICB0aCB7CiAgICAgICAgYmFja2dyb3VuZDogIzJkMmQyZDsKICAgIH0KfQo8L3N0eWxlPgo8L2hlYWQ&#43;Cjxib2R5Pgo8ZGl2IGlkPSJjb250ZW50LWNvbnRhaW5lciI&#43;Ck1hcmNlbCBEdWNoYW1wLCBOZXR3b3JrIG9mIFN0b3BwYWdlcywgUGFyaXMsIDE5MTQgI211c2V1bWFyY2hpdmUgI211c2V1bW9mbW9kZXJuYXJ0CjwvZGl2Pgo8c2NyaXB0PgoKbGV0IGxhc3RSZXBvcnRlZEhlaWdodCA9IDA7CmxldCByZXBvcnRUaW1lb3V0ID0gbnVsbDsKCmZ1bmN0aW9uIHJlcG9ydEhlaWdodCgpIHsKICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjb250ZW50LWNvbnRhaW5lcicpOwogICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgIAogICAgY29uc3QgaGVpZ2h0ID0gY29udGFpbmVyLm9mZnNldEhlaWdodDsKICAgIAogICAgCiAgICBpZiAoTWF0aC5hYnMoaGVpZ2h0IC0gbGFzdFJlcG9ydGVkSGVpZ2h0KSA8IDUpIHsKICAgICAgICByZXR1cm47CiAgICB9CiAgICAKICAgIAogICAgaWYgKHJlcG9ydFRpbWVvdXQpIHsKICAgICAgICBjbGVhclRpbWVvdXQocmVwb3J0VGltZW91dCk7CiAgICB9CiAgICAKICAgIHJlcG9ydFRpbWVvdXQgPSBzZXRUaW1lb3V0KCgpID0&#43;IHsKICAgICAgICAKICAgICAgICBpZiAod2luZG93LnBhcmVudCAhPT0gd2luZG93KSB7CiAgICAgICAgICAgIGxhc3RSZXBvcnRlZEhlaWdodCA9IGhlaWdodDsKICAgICAgICAgICAgCiAgICAgICAgICAgIHdpbmRvdy5wYXJlbnQucG9zdE1lc3NhZ2UoewogICAgICAgICAgICAgICAgdHlwZTogJ2lmcmFtZS1oZWlnaHQnLAogICAgICAgICAgICAgICAgaGVpZ2h0OiBoZWlnaHQsCiAgICAgICAgICAgIH0sICcqJyk7CiAgICAgICAgfQogICAgfSwgNzUpOwp9CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2xvYWQnLCByZXBvcnRIZWlnaHQpOwoKCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICAgIGNvbnN0IGltYWdlcyA9IGRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCdpbWcnKTsKICAgIGZvciAobGV0IGltZyBvZiBpbWFnZXMpIHsKICAgICAgICBpbWcuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIHJlcG9ydEhlaWdodCk7CiAgICAgICAgaW1nLmFkZEV2ZW50TGlzdGVuZXIoJ2Vycm9yJywgcmVwb3J0SGVpZ2h0KTsKICAgIH0KfSk7CgoKd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Jlc2l6ZScsIHJlcG9ydEhlaWdodCk7CgoKcmVwb3J0SGVpZ2h0KCk7Cjwvc2NyaXB0Pgo8L2JvZHk&#43;CjwvaHRtbD4=" class="content-iframe"></iframe>
+                            </content-isolation-iframe>
+                        
+                    </div>
+                </details>
+                
+            </div>
+            </lazy-image-loader>
+        </article>
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+
+    <footer>
+        <p>Generated by feedspool at 2025-09-02 03:46:46 UTC</p>
+    </footer>
+</body>
+</html>

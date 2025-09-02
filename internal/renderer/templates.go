@@ -101,6 +101,11 @@ func LoadDefaultTemplate() (*template.Template, error) {
 	return LoadTemplateFromFS(GetEmbeddedTemplates(), "index.html")
 }
 
+// LoadDefaultTemplateByName loads a specific template from embedded files.
+func LoadDefaultTemplateByName(name string) (*template.Template, error) {
+	return LoadTemplateFromFS(GetEmbeddedTemplates(), name)
+}
+
 // LoadCustomTemplate loads a template from a custom filesystem path.
 func LoadCustomTemplate(templateDir, name string) (*template.Template, error) {
 	fsys := fsFromDirImpl(templateDir)
