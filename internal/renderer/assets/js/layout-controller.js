@@ -15,7 +15,7 @@ export class LayoutController extends HTMLElement {
         
         // Default preferences
         this.preferences = {
-            viewMode: 'list',
+            viewMode: 'card',
             showThumbnails: true
         };
         

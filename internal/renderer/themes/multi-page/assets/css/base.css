@@ -16,6 +16,19 @@ body {
     padding: 20px;
 }
 
+/* Wider layouts for larger screens */
+@media (min-width: 1800px) {
+    body {
+        max-width: 1600px;
+    }
+}
+
+@media (min-width: 2400px) {
+    body {
+        max-width: 2200px;
+    }
+}
+
 header {
     background: var(--bg-secondary);
     padding: 0.5rem 1rem;

@@ -319,3 +319,30 @@
         padding: 0.625rem 0.875rem 0.625rem 0.625rem;
     }
 }
+
+/* Wide screen optimizations for card view */
+@media (min-width: 1800px) {
+    .view-card .items {
+        /* Optimize for 4-5 cards per row on 1600px container */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        max-width: 100%;
+        margin: 0 auto;
+        gap: 1.25rem;
+        padding: 1rem;
+    }
+    
+    .view-card .item {
+        max-width: none;  /* Remove the 360px constraint */
+    }
+}
+
+/* Extra wide screens */
+@media (min-width: 2400px) {
+    .view-card .items {
+        /* Optimize for 5-6 cards per row on 2200px container */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        max-width: 100%;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+}
