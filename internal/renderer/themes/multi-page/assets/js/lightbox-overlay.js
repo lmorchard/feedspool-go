@@ -43,8 +43,8 @@ export class LightboxOverlay extends HTMLElement {
         // Setup event listeners
         this.setupEventListeners();
         
-        // Monitor details elements
-        this.monitorDetailsElements();
+        // Setup document-level event delegation for details elements
+        this.setupDetailsEventDelegation();
     }
 
     setupEventListeners() {
@@ -68,19 +68,33 @@ export class LightboxOverlay extends HTMLElement {
         });
     }
 
-    monitorDetailsElements() {
-        // Find all item details elements
-        const detailsElements = document.querySelectorAll('.item');
-        
-        detailsElements.forEach(details => {
-            details.addEventListener('toggle', (e) => {
-                if (e.target.open && this.isCardView()) {
-                    // Close other details first
-                    this.closeAllDetails();
-                    // Open this one in lightbox
-                    this.openLightbox(e.target);
-                }
-            });
+    setupDetailsEventDelegation() {
+        // Use document-level event delegation to handle dynamically added elements
+        // Note: 'toggle' events don't bubble, so we use 'click' on summary elements
+        document.addEventListener('click', (e) => {
+            // Check if click was on a summary element within an .item details element
+            const summary = e.target.closest('summary');
+            if (!summary) return;
+            
+            const details = summary.closest('details.item');
+            if (!details) return;
+            
+            // Only handle in card view mode
+            if (!this.isCardView()) return;
+            
+            // Prevent default to handle opening ourselves
+            e.preventDefault();
+            
+            // If details is currently closed, open it in lightbox
+            if (!details.open) {
+                // Close other details first
+                this.closeAllDetails();
+                // Open this one in lightbox
+                this.openLightbox(details);
+            } else {
+                // If it's open, close the lightbox
+                this.closeLightbox();
+            }
         });
     }
 

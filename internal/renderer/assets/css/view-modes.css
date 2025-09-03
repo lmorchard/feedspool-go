@@ -6,6 +6,15 @@
     display: block;
 }
 
+.view-list .items .item .item-title {
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.view-list .items .item .item-excerpt {
+    color: var(--text-secondary);    
+}
+
 /* Card View */
 .view-card .items {
     display: grid;
@@ -52,7 +61,7 @@
 .view-card .item-thumbnail {
     margin: 0;
     position: relative;
-    height: 160px;
+    height: 225px;
     overflow: hidden;
     background: var(--bg-tertiary);
     flex-shrink: 0;
@@ -141,6 +150,12 @@
     margin: -0.5rem;
     border-radius: 6px;
     transition: all 0.2s ease;
+}
+
+.view-card .item:has(.item-thumbnail) .item-title a {
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    transform: translateY(-1px);
 }
 
 .view-card .item-title a:hover {
@@ -302,5 +317,32 @@
     
     .view-card .item-date {
         padding: 0.625rem 0.875rem 0.625rem 0.625rem;
+    }
+}
+
+/* Wide screen optimizations for card view */
+@media (min-width: 1800px) {
+    .view-card .items {
+        /* Optimize for 4-5 cards per row on 1600px container */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        max-width: 100%;
+        margin: 0 auto;
+        gap: 1.25rem;
+        padding: 1rem;
+    }
+    
+    .view-card .item {
+        max-width: none;  /* Remove the 360px constraint */
+    }
+}
+
+/* Extra wide screens */
+@media (min-width: 2400px) {
+    .view-card .items {
+        /* Optimize for 5-6 cards per row on 2200px container */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        max-width: 100%;
+        gap: 1.5rem;
+        padding: 1.5rem;
     }
 }

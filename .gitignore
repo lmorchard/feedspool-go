@@ -47,3 +47,5 @@ build/
 coverage.out
 tmp/
 feedspool.yaml
+
+.playwright-mcp/
