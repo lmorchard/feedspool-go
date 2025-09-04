@@ -1,5 +1,8 @@
 name: Release
 
+# This workflow assumes tags are created from main branch after CI has passed.
+# It focuses on building multi-platform release artifacts without redundant CI.
+
 on:
   push:
     tags:
@@ -9,13 +12,8 @@ permissions:
   contents: write
 
 jobs:
-  # Run CI checks first (lint, test) before building release
-  ci:
-    uses: ./.github/workflows/ci.yml
-
   build:
     name: Build
-    needs: ci
     strategy:
       matrix:
         include:
