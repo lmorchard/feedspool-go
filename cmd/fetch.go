@@ -135,11 +135,11 @@ func runFetch(_ *cobra.Command, args []string) error {
 		return runSingleURLFetch(ctx, orchestrator, args[0], opts, cfg)
 	}
 
-	if fetchFormat != "" || fetchFilename != "" {
+	if fetchFormat != "" || fetchFilename != "" || cfg.HasDefaultFeedList() {
 		return runFileFetch(ctx, orchestrator, opts, cfg)
 	}
 
-	// Database mode (no args, no file flags)
+	// Database mode (no args, no file flags, no config defaults)
 	return runDatabaseFetch(ctx, orchestrator, opts, cfg)
 }
 
