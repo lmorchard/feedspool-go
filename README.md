@@ -442,3 +442,4 @@ This allows you to:
 - [ ] add per feed fetch history log table - e.g. to detect failed feeds that should be removed
 - [ ] Support using a feed list at a URL - e.g. might be cool to source a feed list from linkding or such
 - [ ] add file watcher to rebuild and re-render site on changes to templates or assets?
+- [ ] add enclosure media URL player - e.g. for podcasts

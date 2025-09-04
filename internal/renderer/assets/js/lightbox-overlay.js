@@ -82,6 +82,9 @@ export class LightboxOverlay extends HTMLElement {
             // Only handle in card view mode
             if (!this.isCardView()) return;
             
+            // Don't intercept clicks on links - let them work normally
+            if (e.target.closest('a')) return;
+            
             // Prevent default to handle opening ourselves
             e.preventDefault();
             
