@@ -1,37 +1,55 @@
 name: Build and Push Docker Image
 
-# This workflow builds Docker images using binaries from the rolling release
+# This workflow builds Docker images using pre-built binaries from releases:
+# - Rolling releases: Triggered after rolling release workflow completes
+# - Tagged releases: Triggered after tagged release is published
 
 on:
   workflow_run:
-    workflows: ["Rolling Release"]
-    branches: [main]
+    workflows: ["Rolling Release", "Release"]
     types: [completed]
-  release:
-    types: [published]
 
 jobs:
   docker:
-    # Only run if the rolling release workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'release' }}
+    # Only run if the upstream workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download rolling release binary
-        if: github.event_name == 'workflow_run'
+      - name: Download release binary
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Download the Linux AMD64 binary from the latest release
-          gh release download latest --pattern "feedspool_latest_linux_amd64.tar.gz" --dir ./temp
+          # Determine if this was triggered by Rolling Release or Release workflow
+          if [ "${{ github.event.workflow_run.name }}" = "Rolling Release" ]; then
+            # Download from latest rolling release
+            PATTERN="feedspool_latest_linux_amd64.tar.gz"
+            TAG="latest"
+            echo "Triggered by Rolling Release - using latest tag"
+          else
+            # This was triggered by Release workflow, get the tag from the ref
+            # The workflow_run event doesn't give us the tag directly, so we get the latest release
+            TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+            PATTERN="feedspool_${TAG}_linux_amd64.tar.gz"
+            echo "Triggered by Release workflow - using tag ${TAG}"
+          fi
+          
+          echo "Downloading binary for ${TAG} with pattern ${PATTERN}"
+          gh release download "${TAG}" --pattern "${PATTERN}" --dir ./temp
           cd temp
-          tar -xzf feedspool_latest_linux_amd64.tar.gz
+          tar -xzf "${PATTERN}"
           mv feedspool ../
           cd ..
           rm -rf temp
           chmod +x feedspool
+          
+          # Verify the binary was downloaded and is executable
+          echo "Binary verification:"
+          ls -la feedspool
+          file feedspool
+          ./feedspool version || echo "Binary test failed"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,8 +75,17 @@ jobs:
             org.opencontainers.image.description=RSS/Atom feed aggregator and static site generator
             org.opencontainers.image.vendor=lmorchard
 
+      - name: Verify binary in build context
+        run: |
+          echo "Files in build context:"
+          ls -la
+          if [ ! -f feedspool ]; then
+            echo "ERROR: feedspool binary not found in build context"
+            exit 1
+          fi
+          echo "Binary verified in build context"
+
       - name: Build and push Docker image (from release binary)
-        if: github.event_name == 'workflow_run'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -69,16 +96,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
-
-      - name: Build and push Docker image (from source)
-        if: github.event_name == 'release'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
