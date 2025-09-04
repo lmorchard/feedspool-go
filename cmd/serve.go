@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -31,10 +32,11 @@ The server serves files from the specified directory (default: ./build) and prov
 - Request logging (when verbose mode is enabled)
 
 Examples:
-  feedspool serve                    # Serve from ./build on port 8080
+  feedspool serve                    # Serve from ./build on port 8889
   feedspool serve --port 3000        # Serve on port 3000
   feedspool serve --dir ./site       # Serve from ./site directory
   feedspool serve -v                 # Enable request logging
+  PORT=9000 feedspool serve          # Serve on port 9000 (via env var)
 
 This server is intended for development and testing. For production use,
 consider using a dedicated web server like nginx or Apache.`,
@@ -81,14 +83,21 @@ func runServe(_ *cobra.Command, _ []string) error {
 }
 
 func buildServeConfig(cfg *config.Config) *server.Config {
-	// Get values from viper (includes config file values)
+	// Start with viper values (includes config file values)
 	config := &server.Config{
 		Port:    viper.GetInt("serve.port"),
 		Dir:     viper.GetString("serve.dir"),
 		Verbose: cfg.Verbose,
 	}
 
-	// Override with command line flags if provided
+	// Check for PORT environment variable (overrides config file)
+	if portEnv := os.Getenv("PORT"); portEnv != "" {
+		if port, err := strconv.Atoi(portEnv); err == nil {
+			config.Port = port
+		}
+	}
+
+	// Command line flags have highest priority
 	if servePort != defaultPort {
 		config.Port = servePort
 	}
