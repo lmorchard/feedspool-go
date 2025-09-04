@@ -6,16 +6,18 @@ set -e
 
 echo "Starting feedspool container..."
 
+# If the command is not 'serve', just run it directly without setting up cron
+if [ "$1" != "serve" ]; then
+    exec /usr/local/bin/feedspool "$@"
+fi
+
 # Set up cron job for feed updates (every 30 minutes)
 echo "Setting up cron job for feed updates..."
-echo "*/30 * * * * cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render" > /etc/crontabs/root
-
-# Ensure cron output goes to container logs
 echo "*/30 * * * * cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render > /proc/1/fd/1 2> /proc/1/fd/2" > /etc/crontabs/root
 
-# Start crond in background with logging to stderr
+# Start crond in background
 echo "Starting cron daemon..."
-crond -f -l 2 &
+crond -f &
 CRON_PID=$!
 
 # Function to handle shutdown signals

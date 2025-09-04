@@ -1,8 +1,8 @@
 # Build stage
 FROM docker.io/golang:alpine AS builder
 
-# Install make and git for the build process
-RUN apk add --no-cache make git
+# Install build dependencies including gcc for CGO
+RUN apk add --no-cache make git gcc musl-dev
 
 # Set working directory
 WORKDIR /app
@@ -15,6 +15,8 @@ RUN go mod download
 COPY . .
 
 # Build the binary using make (not go build) for proper versioning
+# Enable CGO for SQLite support
+ENV CGO_ENABLED=1
 RUN make build
 
 # Runtime stage
