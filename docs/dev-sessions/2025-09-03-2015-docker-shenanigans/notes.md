@@ -75,6 +75,8 @@ Successfully implemented complete Docker containerization for feedspool-go, incl
 
 ### Post-Implementation Discovery (During Retrospective)
 5. **Documentation accuracy issue** - Docker README included incorrect `feedspool.yaml` configuration structure (used non-existent `feeds.source` and `site` sections instead of actual `feedlist` configuration)
+6. **Container immediate exit issue** - Container exits silently after startup, likely due to missing database initialization
+7. **Poor initial user experience** - Container required waiting up to 30 minutes for first cron cycle to get any content
 
 ## Key Insights & Lessons Learned
 
@@ -140,8 +142,11 @@ Successfully implemented complete Docker containerization for feedspool-go, incl
 ### Documentation Phase
 - Create documentation templates for common scenarios (Docker, APIs, etc.)
 - Include "quick verification" commands users can run to validate setup
-- **Validate configuration examples against actual code** - Cross-reference sample configs with existing example files or code structure
+- **Validate configuration examples against real code** - Cross-reference sample configs with existing example files or code structure
 - Consider automated testing of documentation examples to catch configuration errors
+- **Test containers in production-like environments** - Local testing limitations prevented discovery of critical startup issues
+- **Prioritize immediate user value** - Containers should provide immediate functionality rather than requiring wait times
+- **Add robust error handling and logging** - Silent failures make debugging difficult for users
 
 ## Final Assessment
 

@@ -223,6 +223,8 @@ docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
 ```
 
 This will:
+- Initialize the database if it doesn't exist
+- Immediately fetch feeds and render HTML content
 - Start the feedspool web server on port 8889
 - Mount `./feedspool-data` directory for persistent data
 - Automatically fetch and render feeds every 30 minutes via cron

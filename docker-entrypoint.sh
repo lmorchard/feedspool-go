@@ -31,6 +31,17 @@ shutdown_handler() {
 # Set up signal traps for graceful shutdown
 trap 'shutdown_handler' SIGTERM SIGINT
 
+# Initialize database if it doesn't exist
+if [ ! -f "/data/feeds.db" ]; then
+    echo "Initializing database..."
+    /usr/local/bin/feedspool init || echo "Database initialization failed - continuing anyway"
+fi
+
+# Run initial fetch and render to populate content immediately
+echo "Running initial fetch and render..."
+/usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
+/usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
+
 # Start feedspool serve in the foreground
 echo "Starting feedspool serve..."
 exec /usr/local/bin/feedspool "$@"

@@ -30,7 +30,7 @@ Build a Docker container that runs `feedspool serve` as a web server to serve up
 ### Logging & Error Handling
 - **Logging**: All output (web server and cron jobs) goes to stdout/stderr for Docker logging
 - **Error Handling**: If cron job fails, log error and continue - retry in next 30-minute cycle
-- **Initial Run**: Wait for first cron cycle (no immediate fetch/render on startup)
+- **Initial Run**: Run fetch and render immediately on startup for immediate content, then continue with scheduled updates
 
 ### Distribution
 - **Docker Hub**: Publish to lmorchard/feedspool
