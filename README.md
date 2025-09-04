@@ -327,6 +327,20 @@ cd feedspool-go
 docker build -t feedspool .
 ```
 
+#### Docker Build Options
+
+This project includes two Docker build approaches:
+
+- **`Dockerfile`** - Multi-stage build that compiles from source code
+  - Use when building locally or when you don't have a pre-built binary
+  - Slower build but completely self-contained
+  - `docker build -t feedspool .`
+
+- **`Dockerfile.prebuilt`** - Single-stage build using a pre-compiled binary
+  - Used by GitHub Actions for faster CI/CD builds
+  - Requires the `feedspool` binary to exist in the build context
+  - `make build && docker build -f Dockerfile.prebuilt -t feedspool .`
+
 ### Manual Operations
 
 Run one-time commands without starting the full service:
