@@ -77,6 +77,8 @@ Successfully implemented complete Docker containerization for feedspool-go, incl
 5. **Documentation accuracy issue** - Docker README included incorrect `feedspool.yaml` configuration structure (used non-existent `feeds.source` and `site` sections instead of actual `feedlist` configuration)
 6. **Container immediate exit issue** - Container exits silently after startup, likely due to missing database initialization
 7. **Poor initial user experience** - Container required waiting up to 30 minutes for first cron cycle to get any content
+8. **Missing CI dependency** - Docker workflow should only build/push after lint, test, and build steps pass
+9. **Critical fetch command bug** - `feedspool fetch` with no CLI flags ignores config defaults and uses database mode instead of file mode
 
 ## Key Insights & Lessons Learned
 
