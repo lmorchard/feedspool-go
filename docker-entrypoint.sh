@@ -43,16 +43,87 @@ shutdown_handler() {
 # Set up signal traps for graceful shutdown
 trap 'shutdown_handler' SIGTERM SIGINT
 
+# Create a default configuration file if it doesn't exist
+if [ ! -f "/data/feedspool.yaml" ]; then
+    echo "Creating default feedspool.yaml configuration..."
+    
+    # Detect which feed file format is present and configure accordingly
+    FEED_FORMAT="text"
+    FEED_FILENAME="feeds.txt"
+    
+    if [ -f "/data/feeds.opml" ]; then
+        echo "Detected feeds.opml - configuring for OPML format"
+        FEED_FORMAT="opml"
+        FEED_FILENAME="feeds.opml"
+    elif [ -f "/data/feeds.txt" ]; then
+        echo "Detected feeds.txt - configuring for text format"
+        FEED_FORMAT="text"
+        FEED_FILENAME="feeds.txt"
+    else
+        echo "No feed file detected - will use default configuration (feeds.txt)"
+    fi
+    
+    cat > /data/feedspool.yaml << YAML
+# Auto-generated feedspool configuration for Docker
+database: /data/feeds.db
+
+# Default feed list settings
+feedlist:
+  format: "$FEED_FORMAT"
+  filename: "$FEED_FILENAME"
+
+# Render output settings  
+render:
+  output_dir: "/data/build"
+  default_max_age: "24h"
+  
+# Server settings (can be overridden with PORT env var)
+serve:
+  port: 8889
+  dir: "/data/build"
+
+# Fetch settings
+fetch:
+  with_unfurl: true       # Enable metadata extraction
+  concurrency: 32
+  max_items: 100
+
+# Unfurl settings
+unfurl:
+  skip_robots: false
+  retry_after: "1h"
+  concurrency: 8
+YAML
+    echo "Default configuration created at /data/feedspool.yaml (format: $FEED_FORMAT, file: $FEED_FILENAME)"
+fi
+
 # Initialize database if it doesn't exist
 if [ ! -f "/data/feeds.db" ]; then
     echo "Initializing database..."
     /usr/local/bin/feedspool init || echo "Database initialization failed - continuing anyway"
 fi
 
-# Run initial fetch and render to populate content immediately
-echo "Running initial fetch and render..."
-/usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
-/usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
+# Check if feed file exists before running fetch
+if [ -f "/data/feeds.txt" ] || [ -f "/data/feeds.opml" ]; then
+    # Run initial fetch and render to populate content immediately
+    echo "Running initial fetch and render..."
+    /usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
+    /usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
+else
+    echo "==========================================================================="
+    echo "WARNING: No feed file found!"
+    echo ""
+    echo "Please create one of the following files in your mounted volume:"
+    echo "  - feeds.txt   (one URL per line)"  
+    echo "  - feeds.opml  (OPML format)"
+    echo ""
+    echo "Example feeds.txt:"
+    echo "  https://feeds.bbci.co.uk/news/rss.xml"
+    echo "  https://www.reddit.com/r/programming.rss"
+    echo ""
+    echo "The container will continue running but won't have any feeds to display."
+    echo "==========================================================================="
+fi
 
 # Start feedspool serve in the foreground
 echo "Starting feedspool serve..."

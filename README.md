@@ -217,26 +217,43 @@ feedspool is available as a Docker container for easy deployment and hosting.
 
 ### Quick Start
 
+The simplest way to get started is with just a feeds file:
+
 ```bash
-# Pull and run the latest image
+# Create a directory and add your feeds
+mkdir feedspool-data
+echo "https://feeds.bbci.co.uk/news/rss.xml" > feedspool-data/feeds.txt
+echo "https://www.reddit.com/r/programming.rss" >> feedspool-data/feeds.txt
+
+# Run the container
 docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
 ```
 
-This will:
-- Initialize the database if it doesn't exist
-- Immediately fetch feeds and render HTML content
-- Start the feedspool web server on port 8889
-- Mount `./feedspool-data` directory for persistent data
-- Automatically fetch and render feeds every 30 minutes via cron
+The container will automatically:
+- Detect your `feeds.txt` (or `feeds.opml`) file
+- Create a default configuration optimized for Docker
+- Initialize the database
+- Fetch and render your feeds immediately
+- Start the web server on port 8889
+- Update feeds every 30 minutes via cron
 
-### Configuration
+### Minimal Configuration
 
-Place these files in your mounted directory (`./feedspool-data` in the example above):
+The Docker container is designed to work with minimal setup. Just provide one of these files in your mounted volume:
 
-#### Required Files
-- **feedspool.yaml** - Main configuration file
+- **feeds.txt** - Simple text file with one feed URL per line
+- **feeds.opml** - OPML format feed list
+
+The container will automatically detect which format you're using and configure itself accordingly. No `feedspool.yaml` required!
+
+### Advanced Configuration
+
+For more control, you can provide a custom configuration. Place these files in your mounted directory:
+
+#### Files (all optional - sensible defaults are provided)
+- **feedspool.yaml** - Custom configuration (auto-generated if missing)
 - **feeds.txt** or **feeds.opml** - Your feed subscriptions
-- **feeds.db** - SQLite database (created automatically on first run)
+- **feeds.db** - SQLite database (created automatically)
 - **build/** - Generated HTML files (created automatically)
 
 #### Sample feedspool.yaml
