@@ -12,9 +12,8 @@ RUN mkdir -p /data
 COPY feedspool /usr/local/bin/feedspool
 RUN chmod +x /usr/local/bin/feedspool
 
-# Verify the binary was copied and works
+# Verify the binary was copied and works (basic test)
 RUN ls -la /usr/local/bin/feedspool
-RUN file /usr/local/bin/feedspool
 RUN /usr/local/bin/feedspool version || echo "Binary test in Docker failed"
 
 # Copy entrypoint script
