@@ -1,0 +1,27 @@
+# Docker image for pre-built binary
+# This dockerfile expects the feedspool binary to already exist in the build context
+FROM docker.io/alpine:latest
+
+# Install cronie for cron support
+RUN apk add --no-cache cronie
+
+# Create data directory for volume mount
+RUN mkdir -p /data
+
+# Copy pre-built binary (should exist in build context)
+COPY feedspool /usr/local/bin/feedspool
+RUN chmod +x /usr/local/bin/feedspool
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set working directory to data mount point
+WORKDIR /data
+
+# Expose the default port
+EXPOSE 8889
+
+# Set entrypoint and default command
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["serve"]

@@ -1,5 +1,8 @@
 name: Rolling Release
 
+# This workflow runs CI checks once as a quality gate, then builds release artifacts.
+# The Docker workflow depends on this workflow completing successfully.
+
 on:
   push:
     branches: [ main ]

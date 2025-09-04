@@ -1,24 +1,37 @@
 name: Build and Push Docker Image
 
-# This workflow only builds and pushes Docker images after all CI checks pass
+# This workflow builds Docker images using binaries from the rolling release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Rolling Release"]
+    branches: [main]
+    types: [completed]
   release:
     types: [published]
 
 jobs:
-  ci:
-    uses: ./.github/workflows/ci.yml
-    
   docker:
-    needs: ci
+    # Only run if the rolling release workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'release' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download rolling release binary
+        if: github.event_name == 'workflow_run'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Download the Linux AMD64 binary from the latest release
+          gh release download latest --pattern "feedspool_latest_linux_amd64.tar.gz" --dir ./temp
+          cd temp
+          tar -xzf feedspool_latest_linux_amd64.tar.gz
+          mv feedspool ../
+          cd ..
+          rm -rf temp
+          chmod +x feedspool
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -44,10 +57,25 @@ jobs:
             org.opencontainers.image.description=RSS/Atom feed aggregator and static site generator
             org.opencontainers.image.vendor=lmorchard
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (from release binary)
+        if: github.event_name == 'workflow_run'
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.prebuilt
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Build and push Docker image (from source)
+        if: github.event_name == 'release'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
