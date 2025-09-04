@@ -239,19 +239,23 @@ Place these files in your mounted directory (`./feedspool-data` in the example a
 
 #### Sample feedspool.yaml
 ```yaml
-site:
-  title: "My Feed Pool"
-  description: "Personal news aggregation"
-  url: "http://localhost:8889"
+# Database file path
+database: ./feeds.db
 
-database:
-  file: "./feeds.db"
+# Default feed list settings
+feedlist:
+  format: "text"        # or "opml"
+  filename: "feeds.txt" # or "feeds.opml"
 
-output:
+# Static site generator settings
+render:
+  output_dir: "./build"
+  default_max_age: "24h"
+
+# HTTP server settings (will be overridden by PORT env var in container)
+serve:
+  port: 8889
   dir: "./build"
-
-feeds:
-  source: "feeds.txt"  # or "feeds.opml"
 ```
 
 #### Sample feeds.txt
