@@ -6,7 +6,7 @@ const (
 	defaultFormat    = "text"
 
 	// Server constants.
-	defaultPort     = 8080
+	defaultPort     = 8889
 	shutdownTimeout = 5
 
 	// Output format constants.
