@@ -50,7 +50,7 @@ jobs:
       run: |
         sudo apt-get update
         # Install static linking libraries for all Linux builds
-        sudo apt-get install -y libc6-dev-amd64 libc6-dev
+        sudo apt-get install -y libc6-dev build-essential
         # Install cross-compilation tools for ARM64
         if [ "${{ matrix.goarch }}" = "arm64" ]; then
           sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
