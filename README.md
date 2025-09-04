@@ -211,6 +211,133 @@ unfurl:
 - `--format` - Feed list format (opml or text)
 - `--filename` - Feed list filename
 
+## Docker Usage
+
+feedspool is available as a Docker container for easy deployment and hosting.
+
+### Quick Start
+
+```bash
+# Pull and run the latest image
+docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
+```
+
+This will:
+- Start the feedspool web server on port 8889
+- Mount `./feedspool-data` directory for persistent data
+- Automatically fetch and render feeds every 30 minutes via cron
+
+### Configuration
+
+Place these files in your mounted directory (`./feedspool-data` in the example above):
+
+#### Required Files
+- **feedspool.yaml** - Main configuration file
+- **feeds.txt** or **feeds.opml** - Your feed subscriptions
+- **feeds.db** - SQLite database (created automatically on first run)
+- **build/** - Generated HTML files (created automatically)
+
+#### Sample feedspool.yaml
+```yaml
+site:
+  title: "My Feed Pool"
+  description: "Personal news aggregation"
+  url: "http://localhost:8889"
+
+database:
+  file: "./feeds.db"
+
+output:
+  dir: "./build"
+
+feeds:
+  source: "feeds.txt"  # or "feeds.opml"
+```
+
+#### Sample feeds.txt
+```
+https://feeds.bbci.co.uk/news/rss.xml
+https://www.reddit.com/r/programming.rss
+https://example.com/blog/feed.xml
+```
+
+### Environment Variables
+
+- **PORT** - Server port (default: 8889)
+  ```bash
+  docker run -d -p 9000:9000 -e PORT=9000 -v ./feedspool-data:/data lmorchard/feedspool:latest
+  ```
+
+### Docker Compose
+
+```yaml
+version: '3.8'
+
+services:
+  feedspool:
+    image: lmorchard/feedspool:latest
+    container_name: feedspool
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./feedspool-data:/data
+    environment:
+      - PORT=8889
+    restart: unless-stopped
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/lmorchard/feedspool-go.git
+cd feedspool-go
+docker build -t feedspool .
+```
+
+### Manual Operations
+
+Run one-time commands without starting the full service:
+
+```bash
+# Initialize database
+docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest init
+
+# Fetch feeds manually
+docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest fetch
+
+# Generate HTML manually
+docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest render
+```
+
+### Troubleshooting
+
+#### View Container Logs
+```bash
+docker logs <container-name>
+```
+
+#### Check Container Status
+```bash
+docker ps
+```
+
+#### Access Container Shell
+```bash
+docker exec -it <container-name> /bin/sh
+```
+
+#### Manual Feed Update
+The container automatically fetches and renders feeds every 30 minutes. To trigger manually:
+```bash
+docker exec <container-name> /usr/local/bin/feedspool fetch
+docker exec <container-name> /usr/local/bin/feedspool render
+```
+
+#### Common Issues
+- **Permission denied**: Ensure your host directory is readable/writable
+- **Database errors**: Make sure `feedspool.yaml` specifies correct database path
+- **Empty feeds**: Check your `feeds.txt` or `feeds.opml` file exists and has valid URLs
+
 ## Development
 
 ### Prerequisites
