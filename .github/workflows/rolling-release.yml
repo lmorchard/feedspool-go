@@ -1,7 +1,8 @@
 name: Rolling Release
 
-# This workflow runs CI checks once as a quality gate, then builds release artifacts.
-# The Docker workflow depends on this workflow completing successfully.
+# This workflow runs CI checks once as a quality gate, then builds release artifacts
+# and Docker images. Docker images are built on the same Linux AMD64 runner that 
+# compiles the binary, eliminating the need for artifact downloads.
 
 on:
   push:
@@ -99,6 +100,45 @@ jobs:
       with:
         name: ${{ env.ARCHIVE }}
         path: ${{ env.ARCHIVE }}
+
+    # Build Docker image on the Linux AMD64 runner
+    - name: Set up Docker Buildx
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract Docker metadata
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: lmorchard/feedspool
+        tags: |
+          # Latest tag for rolling releases
+          type=raw,value=latest
+        labels: |
+          org.opencontainers.image.title=feedspool
+          org.opencontainers.image.description=RSS/Atom feed aggregator and static site generator
+          org.opencontainers.image.vendor=lmorchard
+
+    - name: Build and push Docker image
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Dockerfile.prebuilt
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
 
   release:
     name: Create Rolling Release

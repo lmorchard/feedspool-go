@@ -1,7 +1,8 @@
 name: Release
 
 # This workflow assumes tags are created from main branch after CI has passed.
-# It focuses on building multi-platform release artifacts without redundant CI.
+# It builds multi-platform release artifacts and Docker images without redundant CI.
+# Docker images are built on the Linux AMD64 runner using the freshly compiled binary.
 
 on:
   push:
@@ -95,6 +96,45 @@ jobs:
       with:
         name: ${{ env.ARCHIVE }}
         path: ${{ env.ARCHIVE }}
+
+    # Build Docker image on the Linux AMD64 runner
+    - name: Set up Docker Buildx
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract Docker metadata
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: lmorchard/feedspool
+        tags: |
+          # Version tag for releases (e.g., v1.2.3)
+          type=ref,event=tag
+        labels: |
+          org.opencontainers.image.title=feedspool
+          org.opencontainers.image.description=RSS/Atom feed aggregator and static site generator
+          org.opencontainers.image.vendor=lmorchard
+
+    - name: Build and push Docker image
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Dockerfile.prebuilt
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
 
   release:
     name: Create Release
