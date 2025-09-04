@@ -1,0 +1,28 @@
+# Git and development files
+.git
+.github
+.gitignore
+*.md
+!README.md
+
+# Test and build artifacts
+tmp/
+build/
+dist/
+*.test
+coverage.out
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Don't ignore Dockerfiles - we need both for different workflows
+!Dockerfile
+!Dockerfile.prebuilt
+!docker-entrypoint.sh
