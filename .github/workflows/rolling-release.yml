@@ -68,40 +68,20 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 1
+        VERSION: ${{ env.VERSION }}
+        COMMIT: ${{ env.COMMIT }}
+        DATE: ${{ env.DATE }}
       shell: bash
       run: |
-        output_name="feedspool"
-        if [ "$GOOS" = "windows" ]; then
-          output_name="feedspool.exe"
-        fi
+        # Use make build for consistent build logic
+        make build
         
-        go build \
-          -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$VERSION -X github.com/lmorchard/feedspool-go/cmd.Commit=$COMMIT -X github.com/lmorchard/feedspool-go/cmd.Date=$DATE" \
-          -o "$output_name" main.go
+        # Rename to expected output for Windows
+        if [ "$GOOS" = "windows" ] && [ -f feedspool ]; then
+          mv feedspool feedspool.exe
+        fi
 
-    - name: Create archive (Unix)
-      if: matrix.goos != 'windows'
-      shell: bash
-      run: |
-        archive_name="feedspool_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
-        tar -czf "${archive_name}.tar.gz" "feedspool"
-        echo "ARCHIVE=${archive_name}.tar.gz" >> $GITHUB_ENV
-
-    - name: Create archive (Windows)
-      if: matrix.goos == 'windows'
-      shell: powershell
-      run: |
-        $archive_name = "feedspool_$($env:VERSION)_${{ matrix.goos }}_${{ matrix.goarch }}"
-        Compress-Archive -Path "feedspool.exe" -DestinationPath "${archive_name}.zip"
-        echo "ARCHIVE=${archive_name}.zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.ARCHIVE }}
-        path: ${{ env.ARCHIVE }}
-
-    # Build Docker image on the Linux AMD64 runner
+    # Build Docker image BEFORE creating archives (Linux AMD64 only)
     - name: Verify binary for Docker build
       if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
       run: |
@@ -154,6 +134,28 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64
+
+    - name: Create archive (Unix)
+      if: matrix.goos != 'windows'
+      shell: bash
+      run: |
+        archive_name="feedspool_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+        tar -czf "${archive_name}.tar.gz" "feedspool"
+        echo "ARCHIVE=${archive_name}.tar.gz" >> $GITHUB_ENV
+
+    - name: Create archive (Windows)
+      if: matrix.goos == 'windows'
+      shell: powershell
+      run: |
+        $archive_name = "feedspool_$($env:VERSION)_${{ matrix.goos }}_${{ matrix.goarch }}"
+        Compress-Archive -Path "feedspool.exe" -DestinationPath "${archive_name}.zip"
+        echo "ARCHIVE=${archive_name}.zip" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ARCHIVE }}
+        path: ${{ env.ARCHIVE }}
 
   release:
     name: Create Rolling Release

@@ -64,16 +64,18 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 1
+        VERSION: ${{ env.VERSION }}
+        COMMIT: ${{ env.COMMIT }}
+        DATE: ${{ env.DATE }}
       shell: bash
       run: |
-        output_name="feedspool"
-        if [ "$GOOS" = "windows" ]; then
-          output_name="feedspool.exe"
-        fi
+        # Use make build for consistent build logic
+        make build
         
-        go build \
-          -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$VERSION -X github.com/lmorchard/feedspool-go/cmd.Commit=$COMMIT -X github.com/lmorchard/feedspool-go/cmd.Date=$DATE" \
-          -o "$output_name" main.go
+        # Rename to expected output for Windows
+        if [ "$GOOS" = "windows" ] && [ -f feedspool ]; then
+          mv feedspool feedspool.exe
+        fi
 
     - name: Create archive (Unix)
       if: matrix.goos != 'windows'

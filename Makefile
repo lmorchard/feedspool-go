@@ -5,7 +5,13 @@ COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 build:
-	go build -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$(VERSION) -X github.com/lmorchard/feedspool-go/cmd.Commit=$(COMMIT) -X github.com/lmorchard/feedspool-go/cmd.Date=$(DATE)" -o feedspool main.go
+	@echo "Building for $(shell go env GOOS)/$(shell go env GOARCH)"
+	@if [ "$(shell go env GOOS)" = "linux" ]; then \
+		echo "Using static linking for Linux build"; \
+		go build -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$(VERSION) -X github.com/lmorchard/feedspool-go/cmd.Commit=$(COMMIT) -X github.com/lmorchard/feedspool-go/cmd.Date=$(DATE) -linkmode external -extldflags '-static'" -o feedspool main.go; \
+	else \
+		go build -ldflags "-X github.com/lmorchard/feedspool-go/cmd.Version=$(VERSION) -X github.com/lmorchard/feedspool-go/cmd.Commit=$(COMMIT) -X github.com/lmorchard/feedspool-go/cmd.Date=$(DATE)" -o feedspool main.go; \
+	fi
 
 test:
 	go test ./...
