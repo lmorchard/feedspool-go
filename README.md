@@ -223,6 +223,8 @@ docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
 ```
 
 This will:
+- Initialize the database if it doesn't exist
+- Immediately fetch feeds and render HTML content
 - Start the feedspool web server on port 8889
 - Mount `./feedspool-data` directory for persistent data
 - Automatically fetch and render feeds every 30 minutes via cron
@@ -239,19 +241,23 @@ Place these files in your mounted directory (`./feedspool-data` in the example a
 
 #### Sample feedspool.yaml
 ```yaml
-site:
-  title: "My Feed Pool"
-  description: "Personal news aggregation"
-  url: "http://localhost:8889"
+# Database file path
+database: ./feeds.db
 
-database:
-  file: "./feeds.db"
+# Default feed list settings
+feedlist:
+  format: "text"        # or "opml"
+  filename: "feeds.txt" # or "feeds.opml"
 
-output:
+# Static site generator settings
+render:
+  output_dir: "./build"
+  default_max_age: "24h"
+
+# HTTP server settings (will be overridden by PORT env var in container)
+serve:
+  port: 8889
   dir: "./build"
-
-feeds:
-  source: "feeds.txt"  # or "feeds.opml"
 ```
 
 #### Sample feeds.txt
