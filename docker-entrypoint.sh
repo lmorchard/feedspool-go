@@ -13,11 +13,17 @@ fi
 
 # Set up cron job for feed updates (every 30 minutes)
 echo "Setting up cron job for feed updates..."
-echo "*/30 * * * * cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render > /proc/1/fd/1 2> /proc/1/fd/2" > /etc/crontabs/root
+# Disable email notifications and redirect output to Docker logs
+cat > /etc/crontabs/root << EOF
+# Disable email notifications
+MAILTO=""
+# Run fetch and render every 30 minutes, output to Docker logs
+*/30 * * * * cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render > /proc/1/fd/1 2> /proc/1/fd/2
+EOF
 
-# Start crond in background
+# Start crond in background (level 8 = only errors, no info messages)
 echo "Starting cron daemon..."
-crond -f &
+crond -f -d 8 &
 CRON_PID=$!
 
 # Function to handle shutdown signals
