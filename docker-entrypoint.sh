@@ -11,20 +11,26 @@ if [ "$1" != "serve" ]; then
     exec /usr/local/bin/feedspool "$@"
 fi
 
-# Set up cron job for feed updates (every 30 minutes)
-echo "Setting up cron job for feed updates..."
+# Set up cron job for feed updates
+# CRON_SCHEDULE env var allows customization, defaults to every 30 minutes
+CRON_SCHEDULE="${CRON_SCHEDULE:-*/30 * * * *}"
+echo "Setting up cron job for feed updates (schedule: $CRON_SCHEDULE)..."
 # Disable email notifications and redirect output to Docker logs
 cat > /etc/crontabs/root << EOF
 # Disable email notifications
 MAILTO=""
-# Run fetch and render every 30 minutes, output to Docker logs
-*/30 * * * * cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render > /proc/1/fd/1 2> /proc/1/fd/2
+# Run fetch and render on schedule, output to Docker logs
+$CRON_SCHEDULE (cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render) > /proc/1/fd/1 2> /proc/1/fd/2
 EOF
 
-# Start crond in background (level 8 = only errors, no info messages)
+# Start crond in foreground mode in background to capture PID correctly
 echo "Starting cron daemon..."
-crond -f -d 8 &
+crond -f &
 CRON_PID=$!
+
+# Show the crontab for debugging
+echo "Cron jobs registered:"
+crontab -l
 
 # Function to handle shutdown signals
 shutdown_handler() {

@@ -274,6 +274,15 @@ https://example.com/blog/feed.xml
   docker run -d -p 9000:9000 -e PORT=9000 -v ./feedspool-data:/data lmorchard/feedspool:latest
   ```
 
+- **CRON_SCHEDULE** - Cron schedule for automatic feed updates (default: */30 * * * *)
+  ```bash
+  # Update every 5 minutes instead of every 30 minutes
+  docker run -d -p 8889:8889 -e CRON_SCHEDULE="*/5 * * * *" -v ./feedspool-data:/data lmorchard/feedspool:latest
+  
+  # Update hourly at the top of the hour
+  docker run -d -p 8889:8889 -e CRON_SCHEDULE="0 * * * *" -v ./feedspool-data:/data lmorchard/feedspool:latest
+  ```
+
 ### Docker Compose
 
 ```yaml
@@ -289,6 +298,7 @@ services:
       - ./feedspool-data:/data
     environment:
       - PORT=8889
+      # - CRON_SCHEDULE=*/5 * * * *  # Optional: customize update frequency
     restart: unless-stopped
 ```
 
