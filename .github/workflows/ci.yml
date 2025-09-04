@@ -13,24 +13,40 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Check if CI should be skipped
+      id: skip_check
+      run: |
+        if [[ "${{ github.event.head_commit.message }}" == "[noci]"* ]]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "CI skipped due to [noci] in commit message"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "Running full CI pipeline"
+        fi
+
     - name: Set up Go
+      if: steps.skip_check.outputs.skip != 'true'
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
 
     - name: Download dependencies
+      if: steps.skip_check.outputs.skip != 'true'
       run: go mod download
 
     - name: Run golangci-lint
+      if: steps.skip_check.outputs.skip != 'true'
       uses: golangci/golangci-lint-action@v4
       with:
         version: latest
         args: --timeout=5m
 
     - name: Run tests with coverage
+      if: steps.skip_check.outputs.skip != 'true'
       run: go test -v -race -coverprofile=coverage.out ./...
 
     - name: Upload coverage to Codecov
+      if: steps.skip_check.outputs.skip != 'true'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.out
