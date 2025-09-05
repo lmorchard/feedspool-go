@@ -107,10 +107,32 @@ fi
 
 # Check if feed file exists before running fetch
 if [ -f "/data/feeds.txt" ] || [ -f "/data/feeds.opml" ]; then
-    # Run initial fetch and render to populate content immediately
-    echo "Running initial fetch and render..."
-    /usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
-    /usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
+    # Run initial fetch and render in background to populate content
+    echo "Starting initial fetch and render in background..."
+    (
+        /usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
+        /usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
+        echo "Initial fetch and render completed"
+    ) &
+    FETCH_PID=$!
+    
+    # Wait for build directory to exist before starting server
+    echo "Waiting for build directory to be created..."
+    timeout=60  # Maximum wait time in seconds
+    elapsed=0
+    while [ ! -d "/data/build" ] && [ $elapsed -lt $timeout ]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    
+    if [ -d "/data/build" ]; then
+        echo "Build directory ready"
+    else
+        echo "Warning: Build directory not created within $timeout seconds, starting server anyway"
+    fi
+    
+    # Don't wait for the fetch process to complete, let it run in background
+    echo "Initial content loading in progress (PID: $FETCH_PID)"
 else
     echo "==========================================================================="
     echo "WARNING: No feed file found!"
@@ -125,6 +147,9 @@ else
     echo ""
     echo "The container will continue running but won't have any feeds to display."
     echo "==========================================================================="
+    
+    # Create empty build directory so server can start
+    mkdir -p "/data/build"
 fi
 
 # Function to start the server with monitoring
@@ -137,9 +162,9 @@ start_server() {
 
 # Function to monitor and restart the server
 monitor_server() {
-    local restart_count=0
-    local max_restarts=5
-    local restart_delay=5
+    restart_count=0
+    max_restarts=5
+    restart_delay=5
     
     while true; do
         if ! kill -0 $SERVER_PID 2>/dev/null; then
