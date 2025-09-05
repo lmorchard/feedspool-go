@@ -36,7 +36,9 @@ crontab -l
 shutdown_handler() {
     echo "Received shutdown signal, stopping services..."
     kill $CRON_PID 2>/dev/null || true
+    kill $SERVER_PID 2>/dev/null || true
     wait $CRON_PID 2>/dev/null || true
+    wait $SERVER_PID 2>/dev/null || true
     exit 0
 }
 
@@ -125,6 +127,42 @@ else
     echo "==========================================================================="
 fi
 
-# Start feedspool serve in the foreground
-echo "Starting feedspool serve..."
-exec /usr/local/bin/feedspool "$@"
+# Function to start the server with monitoring
+start_server() {
+    echo "Starting feedspool serve..."
+    /usr/local/bin/feedspool "$@" &
+    SERVER_PID=$!
+    echo "Server started with PID: $SERVER_PID"
+}
+
+# Function to monitor and restart the server
+monitor_server() {
+    local restart_count=0
+    local max_restarts=5
+    local restart_delay=5
+    
+    while true; do
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "Server process $SERVER_PID has died!"
+            
+            if [ $restart_count -ge $max_restarts ]; then
+                echo "Maximum restart attempts ($max_restarts) reached. Giving up."
+                exit 1
+            fi
+            
+            restart_count=$((restart_count + 1))
+            echo "Restarting server (attempt $restart_count/$max_restarts) in $restart_delay seconds..."
+            sleep $restart_delay
+            
+            start_server "$@"
+            # Exponential backoff for restart delay
+            restart_delay=$((restart_delay * 2))
+        fi
+        
+        sleep 5
+    done
+}
+
+# Start the server and monitor it
+start_server "$@"
+monitor_server "$@"
