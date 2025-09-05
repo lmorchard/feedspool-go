@@ -122,9 +122,6 @@ link-loader .feed {
 /* Mobile adjustments for feed header */
 @media (max-width: 768px) {
     .feed-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
         padding: 0.5rem;
     }
     
@@ -134,9 +131,6 @@ link-loader .feed {
     }
     
     .feed-last-updated {
-        padding: 0;
-        white-space: normal;
-        font-size: 0.75rem;
-        align-self: flex-end;
+        display: none;
     }
 }
