@@ -11,21 +11,21 @@ body {
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-primary);
-    max-width: 1200px;
+    max-width: 95%;
     margin: 0 auto;
-    padding: 20px;
+    padding: 8px;
 }
 
 /* Wider layouts for larger screens */
-@media (min-width: 1800px) {
+@media (min-width: 1600px) {
     body {
-        max-width: 1600px;
+        max-width: 95%;
     }
 }
 
-@media (min-width: 2400px) {
+@media (min-width: 2000px) {
     body {
-        max-width: 2200px;
+        max-width: 95%;
     }
 }
 
