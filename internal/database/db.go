@@ -146,3 +146,14 @@ func (db *DB) ApplyMigration(version int, migrationSQL string) error {
 
 	return nil
 }
+
+// Vacuum runs VACUUM on the database to reclaim space and optimize the database file.
+func (db *DB) Vacuum() error {
+	logrus.Debug("Running VACUUM on database")
+	_, err := db.conn.Exec("VACUUM")
+	if err != nil {
+		return fmt.Errorf("failed to vacuum database: %w", err)
+	}
+	logrus.Debug("VACUUM completed successfully")
+	return nil
+}

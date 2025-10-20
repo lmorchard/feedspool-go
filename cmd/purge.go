@@ -11,40 +11,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultPurgeAge = "30d"
-
 var (
 	purgeAge      string
 	purgeDryRun   bool
 	purgeFormat   string
 	purgeFilename string
+	purgeNoVacuum bool
 )
 
 var purgeCmd = &cobra.Command{
 	Use:   "purge",
-	Short: "Purge archived items or cleanup feeds based on feed lists",
-	Long: `Purge command operates in two modes:
+	Short: "Purge archived items and cleanup unsubscribed feeds",
+	Long: `Purge command performs two cleanup operations:
 
-Age-based purging (default):
+Age-based purging:
   Deletes archived items from the database that are older than the specified age.
-  
-Feed list cleanup:
-  When --format and filename are specified, removes any feeds (and their items) 
-  from the database that are NOT in the specified feed list. This allows cleanup
-  based on authoritative feed lists.
+  Uses --age flag or purge.max_age from config (default: 30d).
+
+Feed list cleanup (optional):
+  When --format and filename are specified (or configured), removes any feeds
+  (and their items) from the database that are NOT in the specified feed list.
 
 Examples:
-  feedspool purge --age 30d                    # Delete items older than 30 days
-  feedspool purge --format text feeds.txt     # Keep only feeds in feeds.txt
-  feedspool purge --format opml feeds.opml    # Keep only feeds in feeds.opml`,
+  feedspool purge                             # Delete old items using config max_age
+  feedspool purge --age 30d                   # Delete items older than 30 days
+  feedspool purge --format text feeds.txt     # Also cleanup unsubscribed feeds
+  feedspool purge --age 7d --dry-run          # Preview what would be deleted`,
 	RunE: runPurge,
 }
 
 func init() {
-	purgeCmd.Flags().StringVar(&purgeAge, "age", defaultPurgeAge, "Delete items older than this (e.g., 30d, 1w, 48h)")
+	purgeCmd.Flags().StringVar(&purgeAge, "age", "", "Delete items older than this (e.g., 30d, 1w, 48h)")
 	purgeCmd.Flags().BoolVar(&purgeDryRun, "dry-run", false, "Preview what would be deleted without actually deleting")
-	purgeCmd.Flags().StringVar(&purgeFormat, "format", "", "Feed list format for cleanup mode (opml or text)")
-	purgeCmd.Flags().StringVar(&purgeFilename, "filename", "", "Feed list filename for cleanup mode")
+	purgeCmd.Flags().StringVar(&purgeFormat, "format", "", "Feed list format for cleanup (opml or text)")
+	purgeCmd.Flags().StringVar(&purgeFilename, "filename", "", "Feed list filename for cleanup")
+	purgeCmd.Flags().BoolVar(&purgeNoVacuum, "no-vacuum", false, "Skip running VACUUM on the database")
 	rootCmd.AddCommand(purgeCmd)
 }
 
@@ -61,25 +62,39 @@ func runPurge(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// List mode is active if either format or filename is specified
-	isListMode := purgeFormat != "" || purgeFilename != ""
-
-	// Age mode is active if:
-	// - The user specified a non-default age (explicit age-based purge)
-	// - Or, neither list mode nor a non-default age is specified (default to age-based purge)
-	isExplicitAge := purgeAge != defaultPurgeAge
-	isDefaultAge := purgeAge == defaultPurgeAge
-	isAgeMode := isExplicitAge || (!isListMode && isDefaultAge)
-
-	// Validate mode selection
-	if isListMode && isAgeMode && purgeAge != defaultPurgeAge {
-		return fmt.Errorf("cannot specify both age-based and list-based purging options")
+	// Run list-based cleanup if format/filename provided or configured
+	if shouldRunListCleanup(cfg) {
+		if err := runFeedListCleanup(cfg, db); err != nil {
+			return err
+		}
 	}
 
-	if isListMode {
-		return runFeedListCleanup(cfg, db)
+	// Always run age-based cleanup
+	if err := runAgePurge(cfg, db); err != nil {
+		return err
 	}
-	return runAgePurge(cfg, db)
+
+	// Run VACUUM unless skipped via flag or config
+	shouldSkipVacuum := purgeNoVacuum || cfg.Purge.SkipVacuum
+	if !shouldSkipVacuum && !purgeDryRun {
+		fmt.Println("Running VACUUM to optimize database...")
+		if err := db.Vacuum(); err != nil {
+			fmt.Printf("Warning: Failed to vacuum database: %v\n", err)
+		} else {
+			fmt.Println("Database vacuumed successfully")
+		}
+	}
+
+	return nil
+}
+
+func shouldRunListCleanup(cfg *config.Config) bool {
+	// Run if CLI flags are provided
+	if purgeFormat != "" || purgeFilename != "" {
+		return true
+	}
+	// Run if default feedlist is configured
+	return cfg.HasDefaultFeedList()
 }
 
 func runFeedListCleanup(cfg *config.Config, db *database.DB) error {
@@ -113,7 +128,7 @@ func loadAuthorizedFeeds(feedFormat feedlist.Format, filename string) ([]string,
 	}
 
 	authorizedURLs := list.GetURLs()
-	fmt.Printf("Loaded %d authorized feed(s) from %s\n", len(authorizedURLs), filename)
+	fmt.Printf("Loaded %d subscribed feed(s) from %s\n", len(authorizedURLs), filename)
 	return authorizedURLs, nil
 }
 
@@ -158,12 +173,12 @@ func reportNoFeedsToDelete(cfg *config.Config, format, filename string) error {
 			"deleted":  0,
 			"filename": filename,
 			"format":   format,
-			"message":  "No feeds to delete - all database feeds are authorized",
+			"message":  "No feeds to delete - all database feeds are subscribed",
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
 	} else {
-		fmt.Println("No feeds to delete - all database feeds are authorized")
+		fmt.Println("No feeds to delete - all database feeds are subscribed")
 	}
 	return nil
 }
@@ -181,7 +196,7 @@ func reportDryRunDeletion(cfg *config.Config, feedsToDelete []string, format, fi
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
 	} else {
-		fmt.Printf("Dry run mode - would delete %d unauthorized feed(s):\n", len(feedsToDelete))
+		fmt.Printf("Dry run mode - would delete %d unsubscribed feed(s):\n", len(feedsToDelete))
 		for _, url := range feedsToDelete {
 			fmt.Printf("  - %s\n", url)
 		}
@@ -196,7 +211,7 @@ func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 			fmt.Printf("Warning: Failed to delete feed %s: %v\n", url, err)
 		} else {
 			deletedCount++
-			fmt.Printf("Deleted unauthorized feed: %s\n", url)
+			fmt.Printf("Deleted unsubscribed feed: %s\n", url)
 		}
 	}
 
@@ -220,14 +235,23 @@ func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
 	} else {
-		fmt.Printf("Deleted %d unauthorized feed(s) from database\n", deletedCount)
+		fmt.Printf("Deleted %d unsubscribed feed(s) from database\n", deletedCount)
 	}
 
 	return nil
 }
 
 func runAgePurge(cfg *config.Config, db *database.DB) error {
-	duration, err := database.ParseDuration(purgeAge)
+	// Use --age flag if provided, otherwise use config max_age, fallback to 30d
+	ageStr := purgeAge
+	if ageStr == "" {
+		ageStr = cfg.Purge.MaxAge
+	}
+	if ageStr == "" {
+		ageStr = "30d"
+	}
+
+	duration, err := database.ParseDuration(ageStr)
 	if err != nil {
 		return fmt.Errorf("invalid age format: %w", err)
 	}

@@ -35,6 +35,7 @@ type Config struct {
 	Serve    ServeConfig
 	Init     InitConfig
 	Unfurl   UnfurlConfig
+	Purge    PurgeConfig
 }
 
 type FeedListConfig struct {
@@ -70,6 +71,11 @@ type UnfurlConfig struct {
 	SkipRobots  bool          `mapstructure:"skip_robots"`
 	RetryAfter  time.Duration `mapstructure:"retry_after"`
 	Concurrency int           `mapstructure:"concurrency"`
+}
+
+type PurgeConfig struct {
+	MaxAge     string `mapstructure:"max_age"`
+	SkipVacuum bool   `mapstructure:"skip_vacuum"`
 }
 
 func LoadConfig() *Config {
@@ -114,6 +120,10 @@ func LoadConfig() *Config {
 			RetryAfter:  viper.GetDuration("unfurl.retry_after"),
 			Concurrency: viper.GetInt("unfurl.concurrency"),
 		},
+		Purge: PurgeConfig{
+			MaxAge:     viper.GetString("purge.max_age"),
+			SkipVacuum: viper.GetBool("purge.skip_vacuum"),
+		},
 	}
 }
 
@@ -148,6 +158,9 @@ func GetDefault() *Config {
 			SkipRobots:  false,
 			RetryAfter:  1 * time.Hour,
 			Concurrency: DefaultConcurrency,
+		},
+		Purge: PurgeConfig{
+			MaxAge: "30d",
 		},
 	}
 }
