@@ -20,7 +20,7 @@ cat > /etc/crontabs/root << EOF
 # Disable email notifications
 MAILTO=""
 # Run fetch and render on schedule, output to Docker logs
-$CRON_SCHEDULE (cd /data && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render) > /proc/1/fd/1 2> /proc/1/fd/2
+$CRON_SCHEDULE (cd /data && /usr/local/bin/feedspool purge && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render) > /proc/1/fd/1 2> /proc/1/fd/2
 EOF
 
 # Start crond in foreground mode in background to capture PID correctly
