@@ -42,15 +42,7 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    - name: Run tests with coverage
+    - name: Run tests
       if: steps.skip_check.outputs.skip != 'true'
-      run: go test -v -race -coverprofile=coverage.out ./...
-
-    - name: Upload coverage to Codecov
-      if: steps.skip_check.outputs.skip != 'true'
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.out
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
+      run: go test -v -race ./...
 
