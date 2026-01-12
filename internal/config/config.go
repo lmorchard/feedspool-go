@@ -75,8 +75,9 @@ type UnfurlConfig struct {
 }
 
 type PurgeConfig struct {
-	MaxAge     string `mapstructure:"max_age"`
-	SkipVacuum bool   `mapstructure:"skip_vacuum"`
+	MaxAge       string `mapstructure:"max_age"`
+	SkipVacuum   bool   `mapstructure:"skip_vacuum"`
+	MinItemsKeep int    `mapstructure:"min_items_keep"`
 }
 
 func LoadConfig() *Config {
@@ -123,8 +124,9 @@ func LoadConfig() *Config {
 			Concurrency: viper.GetInt("unfurl.concurrency"),
 		},
 		Purge: PurgeConfig{
-			MaxAge:     viper.GetString("purge.max_age"),
-			SkipVacuum: viper.GetBool("purge.skip_vacuum"),
+			MaxAge:       viper.GetString("purge.max_age"),
+			SkipVacuum:   viper.GetBool("purge.skip_vacuum"),
+			MinItemsKeep: getIntWithDefault("purge.min_items_keep", 0),
 		},
 	}
 }
@@ -163,7 +165,8 @@ func GetDefault() *Config {
 			Concurrency: DefaultConcurrency,
 		},
 		Purge: PurgeConfig{
-			MaxAge: "30d",
+			MaxAge:       "30d",
+			MinItemsKeep: 0, // 0 means no minimum (delete all old items)
 		},
 	}
 }
