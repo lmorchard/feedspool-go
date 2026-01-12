@@ -15,12 +15,14 @@ func getIntWithDefault(key string, defaultValue int) int {
 }
 
 const (
-	defaultPort        = 8080
-	defaultOutputDir   = "./build"
-	DefaultTimeout     = 30 * time.Second
-	DefaultConcurrency = 32
-	DefaultMaxItems    = 100
-	DefaultDirPerm     = 0o755
+	defaultPort              = 8080
+	defaultOutputDir         = "./build"
+	DefaultTimeout           = 30 * time.Second
+	DefaultConcurrency       = 32
+	DefaultMaxItems          = 100
+	DefaultDirPerm           = 0o755
+	DefaultMinItemsPerFeed   = 5  // Render: minimum items to show per feed
+	DefaultMinItemsKeepPurge = 10 // Purge: minimum items to keep per feed
 )
 
 type Config struct {
@@ -149,7 +151,7 @@ func GetDefault() *Config {
 			TemplatesDir:           "",
 			AssetsDir:              "",
 			DefaultMaxAge:          "24h",
-			DefaultMinItemsPerFeed: 0, // 0 means no minimum (use timespan only)
+			DefaultMinItemsPerFeed: DefaultMinItemsPerFeed,
 		},
 		Serve: ServeConfig{
 			Port: defaultPort,
@@ -166,7 +168,7 @@ func GetDefault() *Config {
 		},
 		Purge: PurgeConfig{
 			MaxAge:       "30d",
-			MinItemsKeep: 0, // 0 means no minimum (delete all old items)
+			MinItemsKeep: DefaultMinItemsKeepPurge,
 		},
 	}
 }
