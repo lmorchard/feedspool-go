@@ -17,6 +17,7 @@ type WorkflowConfig struct {
 	MaxAge       string
 	Start        string
 	End          string
+	ItemsPerFeed int // Maximum items to show per feed (0 = no limit)
 	OutputDir    string
 	TemplatesDir string
 	AssetsDir    string
@@ -72,6 +73,11 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 	if len(feeds) == 0 {
 		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
 		return nil
+	}
+
+	// Apply per-feed item limit if specified
+	if config.ItemsPerFeed > 0 {
+		items = limitItemsPerFeed(items, config.ItemsPerFeed)
 	}
 
 	// Generate site
@@ -334,4 +340,23 @@ func cleanOutputDirectory(outputDir string) error {
 	}
 
 	return nil
+}
+
+// limitItemsPerFeed limits the number of items per feed in the items map.
+// Items are already sorted by published_date DESC from the database query.
+func limitItemsPerFeed(items map[string][]database.Item, limit int) map[string][]database.Item {
+	if limit <= 0 {
+		return items
+	}
+
+	limitedItems := make(map[string][]database.Item, len(items))
+	for feedURL, feedItems := range items {
+		if len(feedItems) <= limit {
+			limitedItems[feedURL] = feedItems
+		} else {
+			limitedItems[feedURL] = feedItems[:limit]
+		}
+	}
+
+	return limitedItems
 }

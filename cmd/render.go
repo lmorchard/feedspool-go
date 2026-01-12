@@ -11,15 +11,16 @@ import (
 )
 
 var (
-	renderMaxAge    string
-	renderStart     string
-	renderEnd       string
-	renderOutput    string
-	renderTemplates string
-	renderAssets    string
-	renderFeeds     string
-	renderFormat    string
-	renderClean     bool
+	renderMaxAge       string
+	renderStart        string
+	renderEnd          string
+	renderOutput       string
+	renderTemplates    string
+	renderAssets       string
+	renderFeeds        string
+	renderFormat       string
+	renderClean        bool
+	renderItemsPerFeed int
 )
 
 var renderCmd = &cobra.Command{
@@ -31,6 +32,10 @@ Time filtering options:
   --max-age 24h                     # Show feeds updated in last 24 hours
   --start 2023-01-01T00:00:00Z      # Explicit start time (RFC3339)
   --end 2023-12-31T23:59:59Z        # Explicit end time (RFC3339)
+
+Item limiting:
+  --items-per-feed 5                # Limit items shown per feed (default: 0 = no limit)
+                                    # Helps ensure quiet feeds are visible even with short timespans
 
 Feed filtering:
   --feeds feeds.txt --format text   # Use feeds from text file
@@ -53,6 +58,7 @@ func init() {
 	renderCmd.Flags().StringVar(&renderMaxAge, "max-age", "", "Show feeds updated within duration (e.g., 24h, 7d)")
 	renderCmd.Flags().StringVar(&renderStart, "start", "", "Start time (RFC3339 format)")
 	renderCmd.Flags().StringVar(&renderEnd, "end", "", "End time (RFC3339 format)")
+	renderCmd.Flags().IntVar(&renderItemsPerFeed, "items-per-feed", 0, "Maximum items to show per feed (0 = no limit)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
@@ -86,6 +92,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 		MaxAge:       cfg.Render.DefaultMaxAge,
 		Start:        "",
 		End:          "",
+		ItemsPerFeed: cfg.Render.DefaultItemsPerFeed,
 		OutputDir:    cfg.Render.OutputDir,
 		TemplatesDir: cfg.Render.TemplatesDir,
 		AssetsDir:    cfg.Render.AssetsDir,
@@ -104,6 +111,9 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	}
 	if renderEnd != "" {
 		config.End = renderEnd
+	}
+	if renderItemsPerFeed > 0 {
+		config.ItemsPerFeed = renderItemsPerFeed
 	}
 	if renderOutput != defaultOutputDir {
 		config.OutputDir = renderOutput
