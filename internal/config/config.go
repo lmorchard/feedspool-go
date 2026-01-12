@@ -50,12 +50,12 @@ type FetchConfig struct {
 }
 
 type RenderConfig struct {
-	OutputDir           string
-	TemplatesDir        string
-	AssetsDir           string
-	DefaultMaxAge       string
-	DefaultClean        bool `mapstructure:"default_clean"`
-	DefaultItemsPerFeed int  `mapstructure:"default_items_per_feed"`
+	OutputDir              string
+	TemplatesDir           string
+	AssetsDir              string
+	DefaultMaxAge          string
+	DefaultClean           bool `mapstructure:"default_clean"`
+	DefaultMinItemsPerFeed int  `mapstructure:"default_min_items_per_feed"`
 }
 
 type ServeConfig struct {
@@ -103,12 +103,12 @@ func LoadConfig() *Config {
 			MaxItems:    getIntWithDefault("fetch.max_items", DefaultMaxItems),
 		},
 		Render: RenderConfig{
-			OutputDir:           viper.GetString("render.output_dir"),
-			TemplatesDir:        viper.GetString("render.templates_dir"),
-			AssetsDir:           viper.GetString("render.assets_dir"),
-			DefaultMaxAge:       viper.GetString("render.default_max_age"),
-			DefaultClean:        viper.GetBool("render.default_clean"),
-			DefaultItemsPerFeed: getIntWithDefault("render.default_items_per_feed", 0),
+			OutputDir:              viper.GetString("render.output_dir"),
+			TemplatesDir:           viper.GetString("render.templates_dir"),
+			AssetsDir:              viper.GetString("render.assets_dir"),
+			DefaultMaxAge:          viper.GetString("render.default_max_age"),
+			DefaultClean:           viper.GetBool("render.default_clean"),
+			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", 0),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
@@ -145,11 +145,11 @@ func GetDefault() *Config {
 			MaxItems:    DefaultMaxItems,
 		},
 		Render: RenderConfig{
-			OutputDir:           "./build",
-			TemplatesDir:        "",
-			AssetsDir:           "",
-			DefaultMaxAge:       "24h",
-			DefaultItemsPerFeed: 0, // 0 means no limit (show all items)
+			OutputDir:              "./build",
+			TemplatesDir:           "",
+			AssetsDir:              "",
+			DefaultMaxAge:          "24h",
+			DefaultMinItemsPerFeed: 0, // 0 means no minimum (use timespan only)
 		},
 		Serve: ServeConfig{
 			Port: defaultPort,

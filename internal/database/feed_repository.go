@@ -204,3 +204,168 @@ func (db *DB) GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string)
 	start := end.Add(-maxAge)
 	return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
 }
+
+// GetFeedsWithItemsMinimum gets feeds and their items, ensuring at least minItemsPerFeed
+// items are returned for each feed, even if they fall outside the time range.
+// This is useful for ensuring quiet/infrequently-updated feeds remain visible.
+func (db *DB) GetFeedsWithItemsMinimum(
+	start, end time.Time, feedURLs []string, minItemsPerFeed int,
+) ([]Feed, map[string][]Item, error) {
+	// If no minimum specified, use the standard time-based query
+	if minItemsPerFeed <= 0 {
+		return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
+	}
+
+	// Get all feeds (optionally filtered by feedURLs)
+	feeds, err := db.getFeedsFiltered(feedURLs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get feeds: %w", err)
+	}
+
+	if len(feeds) == 0 {
+		return []Feed{}, make(map[string][]Item), nil
+	}
+
+	// Get items for each feed with minimum guarantee
+	items := make(map[string][]Item)
+	feedsWithItems := []Feed{}
+
+	for i := range feeds {
+		feedItems, err := db.getItemsForFeedWithMinimum(feeds[i].URL, start, end, minItemsPerFeed)
+		if err != nil {
+			logrus.Warnf("Failed to get items for feed %s: %v", feeds[i].URL, err)
+			continue
+		}
+
+		if len(feedItems) > 0 {
+			items[feeds[i].URL] = feedItems
+			feedsWithItems = append(feedsWithItems, feeds[i])
+		}
+	}
+
+	return feedsWithItems, items, nil
+}
+
+// getFeedsFiltered gets all feeds, optionally filtered by a list of URLs.
+func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
+	query := `
+		SELECT url, title, description, last_updated, etag, last_modified,
+			last_fetch_time, last_successful_fetch, error_count, last_error, latest_item_date, feed_json
+		FROM feeds
+	`
+	args := []interface{}{}
+
+	if len(feedURLs) > 0 {
+		placeholders := make([]string, len(feedURLs))
+		for i, url := range feedURLs {
+			placeholders[i] = "?"
+			args = append(args, url)
+		}
+		query += " WHERE url IN (" + strings.Join(placeholders, ",") + ")"
+	}
+
+	query += " ORDER BY COALESCE(latest_item_date, last_updated) DESC"
+
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query feeds: %w", err)
+	}
+	defer rows.Close()
+
+	feeds := []Feed{}
+	for rows.Next() {
+		feed := Feed{}
+		err := rows.Scan(
+			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
+			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
+			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan feed: %w", err)
+		}
+		feeds = append(feeds, feed)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over feeds: %w", err)
+	}
+
+	return feeds, nil
+}
+
+// getItemsForFeedWithMinimum gets items for a feed, ensuring at least minItems are returned.
+// Returns MAX(items within timespan, minItems most recent items).
+// This ensures active feeds show all new items, while quiet feeds still show recent history.
+func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, minItems int) ([]Item, error) {
+	// First, get items within the timespan
+	timespanQuery := `
+		SELECT id, feed_url, guid, title, link, published_date,
+			content, summary, archived, item_json
+		FROM items
+		WHERE feed_url = ? AND archived = 0
+			AND published_date >= ? AND published_date <= ?
+		ORDER BY published_date DESC
+	`
+
+	rows, err := db.conn.Query(timespanQuery, feedURL, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query timespan items: %w", err)
+	}
+	defer rows.Close()
+
+	items := []Item{}
+	for rows.Next() {
+		item := Item{}
+		err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			&item.ItemJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan timespan item: %w", err)
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over timespan items: %w", err)
+	}
+
+	// If we have enough items from the timespan, we're done
+	if len(items) >= minItems {
+		return items, nil
+	}
+
+	// Otherwise, get the most recent minItems items regardless of timespan
+	recentQuery := `
+		SELECT id, feed_url, guid, title, link, published_date,
+			content, summary, archived, item_json
+		FROM items
+		WHERE feed_url = ? AND archived = 0
+		ORDER BY published_date DESC
+		LIMIT ?
+	`
+
+	rows2, err := db.conn.Query(recentQuery, feedURL, minItems)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query recent items: %w", err)
+	}
+	defer rows2.Close()
+
+	items = []Item{} // Reset and get fresh items
+	for rows2.Next() {
+		item := Item{}
+		err := rows2.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			&item.ItemJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan recent item: %w", err)
+		}
+		items = append(items, item)
+	}
+
+	if err := rows2.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over recent items: %w", err)
+	}
+
+	return items, nil
+}

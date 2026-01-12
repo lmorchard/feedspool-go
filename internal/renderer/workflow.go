@@ -14,17 +14,17 @@ import (
 
 // WorkflowConfig holds all configuration for rendering operations.
 type WorkflowConfig struct {
-	MaxAge       string
-	Start        string
-	End          string
-	ItemsPerFeed int // Maximum items to show per feed (0 = no limit)
-	OutputDir    string
-	TemplatesDir string
-	AssetsDir    string
-	FeedsFile    string
-	Format       string
-	Database     string
-	Clean        bool
+	MaxAge          string
+	Start           string
+	End             string
+	MinItemsPerFeed int // Minimum items to show per feed (0 = no minimum, use timespan only)
+	OutputDir       string
+	TemplatesDir    string
+	AssetsDir       string
+	FeedsFile       string
+	Format          string
+	Database        string
+	Clean           bool
 }
 
 // ExecuteWorkflow performs the complete render operation with the given configuration.
@@ -64,8 +64,8 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Query data
-	feeds, items, err := queryData(db, startTime, endTime, feedURLs)
+	// Query data with minimum items per feed guarantee
+	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed)
 	if err != nil {
 		return err
 	}
@@ -73,11 +73,6 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 	if len(feeds) == 0 {
 		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
 		return nil
-	}
-
-	// Apply per-feed item limit if specified
-	if config.ItemsPerFeed > 0 {
-		items = limitItemsPerFeed(items, config.ItemsPerFeed)
 	}
 
 	// Generate site
@@ -108,7 +103,7 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 }
 
 func queryData(
-	db *database.DB, startTime, endTime time.Time, feedURLs []string,
+	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int,
 ) ([]database.Feed, map[string][]database.Item, error) {
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Rendering feeds from %s to %s...\n",
@@ -116,8 +111,11 @@ func queryData(
 	if len(feedURLs) > 0 {
 		fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
 	}
+	if minItemsPerFeed > 0 {
+		fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+	}
 
-	feeds, items, err := db.GetFeedsWithItemsByTimeRange(startTime, endTime, feedURLs)
+	feeds, items, err := db.GetFeedsWithItemsMinimum(startTime, endTime, feedURLs, minItemsPerFeed)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query feeds and items: %w", err)
 	}
@@ -340,23 +338,4 @@ func cleanOutputDirectory(outputDir string) error {
 	}
 
 	return nil
-}
-
-// limitItemsPerFeed limits the number of items per feed in the items map.
-// Items are already sorted by published_date DESC from the database query.
-func limitItemsPerFeed(items map[string][]database.Item, limit int) map[string][]database.Item {
-	if limit <= 0 {
-		return items
-	}
-
-	limitedItems := make(map[string][]database.Item, len(items))
-	for feedURL, feedItems := range items {
-		if len(feedItems) <= limit {
-			limitedItems[feedURL] = feedItems
-		} else {
-			limitedItems[feedURL] = feedItems[:limit]
-		}
-	}
-
-	return limitedItems
 }
