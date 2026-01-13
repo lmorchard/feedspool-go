@@ -74,9 +74,14 @@ jobs:
         DATE: ${{ env.DATE }}
       shell: bash
       run: |
-        # Use make build for consistent build logic
-        make build
-        
+        # Use make build-static for Linux (Docker needs static binary for Alpine)
+        # Use make build for other platforms
+        if [ "$GOOS" = "linux" ]; then
+          make build-static
+        else
+          make build
+        fi
+
         # Rename to expected output for Windows
         if [ "$GOOS" = "windows" ] && [ -f feedspool ]; then
           mv feedspool feedspool.exe
