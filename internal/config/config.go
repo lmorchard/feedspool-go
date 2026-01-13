@@ -15,12 +15,14 @@ func getIntWithDefault(key string, defaultValue int) int {
 }
 
 const (
-	defaultPort        = 8080
-	defaultOutputDir   = "./build"
-	DefaultTimeout     = 30 * time.Second
-	DefaultConcurrency = 32
-	DefaultMaxItems    = 100
-	DefaultDirPerm     = 0o755
+	defaultPort              = 8080
+	defaultOutputDir         = "./build"
+	DefaultTimeout           = 30 * time.Second
+	DefaultConcurrency       = 32
+	DefaultMaxItems          = 100
+	DefaultDirPerm           = 0o755
+	DefaultMinItemsPerFeed   = 5  // Render: minimum items to show per feed
+	DefaultMinItemsKeepPurge = 10 // Purge: minimum items to keep per feed
 )
 
 type Config struct {
@@ -50,11 +52,12 @@ type FetchConfig struct {
 }
 
 type RenderConfig struct {
-	OutputDir     string
-	TemplatesDir  string
-	AssetsDir     string
-	DefaultMaxAge string
-	DefaultClean  bool `mapstructure:"default_clean"`
+	OutputDir              string
+	TemplatesDir           string
+	AssetsDir              string
+	DefaultMaxAge          string
+	DefaultClean           bool `mapstructure:"default_clean"`
+	DefaultMinItemsPerFeed int  `mapstructure:"default_min_items_per_feed"`
 }
 
 type ServeConfig struct {
@@ -74,8 +77,9 @@ type UnfurlConfig struct {
 }
 
 type PurgeConfig struct {
-	MaxAge     string `mapstructure:"max_age"`
-	SkipVacuum bool   `mapstructure:"skip_vacuum"`
+	MaxAge       string `mapstructure:"max_age"`
+	SkipVacuum   bool   `mapstructure:"skip_vacuum"`
+	MinItemsKeep int    `mapstructure:"min_items_keep"`
 }
 
 func LoadConfig() *Config {
@@ -101,11 +105,12 @@ func LoadConfig() *Config {
 			MaxItems:    getIntWithDefault("fetch.max_items", DefaultMaxItems),
 		},
 		Render: RenderConfig{
-			OutputDir:     viper.GetString("render.output_dir"),
-			TemplatesDir:  viper.GetString("render.templates_dir"),
-			AssetsDir:     viper.GetString("render.assets_dir"),
-			DefaultMaxAge: viper.GetString("render.default_max_age"),
-			DefaultClean:  viper.GetBool("render.default_clean"),
+			OutputDir:              viper.GetString("render.output_dir"),
+			TemplatesDir:           viper.GetString("render.templates_dir"),
+			AssetsDir:              viper.GetString("render.assets_dir"),
+			DefaultMaxAge:          viper.GetString("render.default_max_age"),
+			DefaultClean:           viper.GetBool("render.default_clean"),
+			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", 0),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
@@ -121,8 +126,9 @@ func LoadConfig() *Config {
 			Concurrency: viper.GetInt("unfurl.concurrency"),
 		},
 		Purge: PurgeConfig{
-			MaxAge:     viper.GetString("purge.max_age"),
-			SkipVacuum: viper.GetBool("purge.skip_vacuum"),
+			MaxAge:       viper.GetString("purge.max_age"),
+			SkipVacuum:   viper.GetBool("purge.skip_vacuum"),
+			MinItemsKeep: getIntWithDefault("purge.min_items_keep", 0),
 		},
 	}
 }
@@ -141,10 +147,11 @@ func GetDefault() *Config {
 			MaxItems:    DefaultMaxItems,
 		},
 		Render: RenderConfig{
-			OutputDir:     "./build",
-			TemplatesDir:  "",
-			AssetsDir:     "",
-			DefaultMaxAge: "24h",
+			OutputDir:              "./build",
+			TemplatesDir:           "",
+			AssetsDir:              "",
+			DefaultMaxAge:          "24h",
+			DefaultMinItemsPerFeed: DefaultMinItemsPerFeed,
 		},
 		Serve: ServeConfig{
 			Port: defaultPort,
@@ -160,7 +167,8 @@ func GetDefault() *Config {
 			Concurrency: DefaultConcurrency,
 		},
 		Purge: PurgeConfig{
-			MaxAge: "30d",
+			MaxAge:       "30d",
+			MinItemsKeep: DefaultMinItemsKeepPurge,
 		},
 	}
 }

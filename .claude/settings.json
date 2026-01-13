@@ -10,7 +10,16 @@
     ]
   },
   "hooks": {
-    "post-edit": "make format && make lint && make test",
-    "post-multi-edit": "make format && make lint && make test"
+    "PostToolUse": [
+      {
+        "matcher": "Edit(*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "make format && make lint && make test"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -17,6 +17,7 @@ var (
 	purgeFormat   string
 	purgeFilename string
 	purgeNoVacuum bool
+	purgeMinItems int
 )
 
 var purgeCmd = &cobra.Command{
@@ -28,6 +29,10 @@ Age-based purging:
   Deletes archived items from the database that are older than the specified age.
   Uses --age flag or purge.max_age from config (default: 30d).
 
+  Minimum items protection:
+  Use --min-items to ensure at least N items remain per feed regardless of age.
+  This helps preserve history for infrequently-updated feeds.
+
 Feed list cleanup (optional):
   When --format and filename are specified (or configured), removes any feeds
   (and their items) from the database that are NOT in the specified feed list.
@@ -35,6 +40,7 @@ Feed list cleanup (optional):
 Examples:
   feedspool purge                             # Delete old items using config max_age
   feedspool purge --age 30d                   # Delete items older than 30 days
+  feedspool purge --age 30d --min-items 15    # Keep at least 15 items per feed
   feedspool purge --format text feeds.txt     # Also cleanup unsubscribed feeds
   feedspool purge --age 7d --dry-run          # Preview what would be deleted`,
 	RunE: runPurge,
@@ -42,6 +48,8 @@ Examples:
 
 func init() {
 	purgeCmd.Flags().StringVar(&purgeAge, "age", "", "Delete items older than this (e.g., 30d, 1w, 48h)")
+	purgeCmd.Flags().IntVar(&purgeMinItems, "min-items", -1,
+		"Minimum items to keep per feed regardless of age (-1 = use config default, 0 = no minimum)")
 	purgeCmd.Flags().BoolVar(&purgeDryRun, "dry-run", false, "Preview what would be deleted without actually deleting")
 	purgeCmd.Flags().StringVar(&purgeFormat, "format", "", "Feed list format for cleanup (opml or text)")
 	purgeCmd.Flags().StringVar(&purgeFilename, "filename", "", "Feed list filename for cleanup")
@@ -69,8 +77,14 @@ func runPurge(_ *cobra.Command, _ []string) error {
 		}
 	}
 
+	// Determine minimum items to keep per feed
+	minItems := purgeMinItems
+	if minItems < 0 {
+		minItems = cfg.Purge.MinItemsKeep
+	}
+
 	// Always run age-based cleanup
-	if err := runAgePurge(cfg, db); err != nil {
+	if err := runAgePurge(cfg, db, minItems); err != nil {
 		return err
 	}
 
@@ -241,7 +255,7 @@ func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 	return nil
 }
 
-func runAgePurge(cfg *config.Config, db *database.DB) error {
+func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 	// Use --age flag if provided, otherwise use config max_age, fallback to 30d
 	ageStr := purgeAge
 	if ageStr == "" {
@@ -261,21 +275,30 @@ func runAgePurge(cfg *config.Config, db *database.DB) error {
 	if purgeDryRun {
 		if cfg.JSON {
 			result := map[string]interface{}{
-				"mode":       "age",
-				"dryRun":     true,
-				"cutoffDate": cutoffTime.Format(time.RFC3339),
-				"deleted":    0,
+				"mode":         "age",
+				"dryRun":       true,
+				"cutoffDate":   cutoffTime.Format(time.RFC3339),
+				"minItemsKeep": minItems,
+				"deleted":      0,
 			}
 			jsonData, _ := json.Marshal(result)
 			fmt.Println(string(jsonData))
 		} else {
 			fmt.Printf("Dry run mode - would delete archived items older than %s\n", cutoffTime.Format("2006-01-02"))
 			fmt.Printf("(Items published before %s)\n", cutoffTime.Format(time.RFC3339))
+			if minItems > 0 {
+				fmt.Printf("Keeping at least %d items per feed\n", minItems)
+			}
 		}
 		return nil
 	}
 
-	deleted, err := db.DeleteArchivedItems(cutoffTime)
+	var deleted int64
+	if minItems > 0 {
+		deleted, err = db.DeleteArchivedItemsWithMinimum(cutoffTime, minItems)
+	} else {
+		deleted, err = db.DeleteArchivedItems(cutoffTime)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to delete archived items: %w", err)
 	}
@@ -293,6 +316,7 @@ func runAgePurge(cfg *config.Config, db *database.DB) error {
 			"mode":            "age",
 			"dryRun":          false,
 			"cutoffDate":      cutoffTime.Format(time.RFC3339),
+			"minItemsKeep":    minItems,
 			"deleted":         deleted,
 			"metadataDeleted": metadataDeleted,
 		}
@@ -300,6 +324,9 @@ func runAgePurge(cfg *config.Config, db *database.DB) error {
 		fmt.Println(string(jsonData))
 	} else {
 		fmt.Printf("Deleted %d archived items older than %s\n", deleted, cutoffTime.Format("2006-01-02"))
+		if minItems > 0 {
+			fmt.Printf("(Kept at least %d items per feed)\n", minItems)
+		}
 	}
 
 	return nil

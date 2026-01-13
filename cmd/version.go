@@ -21,6 +21,10 @@ var versionCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
+
+	// Enable --version flag with custom template
+	rootCmd.Version = Version
+	rootCmd.SetVersionTemplate(fmt.Sprintf("feedspool version %s\n  commit: %s\n  built:  %s\n", Version, Commit, Date))
 }
 
 func runVersion(_ *cobra.Command, _ []string) {

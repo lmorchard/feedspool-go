@@ -14,16 +14,17 @@ import (
 
 // WorkflowConfig holds all configuration for rendering operations.
 type WorkflowConfig struct {
-	MaxAge       string
-	Start        string
-	End          string
-	OutputDir    string
-	TemplatesDir string
-	AssetsDir    string
-	FeedsFile    string
-	Format       string
-	Database     string
-	Clean        bool
+	MaxAge          string
+	Start           string
+	End             string
+	MinItemsPerFeed int // Minimum items to show per feed (0 = no minimum, use timespan only)
+	OutputDir       string
+	TemplatesDir    string
+	AssetsDir       string
+	FeedsFile       string
+	Format          string
+	Database        string
+	Clean           bool
 }
 
 // ExecuteWorkflow performs the complete render operation with the given configuration.
@@ -63,8 +64,8 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Query data
-	feeds, items, err := queryData(db, startTime, endTime, feedURLs)
+	// Query data with minimum items per feed guarantee
+	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 }
 
 func queryData(
-	db *database.DB, startTime, endTime time.Time, feedURLs []string,
+	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int,
 ) ([]database.Feed, map[string][]database.Item, error) {
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Rendering feeds from %s to %s...\n",
@@ -110,8 +111,11 @@ func queryData(
 	if len(feedURLs) > 0 {
 		fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
 	}
+	if minItemsPerFeed > 0 {
+		fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+	}
 
-	feeds, items, err := db.GetFeedsWithItemsByTimeRange(startTime, endTime, feedURLs)
+	feeds, items, err := db.GetFeedsWithItemsMinimum(startTime, endTime, feedURLs, minItemsPerFeed)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to query feeds and items: %w", err)
 	}

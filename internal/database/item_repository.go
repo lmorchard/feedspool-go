@@ -137,6 +137,95 @@ func (db *DB) DeleteArchivedItems(olderThan time.Time) (int64, error) {
 	return rowsAffected, nil
 }
 
+// DeleteArchivedItemsWithMinimum deletes archived items older than the specified time,
+// but ensures at least minItemsPerFeed items remain for each feed.
+func (db *DB) DeleteArchivedItemsWithMinimum(olderThan time.Time, minItemsPerFeed int) (int64, error) {
+	if minItemsPerFeed <= 0 {
+		return db.DeleteArchivedItems(olderThan)
+	}
+
+	// Get all feed URLs
+	feeds, err := db.GetAllFeeds()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get feeds: %w", err)
+	}
+
+	var totalDeleted int64
+
+	// Process each feed individually
+	for _, feed := range feeds {
+		deleted, err := db.deleteArchivedItemsForFeed(feed.URL, olderThan, minItemsPerFeed)
+		if err != nil {
+			logrus.Warnf("Failed to delete items for feed %s: %v", feed.URL, err)
+			continue
+		}
+		totalDeleted += deleted
+	}
+
+	logrus.Debugf("Deleted %d archived items (with minimum %d items per feed)", totalDeleted, minItemsPerFeed)
+	return totalDeleted, nil
+}
+
+// deleteArchivedItemsForFeed deletes archived items for a specific feed,
+// ensuring at least minItems remain.
+func (db *DB) deleteArchivedItemsForFeed(feedURL string, olderThan time.Time, minItems int) (int64, error) {
+	// Get IDs of the most recent N items for this feed (to protect them from deletion)
+	protectedQuery := `
+		SELECT id FROM items
+		WHERE feed_url = ?
+		ORDER BY published_date DESC
+		LIMIT ?
+	`
+	rows, err := db.conn.Query(protectedQuery, feedURL, minItems)
+	if err != nil {
+		return 0, fmt.Errorf("failed to query protected items: %w", err)
+	}
+	defer rows.Close()
+
+	protectedIDs := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return 0, fmt.Errorf("failed to scan item ID: %w", err)
+		}
+		protectedIDs = append(protectedIDs, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, fmt.Errorf("error iterating protected items: %w", err)
+	}
+
+	// If we have fewer than minItems total, don't delete anything
+	if len(protectedIDs) < minItems {
+		return 0, nil
+	}
+
+	// Build DELETE query excluding protected items
+	placeholders := make([]string, len(protectedIDs))
+	args := []interface{}{feedURL, olderThan}
+	for i, id := range protectedIDs {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	//nolint:gosec // Safe: only formatting placeholder count, not user input
+	deleteQuery := fmt.Sprintf(`
+		DELETE FROM items
+		WHERE feed_url = ?
+		  AND archived = 1
+		  AND published_date < ?
+		  AND id NOT IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	result, err := db.conn.Exec(deleteQuery, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete items: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
+}
+
 // getItemsForFeeds gets all items for a set of feeds within a time range.
 func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time) (map[string][]Item, error) {
 	if len(feedURLMap) == 0 {
