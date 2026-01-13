@@ -16,8 +16,9 @@ COPY . .
 
 # Build the binary using make (not go build) for proper versioning
 # Enable CGO for SQLite support
+# Use build-static for portable binary with musl libc
 ENV CGO_ENABLED=1
-RUN make build
+RUN make build-static
 
 # Runtime stage
 FROM docker.io/alpine:latest
