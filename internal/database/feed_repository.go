@@ -357,9 +357,9 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 		existingGUIDs[items[i].GUID] = true
 	}
 
-	// Add recent items that aren't already in our list
-	recentItems := []Item{}
-	for rows2.Next() {
+	// Add recent items that aren't already in our list, up to minItems total
+	needed := minItems - len(items)
+	for rows2.Next() && needed > 0 {
 		item := Item{}
 		err := rows2.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
@@ -369,20 +369,13 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 			return nil, fmt.Errorf("failed to scan recent item: %w", err)
 		}
 		if !existingGUIDs[item.GUID] {
-			recentItems = append(recentItems, item)
+			items = append(items, item)
+			needed--
 		}
 	}
 
 	if err := rows2.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over recent items: %w", err)
-	}
-
-	// Merge: timespan items first, then additional recent items to reach minimum
-	items = append(items, recentItems...)
-
-	// Ensure we don't exceed minItems significantly (trim if needed)
-	if len(items) > minItems {
-		items = items[:minItems]
 	}
 
 	return items, nil
