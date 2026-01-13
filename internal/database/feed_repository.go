@@ -353,8 +353,8 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 
 	// Build a map of GUIDs we already have from the timespan
 	existingGUIDs := make(map[string]bool)
-	for _, item := range items {
-		existingGUIDs[item.GUID] = true
+	for i := range items {
+		existingGUIDs[items[i].GUID] = true
 	}
 
 	// Add recent items that aren't already in our list
