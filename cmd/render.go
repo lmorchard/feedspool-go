@@ -58,8 +58,8 @@ func init() {
 	renderCmd.Flags().StringVar(&renderMaxAge, "max-age", "", "Show feeds updated within duration (e.g., 24h, 7d)")
 	renderCmd.Flags().StringVar(&renderStart, "start", "", "Start time (RFC3339 format)")
 	renderCmd.Flags().StringVar(&renderEnd, "end", "", "End time (RFC3339 format)")
-	renderCmd.Flags().IntVar(&renderMinItemsPerFeed, "min-items-per-feed", 0,
-		"Minimum items to show per feed (0 = use timespan only)")
+	renderCmd.Flags().IntVar(&renderMinItemsPerFeed, "min-items-per-feed", -1,
+		"Minimum items to show per feed (-1 = use config default, 0 = use timespan only)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
@@ -113,7 +113,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	if renderEnd != "" {
 		config.End = renderEnd
 	}
-	if renderMinItemsPerFeed > 0 {
+	if renderMinItemsPerFeed >= 0 {
 		config.MinItemsPerFeed = renderMinItemsPerFeed
 	}
 	if renderOutput != defaultOutputDir {

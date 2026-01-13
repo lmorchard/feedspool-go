@@ -48,8 +48,8 @@ Examples:
 
 func init() {
 	purgeCmd.Flags().StringVar(&purgeAge, "age", "", "Delete items older than this (e.g., 30d, 1w, 48h)")
-	purgeCmd.Flags().IntVar(&purgeMinItems, "min-items", 0,
-		"Minimum items to keep per feed regardless of age (0 = no minimum)")
+	purgeCmd.Flags().IntVar(&purgeMinItems, "min-items", -1,
+		"Minimum items to keep per feed regardless of age (-1 = use config default, 0 = no minimum)")
 	purgeCmd.Flags().BoolVar(&purgeDryRun, "dry-run", false, "Preview what would be deleted without actually deleting")
 	purgeCmd.Flags().StringVar(&purgeFormat, "format", "", "Feed list format for cleanup (opml or text)")
 	purgeCmd.Flags().StringVar(&purgeFilename, "filename", "", "Feed list filename for cleanup")
@@ -79,7 +79,7 @@ func runPurge(_ *cobra.Command, _ []string) error {
 
 	// Determine minimum items to keep per feed
 	minItems := purgeMinItems
-	if minItems == 0 {
+	if minItems < 0 {
 		minItems = cfg.Purge.MinItemsKeep
 	}
 
