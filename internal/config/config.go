@@ -110,7 +110,7 @@ func LoadConfig() *Config {
 			AssetsDir:              viper.GetString("render.assets_dir"),
 			DefaultMaxAge:          viper.GetString("render.default_max_age"),
 			DefaultClean:           viper.GetBool("render.default_clean"),
-			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", 0),
+			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", DefaultMinItemsPerFeed),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
