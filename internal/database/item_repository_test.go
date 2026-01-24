@@ -358,9 +358,9 @@ func TestDeleteArchivedItems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Should have 1 non-archived item (archived items are excluded by GetItemsForFeed)
-	if len(allItems) != 1 {
-		t.Errorf("Found %d non-archived items, want 1", len(allItems))
+	// Should have 2 items (archived flag no longer filters items in queries)
+	if len(allItems) != 2 {
+		t.Errorf("Found %d items, want 2", len(allItems))
 	}
 
 	// Check total count in database

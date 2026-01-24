@@ -37,10 +37,10 @@ func (db *DB) UpsertItem(item *Item) error {
 // GetItemsForFeed retrieves items for a specific feed with optional filtering by time range and limit.
 func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item, error) {
 	query := `
-		SELECT id, feed_url, guid, title, link, published_date, 
+		SELECT id, feed_url, guid, title, link, published_date,
 			content, summary, archived, item_json
-		FROM items 
-		WHERE feed_url = ? AND archived = 0
+		FROM items
+		WHERE feed_url = ?
 	`
 	args := []interface{}{feedURL}
 
@@ -252,7 +252,7 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 		SELECT id, feed_url, guid, title, link, published_date,
 			content, summary, archived, item_json
 		FROM items
-		WHERE feed_url IN (%s) AND archived = 0 
+		WHERE feed_url IN (%s)
 			AND published_date >= ? AND published_date <= ?
 		ORDER BY feed_url, published_date DESC
 	`, strings.Join(placeholders, ","))
