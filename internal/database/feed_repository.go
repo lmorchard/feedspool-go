@@ -207,18 +207,19 @@ func (db *DB) GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string)
 	return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
 }
 
-// GetFeedsWithItemsMinimum gets feeds and their items, ensuring at least minItemsPerFeed
-// items are returned for each feed, even if they fall outside the time range.
-// This is useful for ensuring quiet/infrequently-updated feeds remain visible.
+// GetFeedsWithItemsMinimum gets ALL feeds and their items, applying a minimum items guarantee.
+// For each feed:
+//   - If the feed has >= minItemsPerFeed items within the timespan, return those items
+//   - If the feed has < minItemsPerFeed items within the timespan, return minItemsPerFeed most recent items
+//
+// This ensures quiet/infrequently-updated feeds remain visible with recent items, while busy
+// feeds show all items within the requested timespan.
+//
+// When minItemsPerFeed is 0, only items within the timespan are returned (no minimum guarantee).
 func (db *DB) GetFeedsWithItemsMinimum(
 	start, end time.Time, feedURLs []string, minItemsPerFeed int,
 ) ([]Feed, map[string][]Item, error) {
-	// If no minimum specified, use the standard time-based query
-	if minItemsPerFeed <= 0 {
-		return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
-	}
-
-	// Get all feeds (optionally filtered by feedURLs)
+	// Get all feeds (optionally filtered by feedURLs list)
 	feeds, err := db.getFeedsFiltered(feedURLs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get feeds: %w", err)
