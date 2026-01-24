@@ -219,6 +219,11 @@ func (db *DB) GetFeedsWithItemsByMaxAge(maxAge time.Duration, feedURLs []string)
 func (db *DB) GetFeedsWithItemsMinimum(
 	start, end time.Time, feedURLs []string, minItemsPerFeed int,
 ) ([]Feed, map[string][]Item, error) {
+	// Optimization: when no minimum guarantee is requested, use the more efficient time-based query
+	if minItemsPerFeed == 0 {
+		return db.GetFeedsWithItemsByTimeRange(start, end, feedURLs)
+	}
+
 	// Get all feeds (optionally filtered by feedURLs list)
 	feeds, err := db.getFeedsFiltered(feedURLs)
 	if err != nil {
