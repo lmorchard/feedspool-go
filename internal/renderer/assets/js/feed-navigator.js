@@ -17,6 +17,7 @@ class FeedNavigator extends HTMLElement {
         this.mutationObserver = null;
         this.prevButton = null;
         this.nextButton = null;
+        this.feedSelector = null;
     }
 
     connectedCallback() {
@@ -57,6 +58,19 @@ class FeedNavigator extends HTMLElement {
         this.prevButton.appendChild(prevIcon);
         this.prevButton.appendChild(prevText);
 
+        // Create feed selector dropdown
+        this.feedSelector = document.createElement('select');
+        this.feedSelector.className = 'feed-nav-selector';
+        this.feedSelector.setAttribute('aria-label', 'Jump to feed');
+        this.feedSelector.addEventListener('change', (e) => this.scrollToFeed(parseInt(e.target.value)));
+
+        // Will be populated in updateFeedContainers
+        const defaultOption = document.createElement('option');
+        defaultOption.textContent = 'Select feed...';
+        defaultOption.value = '';
+        defaultOption.disabled = true;
+        this.feedSelector.appendChild(defaultOption);
+
         // Create next button
         this.nextButton = document.createElement('button');
         this.nextButton.className = 'feed-nav-button feed-nav-next';
@@ -75,6 +89,7 @@ class FeedNavigator extends HTMLElement {
         this.nextButton.appendChild(nextIcon);
 
         buttonContainer.appendChild(this.prevButton);
+        buttonContainer.appendChild(this.feedSelector);
         buttonContainer.appendChild(this.nextButton);
         this.appendChild(buttonContainer);
 
@@ -137,6 +152,42 @@ class FeedNavigator extends HTMLElement {
                 display: inline;
             }
 
+            .feed-nav-selector {
+                pointer-events: auto;
+                padding: 0.875rem 1.25rem;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 2rem;
+                font-size: 0.9rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                max-width: 300px;
+                min-width: 150px;
+            }
+
+            .feed-nav-selector:hover {
+                background: rgba(0, 0, 0, 0.9);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            }
+
+            .feed-nav-selector:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .feed-nav-selector.hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .feed-nav-selector option {
+                background: #1a1a1a;
+                color: white;
+            }
+
             .feed-nav-button:hover {
                 background: rgba(0, 0, 0, 0.9);
                 transform: translateY(-2px);
@@ -167,6 +218,21 @@ class FeedNavigator extends HTMLElement {
                 .feed-nav-button:hover {
                     background: rgba(255, 255, 255, 1);
                 }
+
+                .feed-nav-selector {
+                    background: rgba(255, 255, 255, 0.95);
+                    color: #333;
+                    border-color: rgba(0, 0, 0, 0.1);
+                }
+
+                .feed-nav-selector:hover {
+                    background: rgba(255, 255, 255, 1);
+                }
+
+                .feed-nav-selector option {
+                    background: #ffffff;
+                    color: #333;
+                }
             }
 
             /* Mobile/narrow screen adjustments */
@@ -188,6 +254,13 @@ class FeedNavigator extends HTMLElement {
 
                 .feed-nav-icon {
                     font-size: 1.25rem;
+                }
+
+                .feed-nav-selector {
+                    min-width: 120px;
+                    max-width: 200px;
+                    font-size: 0.85rem;
+                    padding: 0.75rem 0.5rem;
                 }
             }
         `;
@@ -278,11 +351,37 @@ class FeedNavigator extends HTMLElement {
             });
         }
 
+        this.updateFeedSelector();
         this.updateButtonState();
     }
 
+    updateFeedSelector() {
+        if (!this.feedSelector) return;
+
+        // Clear existing options except the default
+        while (this.feedSelector.options.length > 1) {
+            this.feedSelector.remove(1);
+        }
+
+        // Populate with feed titles
+        this.feedContainers.forEach((container, index) => {
+            const feedHeader = container.querySelector('.feed-header h2');
+            const title = feedHeader ? feedHeader.textContent.trim() : `Feed ${index + 1}`;
+
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = title;
+            this.feedSelector.appendChild(option);
+        });
+
+        // Update selected value to match current feed
+        if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
+            this.feedSelector.value = this.currentFeedIndex;
+        }
+    }
+
     updateButtonState() {
-        if (!this.prevButton || !this.nextButton) return;
+        if (!this.prevButton || !this.nextButton || !this.feedSelector) return;
 
         const hasFeeds = this.feedContainers.length > 0;
         const isFirstFeed = this.currentFeedIndex <= 0;
@@ -304,6 +403,34 @@ class FeedNavigator extends HTMLElement {
         } else {
             this.nextButton.classList.remove('hidden');
             this.nextButton.disabled = false;
+        }
+
+        // Update selector to show current feed
+        if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
+            this.feedSelector.value = this.currentFeedIndex;
+        }
+
+        // Hide selector if no feeds
+        if (!hasFeeds) {
+            this.feedSelector.classList.add('hidden');
+            this.feedSelector.disabled = true;
+        } else {
+            this.feedSelector.classList.remove('hidden');
+            this.feedSelector.disabled = false;
+        }
+    }
+
+    scrollToFeed(index) {
+        if (index < 0 || index >= this.feedContainers.length) {
+            return;
+        }
+
+        const targetFeed = this.feedContainers[index];
+        if (targetFeed) {
+            targetFeed.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
     }
 
