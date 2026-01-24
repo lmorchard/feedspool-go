@@ -9,6 +9,10 @@
  */
 
 class FeedNavigator extends HTMLElement {
+    // Constants for feed container identification
+    static FEED_CONTAINER_SELECTOR = ':scope > link-loader, :scope > lazy-image-loader';
+    static FEED_CONTAINER_TAGS = ['LINK-LOADER', 'LAZY-IMAGE-LOADER'];
+
     constructor() {
         super();
         this.feedContainers = [];
@@ -18,6 +22,16 @@ class FeedNavigator extends HTMLElement {
         this.prevButton = null;
         this.nextButton = null;
         this.feedSelector = null;
+    }
+
+    /**
+     * Helper method to check if a node is a feed container
+     * @param {Node} node - The DOM node to check
+     * @returns {boolean} True if the node is a feed container
+     */
+    isFeedContainer(node) {
+        return node.nodeType === Node.ELEMENT_NODE &&
+               FeedNavigator.FEED_CONTAINER_TAGS.includes(node.tagName);
     }
 
     connectedCallback() {
@@ -272,15 +286,17 @@ class FeedNavigator extends HTMLElement {
         // Observer to track which feed header is near the top of viewport
         const options = {
             root: null,
-            rootMargin: '-10% 0px -80% 0px', // Top 20% of viewport
+            rootMargin: '-10% 0px -80% 0px', // Top 10% of viewport (10%-90% region)
             threshold: 0
         };
 
         this.intersectionObserver = new IntersectionObserver((entries) => {
+            console.log('[feed-navigator] IntersectionObserver fired with', entries.length, 'entries');
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     const index = this.feedContainers.indexOf(entry.target);
                     if (index !== -1) {
+                        console.log('[feed-navigator] Current feed index updated to', index);
                         this.currentFeedIndex = index;
                         this.updateButtonState();
                     }
@@ -297,27 +313,26 @@ class FeedNavigator extends HTMLElement {
         };
 
         this.mutationObserver = new MutationObserver((mutations) => {
+            console.log('[feed-navigator] MutationObserver fired with', mutations.length, 'mutations');
             let shouldUpdate = false;
 
             for (const mutation of mutations) {
                 if (mutation.type === 'childList') {
                     // Check if any added nodes are feed containers
                     for (const node of mutation.addedNodes) {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            if (node.tagName === 'LINK-LOADER' || node.tagName === 'LAZY-IMAGE-LOADER') {
-                                shouldUpdate = true;
-                                break;
-                            }
+                        if (this.isFeedContainer(node)) {
+                            console.log('[feed-navigator] Detected added feed container:', node.tagName);
+                            shouldUpdate = true;
+                            break;
                         }
                     }
 
                     // Check if any removed nodes were feed containers
                     for (const node of mutation.removedNodes) {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            if (node.tagName === 'LINK-LOADER' || node.tagName === 'LAZY-IMAGE-LOADER') {
-                                shouldUpdate = true;
-                                break;
-                            }
+                        if (this.isFeedContainer(node)) {
+                            console.log('[feed-navigator] Detected removed feed container:', node.tagName);
+                            shouldUpdate = true;
+                            break;
                         }
                     }
                 }
@@ -326,7 +341,10 @@ class FeedNavigator extends HTMLElement {
             }
 
             if (shouldUpdate) {
+                console.log('[feed-navigator] Triggering updateFeedContainers due to mutation');
                 this.updateFeedContainers();
+            } else {
+                console.log('[feed-navigator] No relevant mutations detected');
             }
         });
 
@@ -334,6 +352,9 @@ class FeedNavigator extends HTMLElement {
     }
 
     updateFeedContainers() {
+        console.log('[feed-navigator] updateFeedContainers() called');
+        const startTime = performance.now();
+
         // Disconnect existing observations
         if (this.intersectionObserver) {
             this.feedContainers.forEach(container => {
@@ -342,7 +363,8 @@ class FeedNavigator extends HTMLElement {
         }
 
         // Find all feed containers (link-loader or lazy-image-loader) as direct children
-        this.feedContainers = Array.from(this.querySelectorAll(':scope > link-loader, :scope > lazy-image-loader'));
+        this.feedContainers = Array.from(this.querySelectorAll(FeedNavigator.FEED_CONTAINER_SELECTOR));
+        console.log('[feed-navigator] Found', this.feedContainers.length, 'feed containers');
 
         // Observe all feed containers
         if (this.intersectionObserver) {
@@ -353,10 +375,15 @@ class FeedNavigator extends HTMLElement {
 
         this.updateFeedSelector();
         this.updateButtonState();
+
+        const elapsed = performance.now() - startTime;
+        console.log('[feed-navigator] updateFeedContainers() took', elapsed.toFixed(2), 'ms');
     }
 
     updateFeedSelector() {
         if (!this.feedSelector) return;
+        console.log('[feed-navigator] updateFeedSelector() called');
+        const startTime = performance.now();
 
         // Clear existing options except the default
         while (this.feedSelector.options.length > 1) {
@@ -378,6 +405,9 @@ class FeedNavigator extends HTMLElement {
         if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
             this.feedSelector.value = this.currentFeedIndex;
         }
+
+        const elapsed = performance.now() - startTime;
+        console.log('[feed-navigator] updateFeedSelector() took', elapsed.toFixed(2), 'ms');
     }
 
     updateButtonState() {
@@ -421,6 +451,7 @@ class FeedNavigator extends HTMLElement {
     }
 
     scrollToFeed(index) {
+        console.log('[feed-navigator] scrollToFeed() called with index', index);
         if (index < 0 || index >= this.feedContainers.length) {
             return;
         }
@@ -435,6 +466,7 @@ class FeedNavigator extends HTMLElement {
     }
 
     scrollToPreviousFeed() {
+        console.log('[feed-navigator] scrollToPreviousFeed() called');
         // Refresh the containers to ensure we have the current DOM state
         this.updateFeedContainers();
 
@@ -449,7 +481,7 @@ class FeedNavigator extends HTMLElement {
         // Walk backwards to find the previous feed container
         let prevFeed = currentContainer.previousElementSibling;
         while (prevFeed) {
-            if (prevFeed.tagName === 'LINK-LOADER' || prevFeed.tagName === 'LAZY-IMAGE-LOADER') {
+            if (this.isFeedContainer(prevFeed)) {
                 prevFeed.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
@@ -461,6 +493,7 @@ class FeedNavigator extends HTMLElement {
     }
 
     scrollToNextFeed() {
+        console.log('[feed-navigator] scrollToNextFeed() called');
         // Refresh the containers to ensure we have the current DOM state
         this.updateFeedContainers();
 
@@ -475,7 +508,7 @@ class FeedNavigator extends HTMLElement {
         // Walk forwards to find the next feed container
         let nextFeed = currentContainer.nextElementSibling;
         while (nextFeed) {
-            if (nextFeed.tagName === 'LINK-LOADER' || nextFeed.tagName === 'LAZY-IMAGE-LOADER') {
+            if (this.isFeedContainer(nextFeed)) {
                 nextFeed.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
