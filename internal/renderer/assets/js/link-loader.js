@@ -65,9 +65,13 @@ class LinkLoader extends HTMLElement {
             if (!targetElement) {
                 throw new Error(`Element with ID '${fragmentId}' not found`);
             }
-            
-            // Remove the link and replace with loaded content
-            this.link.remove();
+
+            // Remove all existing content (placeholder header and link)
+            while (this.firstChild) {
+                this.firstChild.remove();
+            }
+
+            // Append the loaded content
             this.appendChild(targetElement);
             
         } catch (error) {

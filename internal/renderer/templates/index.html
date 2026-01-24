@@ -34,22 +34,24 @@
 
     <layout-controller>
         <main>
-            {{range .Feeds}}
-            {{$items := index $.Items .URL}}
-            {{if $items}}
-            <link-loader>
-                <div class="feed-header">
-                    <h2{{if .Description}} title="{{.Description}}"{{end}}>
-                        {{$favicon := index $.FeedFavicon .URL}}
-                        {{if $favicon}}<img src="{{$favicon}}" alt="" class="feed-favicon">{{end}}
-                        {{.Title}}
-                    </h2>
-                    <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
-                </div>
-                <a href="feeds/{{.ID}}.html#feed-{{.ID}}">Read more...</a>
-            </link-loader>
-            {{end}}
-            {{end}}
+            <feed-navigator>
+                {{range .Feeds}}
+                {{$items := index $.Items .URL}}
+                {{if $items}}
+                <link-loader>
+                    <div class="feed-header">
+                        <h2{{if .Description}} title="{{.Description}}"{{end}}>
+                            {{$favicon := index $.FeedFavicon .URL}}
+                            {{if $favicon}}<img src="{{$favicon}}" alt="" class="feed-favicon">{{end}}
+                            {{.Title}}
+                        </h2>
+                        <time class="feed-last-updated">{{if .LatestItemDate.Valid}}Latest: {{.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
+                    </div>
+                    <a href="feeds/{{.ID}}.html#feed-{{.ID}}">Read more...</a>
+                </link-loader>
+                {{end}}
+                {{end}}
+            </feed-navigator>
         </main>
         <lightbox-overlay></lightbox-overlay>
     </layout-controller>
