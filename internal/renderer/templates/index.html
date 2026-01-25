@@ -38,9 +38,10 @@
                 {{if gt .TotalPages 1}}
                 {{/* Paginated version: Load page fragments */}}
                 {{range $pageNum := sequence 1 .TotalPages}}
+                {{$range := feedRange $pageNum $.FeedsPerPage (len $.Feeds)}}
                 <link-loader>
                     <div class="page-loader-placeholder">
-                        <p>Loading feeds {{add (mul (sub $pageNum 1) $.FeedsPerPage) 1}} - {{min (mul $pageNum $.FeedsPerPage) (len $.Feeds)}}...</p>
+                        <p>Loading feeds {{$range.Start}} - {{$range.End}}...</p>
                     </div>
                     <a href="feeds/page-{{$pageNum}}.html#page-{{$pageNum}}">Load page {{$pageNum}}</a>
                 </link-loader>

@@ -109,6 +109,18 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 			}
 			return b
 		},
+		// Helper for feed range display in pagination
+		"feedRange": func(pageNum, feedsPerPage, totalFeeds int) map[string]int {
+			start := (pageNum-1)*feedsPerPage + 1
+			end := pageNum * feedsPerPage
+			if end > totalFeeds {
+				end = totalFeeds
+			}
+			return map[string]int{
+				"Start": start,
+				"End":   end,
+			}
+		},
 	})
 
 	content, err := fs.ReadFile(fsys, name)

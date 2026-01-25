@@ -43,6 +43,38 @@ class FeedNavigator extends HTMLElement {
         return true;
     }
 
+    /**
+     * Get the scroll target for a feed container (header if present, container otherwise)
+     * @param {Element} container - The feed container element
+     * @returns {Element} The element to scroll to
+     */
+    getFeedScrollTarget(container) {
+        const prevSibling = container.previousElementSibling;
+        const hasHeaderClass = prevSibling && prevSibling.classList.contains('feed-header');
+        return hasHeaderClass ? prevSibling : container;
+    }
+
+    /**
+     * Get the feed title from a container
+     * @param {Element} container - The feed container element
+     * @param {number} fallbackIndex - Index to use for fallback name
+     * @returns {string} The feed title
+     */
+    getFeedTitle(container, fallbackIndex) {
+        // Check inside container first (collapsed feeds)
+        let feedHeader = container.querySelector('.feed-header h2');
+
+        // If not found, check previous sibling (expanded feeds)
+        if (!feedHeader) {
+            const prevSibling = container.previousElementSibling;
+            if (prevSibling && prevSibling.classList.contains('feed-header')) {
+                feedHeader = prevSibling.querySelector('h2');
+            }
+        }
+
+        return feedHeader ? feedHeader.textContent.trim() : `Feed ${fallbackIndex + 1}`;
+    }
+
     connectedCallback() {
         this.render();
         this.setupIntersectionObserver();
@@ -300,12 +332,10 @@ class FeedNavigator extends HTMLElement {
         };
 
         this.intersectionObserver = new IntersectionObserver((entries) => {
-            console.log('[feed-navigator] IntersectionObserver fired with', entries.length, 'entries');
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     const index = this.feedContainers.indexOf(entry.target);
                     if (index !== -1) {
-                        console.log('[feed-navigator] Current feed index updated to', index);
                         this.currentFeedIndex = index;
                         this.updateButtonState();
                     }
@@ -322,38 +352,16 @@ class FeedNavigator extends HTMLElement {
         };
 
         this.mutationObserver = new MutationObserver((mutations) => {
-            console.log('[feed-navigator] MutationObserver fired with', mutations.length, 'mutations');
-            let shouldUpdate = false;
+            const hasRelevantChanges = mutations.some(mutation => {
+                if (mutation.type !== 'childList') return false;
 
-            for (const mutation of mutations) {
-                if (mutation.type === 'childList') {
-                    // Check if any added nodes are feed containers
-                    for (const node of mutation.addedNodes) {
-                        if (this.isFeedContainer(node)) {
-                            console.log('[feed-navigator] Detected added feed container:', node.tagName);
-                            shouldUpdate = true;
-                            break;
-                        }
-                    }
+                // Check if any added or removed nodes are feed containers
+                const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+                return nodes.some(node => this.isFeedContainer(node));
+            });
 
-                    // Check if any removed nodes were feed containers
-                    for (const node of mutation.removedNodes) {
-                        if (this.isFeedContainer(node)) {
-                            console.log('[feed-navigator] Detected removed feed container:', node.tagName);
-                            shouldUpdate = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (shouldUpdate) break;
-            }
-
-            if (shouldUpdate) {
-                console.log('[feed-navigator] Triggering updateFeedContainers due to mutation');
+            if (hasRelevantChanges) {
                 this.updateFeedContainers();
-            } else {
-                console.log('[feed-navigator] No relevant mutations detected');
             }
         });
 
@@ -361,9 +369,6 @@ class FeedNavigator extends HTMLElement {
     }
 
     updateFeedContainers() {
-        console.log('[feed-navigator] updateFeedContainers() called');
-        const startTime = performance.now();
-
         // Disconnect existing observations
         if (this.intersectionObserver) {
             this.feedContainers.forEach(container => {
@@ -375,7 +380,6 @@ class FeedNavigator extends HTMLElement {
         // Filter out page loaders
         this.feedContainers = Array.from(this.querySelectorAll(FeedNavigator.FEED_CONTAINER_SELECTOR))
             .filter(container => this.isFeedContainer(container));
-        console.log('[feed-navigator] Found', this.feedContainers.length, 'feed containers');
 
         // Observe all feed containers
         if (this.intersectionObserver) {
@@ -386,15 +390,10 @@ class FeedNavigator extends HTMLElement {
 
         this.updateFeedSelector();
         this.updateButtonState();
-
-        const elapsed = performance.now() - startTime;
-        console.log('[feed-navigator] updateFeedContainers() took', elapsed.toFixed(2), 'ms');
     }
 
     updateFeedSelector() {
         if (!this.feedSelector) return;
-        console.log('[feed-navigator] updateFeedSelector() called');
-        const startTime = performance.now();
 
         // Clear existing options except the default
         while (this.feedSelector.options.length > 1) {
@@ -403,22 +402,9 @@ class FeedNavigator extends HTMLElement {
 
         // Populate with feed titles
         this.feedContainers.forEach((container, index) => {
-            // Check inside container first (collapsed feeds)
-            let feedHeader = container.querySelector('.feed-header h2');
-
-            // If not found, check previous sibling (expanded feeds)
-            if (!feedHeader) {
-                const prevSibling = container.previousElementSibling;
-                if (prevSibling && prevSibling.classList.contains('feed-header')) {
-                    feedHeader = prevSibling.querySelector('h2');
-                }
-            }
-
-            const title = feedHeader ? feedHeader.textContent.trim() : `Feed ${index + 1}`;
-
             const option = document.createElement('option');
             option.value = index;
-            option.textContent = title;
+            option.textContent = this.getFeedTitle(container, index);
             this.feedSelector.appendChild(option);
         });
 
@@ -426,9 +412,6 @@ class FeedNavigator extends HTMLElement {
         if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
             this.feedSelector.value = this.currentFeedIndex;
         }
-
-        const elapsed = performance.now() - startTime;
-        console.log('[feed-navigator] updateFeedSelector() took', elapsed.toFixed(2), 'ms');
     }
 
     updateButtonState() {
@@ -456,34 +439,28 @@ class FeedNavigator extends HTMLElement {
             this.nextButton.disabled = false;
         }
 
-        // Update selector to show current feed
-        if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
-            this.feedSelector.value = this.currentFeedIndex;
-        }
-
-        // Hide selector if no feeds
+        // Selector state
         if (!hasFeeds) {
             this.feedSelector.classList.add('hidden');
             this.feedSelector.disabled = true;
         } else {
             this.feedSelector.classList.remove('hidden');
             this.feedSelector.disabled = false;
+            // Update to show current feed
+            if (this.currentFeedIndex >= 0 && this.currentFeedIndex < this.feedContainers.length) {
+                this.feedSelector.value = this.currentFeedIndex;
+            }
         }
     }
 
     scrollToFeed(index) {
-        console.log('[feed-navigator] scrollToFeed() called with index', index);
         if (index < 0 || index >= this.feedContainers.length) {
             return;
         }
 
         const targetFeed = this.feedContainers[index];
         if (targetFeed) {
-            // Check if there's a feed-header sibling before this feed
-            const prevSibling = targetFeed.previousElementSibling;
-            const hasHeaderClass = prevSibling && prevSibling.classList.contains('feed-header');
-            const scrollTarget = hasHeaderClass ? prevSibling : targetFeed;
-
+            const scrollTarget = this.getFeedScrollTarget(targetFeed);
             scrollTarget.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
@@ -492,66 +469,14 @@ class FeedNavigator extends HTMLElement {
     }
 
     scrollToPreviousFeed() {
-        console.log('[feed-navigator] scrollToPreviousFeed() called');
-        // Refresh the containers to ensure we have the current DOM state
-        this.updateFeedContainers();
-
-        if (this.currentFeedIndex <= 0) {
-            return;
-        }
-
-        // Find the previous container in the actual DOM order
-        const currentContainer = this.feedContainers[this.currentFeedIndex];
-        if (!currentContainer) return;
-
-        // Walk backwards to find the previous feed container
-        let prevFeed = currentContainer.previousElementSibling;
-        while (prevFeed) {
-            if (this.isFeedContainer(prevFeed)) {
-                // Check if there's a feed-header sibling before this feed
-                const headerSibling = prevFeed.previousElementSibling;
-                const hasHeaderClass = headerSibling && headerSibling.classList.contains('feed-header');
-                const scrollTarget = hasHeaderClass ? headerSibling : prevFeed;
-
-                scrollTarget.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-                return;
-            }
-            prevFeed = prevFeed.previousElementSibling;
+        if (this.currentFeedIndex > 0) {
+            this.scrollToFeed(this.currentFeedIndex - 1);
         }
     }
 
     scrollToNextFeed() {
-        console.log('[feed-navigator] scrollToNextFeed() called');
-        // Refresh the containers to ensure we have the current DOM state
-        this.updateFeedContainers();
-
-        if (this.currentFeedIndex < 0 || this.currentFeedIndex >= this.feedContainers.length - 1) {
-            return;
-        }
-
-        // Find the next container in the actual DOM order
-        const currentContainer = this.feedContainers[this.currentFeedIndex];
-        if (!currentContainer) return;
-
-        // Walk forwards to find the next feed container
-        let nextFeed = currentContainer.nextElementSibling;
-        while (nextFeed) {
-            if (this.isFeedContainer(nextFeed)) {
-                // Check if there's a feed-header sibling before this feed
-                const headerSibling = nextFeed.previousElementSibling;
-                const hasHeaderClass = headerSibling && headerSibling.classList.contains('feed-header');
-                const scrollTarget = hasHeaderClass ? headerSibling : nextFeed;
-
-                scrollTarget.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-                return;
-            }
-            nextFeed = nextFeed.nextElementSibling;
+        if (this.currentFeedIndex < this.feedContainers.length - 1) {
+            this.scrollToFeed(this.currentFeedIndex + 1);
         }
     }
 }
