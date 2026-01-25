@@ -21,6 +21,7 @@ var (
 	renderFormat          string
 	renderClean           bool
 	renderMinItemsPerFeed int
+	renderMaxItemsPerFeed int
 	renderFeedsPerPage    int
 )
 
@@ -34,9 +35,11 @@ Time filtering options:
   --start 2023-01-01T00:00:00Z      # Explicit start time (RFC3339)
   --end 2023-12-31T23:59:59Z        # Explicit end time (RFC3339)
 
-Minimum items per feed:
+Item count per feed:
   --min-items-per-feed 5            # Show at least 5 items per feed (default: 0 = use timespan only)
                                     # Ensures quiet feeds remain visible even if outside timespan
+  --max-items-per-feed 30           # Show at most 30 items per feed (default: 0 = no limit)
+                                    # Useful for preventing browser crashes on feeds with many items
 
 Feed filtering:
   --feeds feeds.txt --format text   # Use feeds from text file
@@ -61,6 +64,8 @@ func init() {
 	renderCmd.Flags().StringVar(&renderEnd, "end", "", "End time (RFC3339 format)")
 	renderCmd.Flags().IntVar(&renderMinItemsPerFeed, "min-items-per-feed", -1,
 		"Minimum items to show per feed (-1 = use config default, 0 = use timespan only)")
+	renderCmd.Flags().IntVar(&renderMaxItemsPerFeed, "max-items-per-feed", -1,
+		"Maximum items to show per feed (-1 = use config default, 0 = no limit)")
 	renderCmd.Flags().IntVar(&renderFeedsPerPage, "feeds-per-page", -1,
 		"Feeds per page for pagination (-1 = use config default, 0 = disable pagination)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
@@ -97,6 +102,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 		Start:           "",
 		End:             "",
 		MinItemsPerFeed: cfg.Render.DefaultMinItemsPerFeed,
+		MaxItemsPerFeed: cfg.Render.DefaultMaxItemsPerFeed,
 		FeedsPerPage:    cfg.Render.FeedsPerPage,
 		OutputDir:       cfg.Render.OutputDir,
 		TemplatesDir:    cfg.Render.TemplatesDir,
@@ -119,6 +125,9 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	}
 	if renderMinItemsPerFeed >= 0 {
 		config.MinItemsPerFeed = renderMinItemsPerFeed
+	}
+	if renderMaxItemsPerFeed >= 0 {
+		config.MaxItemsPerFeed = renderMaxItemsPerFeed
 	}
 	if renderFeedsPerPage >= 0 {
 		config.FeedsPerPage = renderFeedsPerPage
