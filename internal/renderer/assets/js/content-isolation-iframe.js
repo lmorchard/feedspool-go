@@ -4,6 +4,7 @@
  */
 
 import { debounce } from './utils.js';
+import { isElementVisible, createLazyLoadObserver } from './utils/lazy-load-observer.js';
 
 // Registry to map iframe contentWindows to their parent contentIsolationIframe elements
 const contentIsolationIframeRegistry = new Map();
@@ -69,8 +70,7 @@ export class ContentIsolationIframe extends HTMLElement {
         if (!details || details.open) {
             // If not in details or details is open, rely on intersection observer
             // Check if already in viewport on load
-            const rect = this.getBoundingClientRect();
-            if (rect.top < window.innerHeight && rect.bottom > 0) {
+            if (isElementVisible(this)) {
                 // Already in viewport, load immediately
                 this.loadIframe();
             }
@@ -130,19 +130,14 @@ export class ContentIsolationIframe extends HTMLElement {
 
 function getContentIsolationIframeSharedIntersectionObserver() {
     if (!sharedContentIsolationIframeIntersectionObserver) {
-        sharedContentIsolationIframeIntersectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const target = entry.target;
-                    if (target.loadIframe && !target.isLoaded) {
-                        target.loadIframe();
-                    }
+        sharedContentIsolationIframeIntersectionObserver = createLazyLoadObserver(
+            (target) => {
+                if (target.loadIframe && !target.isLoaded) {
+                    target.loadIframe();
                 }
-            });
-        }, {
-            rootMargin: '100px', // Start loading 100px before entering viewport
-            threshold: 0.01
-        });
+            },
+            { rootMargin: '100px' }
+        );
     }
     return sharedContentIsolationIframeIntersectionObserver;
 }
