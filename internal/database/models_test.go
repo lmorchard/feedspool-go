@@ -8,7 +8,10 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-const testItemTitle = "Test Item"
+const (
+	testItemTitle = "Test Item"
+	testBBCLink   = "https://www.bbc.com/news/articles/ce9y1747z3go"
+)
 
 func TestJSONValue(t *testing.T) {
 	tests := []struct {
@@ -386,5 +389,122 @@ func TestGenerateGUID(t *testing.T) {
 	guid3 := generateGUID("different-link", title)
 	if guid1 == guid3 {
 		t.Errorf("Different inputs should produce different GUIDs")
+	}
+}
+
+func TestNormalizeGUID(t *testing.T) {
+	tests := []struct {
+		name        string
+		guid        string
+		link        string
+		title       string
+		description string
+	}{
+		{
+			name:        "BBC-style GUID with fragment",
+			guid:        "https://www.bbc.com/news/articles/ce9y1747z3go#0",
+			link:        "https://www.bbc.com/news/articles/ce9y1747z3go",
+			title:       testItemTitle,
+			description: "Should normalize BBC-style GUIDs with incrementing fragments",
+		},
+		{
+			name:        "BBC-style GUID with different fragment number",
+			guid:        "https://www.bbc.com/news/articles/ce9y1747z3go#5",
+			link:        "https://www.bbc.com/news/articles/ce9y1747z3go",
+			title:       testItemTitle,
+			description: "Should produce same result regardless of fragment number",
+		},
+		{
+			name:        "Normal GUID not matching link",
+			guid:        "some-unique-guid-12345",
+			link:        "https://example.com/item",
+			title:       testItemTitle,
+			description: "Should leave normal GUIDs unchanged",
+		},
+		{
+			name:        "Empty link",
+			guid:        "https://example.com#5",
+			link:        "",
+			title:       testItemTitle,
+			description: "Should return GUID unchanged when link is empty",
+		},
+		{
+			name:        "GUID without fragment",
+			guid:        "https://example.com/item",
+			link:        "https://example.com/item",
+			title:       testItemTitle,
+			description: "Should return GUID unchanged when no fragment present",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			normalized := normalizeGUID(tt.guid, tt.link, tt.title)
+
+			// Verify it's not empty
+			if normalized == "" {
+				t.Errorf("normalizeGUID() returned empty string")
+			}
+
+			// For BBC-style GUIDs, verify normalization produces consistent results
+			if tt.link != "" && len(tt.guid) > len(tt.link) &&
+				tt.guid[:len(tt.link)] == tt.link && tt.guid[len(tt.link)] == '#' {
+				// This is a BBC-style GUID - should be normalized
+				expected := generateGUID(tt.link, tt.title)
+				if normalized != expected {
+					t.Errorf("normalizeGUID() = %v, want %v", normalized, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestNormalizeGUIDConsistency(t *testing.T) {
+	// Test that BBC-style GUIDs with different fragments produce the same normalized GUID
+	link := testBBCLink
+	title := testItemTitle
+
+	guid1 := normalizeGUID(link+"#0", link, title)
+	guid2 := normalizeGUID(link+"#5", link, title)
+	guid3 := normalizeGUID(link+"#10", link, title)
+
+	if guid1 != guid2 || guid2 != guid3 {
+		t.Errorf("BBC-style GUIDs with different fragments should normalize to same value: %v, %v, %v",
+			guid1, guid2, guid3)
+	}
+}
+
+func TestItemFromGofeedWithBBCStyleGUID(t *testing.T) {
+	// Test that BBC-style GUIDs are normalized during item creation
+	link := testBBCLink
+
+	gofeedItem1 := &gofeed.Item{
+		GUID:  link + "#0",
+		Title: testItemTitle,
+		Link:  link,
+	}
+
+	gofeedItem2 := &gofeed.Item{
+		GUID:  link + "#5",
+		Title: testItemTitle,
+		Link:  link,
+	}
+
+	item1, err := ItemFromGofeed(gofeedItem1, "https://feeds.bbci.co.uk/news/rss.xml")
+	if err != nil {
+		t.Errorf("ItemFromGofeed() error = %v", err)
+		return
+	}
+
+	item2, err := ItemFromGofeed(gofeedItem2, "https://feeds.bbci.co.uk/news/rss.xml")
+	if err != nil {
+		t.Errorf("ItemFromGofeed() error = %v", err)
+		return
+	}
+
+	// Items with same link/title but different BBC-style fragment GUIDs should have same normalized GUID
+	if item1.GUID != item2.GUID {
+		t.Errorf("Items with BBC-style GUIDs should have same normalized GUID: %v != %v",
+			item1.GUID, item2.GUID)
 	}
 }

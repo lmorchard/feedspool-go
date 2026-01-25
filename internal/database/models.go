@@ -134,6 +134,8 @@ func ItemFromGofeed(gi *gofeed.Item, feedURL string) (*Item, error) {
 
 	if gi.GUID == "" {
 		item.GUID = generateGUID(gi.Link, gi.Title)
+	} else {
+		item.GUID = normalizeGUID(gi.GUID, gi.Link, gi.Title)
 	}
 
 	if gi.PublishedParsed != nil {
@@ -151,6 +153,18 @@ func generateGUID(link, title string) string {
 	h := sha256.New()
 	h.Write([]byte(link + title))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// normalizeGUID normalizes GUIDs to prevent duplicates from feeds that change
+// GUID fragments (e.g., BBC's pattern of {link}#{number} where the number increments).
+func normalizeGUID(guid, link, title string) string {
+	// Check if GUID follows the pattern {link}#{fragment}
+	// where the link portion matches the actual item link
+	if link != "" && len(guid) > len(link) && guid[:len(link)] == link && guid[len(link)] == '#' {
+		// Strip the fragment to prevent duplicates when feeds increment the fragment
+		return generateGUID(link, title)
+	}
+	return guid
 }
 
 // SetMetadataField sets a field in the metadata JSON.
