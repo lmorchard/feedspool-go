@@ -21,6 +21,7 @@ var (
 	renderFormat          string
 	renderClean           bool
 	renderMinItemsPerFeed int
+	renderFeedsPerPage    int
 )
 
 var renderCmd = &cobra.Command{
@@ -60,6 +61,8 @@ func init() {
 	renderCmd.Flags().StringVar(&renderEnd, "end", "", "End time (RFC3339 format)")
 	renderCmd.Flags().IntVar(&renderMinItemsPerFeed, "min-items-per-feed", -1,
 		"Minimum items to show per feed (-1 = use config default, 0 = use timespan only)")
+	renderCmd.Flags().IntVar(&renderFeedsPerPage, "feeds-per-page", -1,
+		"Feeds per page for pagination (-1 = use config default, 0 = disable pagination)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
@@ -94,6 +97,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 		Start:           "",
 		End:             "",
 		MinItemsPerFeed: cfg.Render.DefaultMinItemsPerFeed,
+		FeedsPerPage:    cfg.Render.FeedsPerPage,
 		OutputDir:       cfg.Render.OutputDir,
 		TemplatesDir:    cfg.Render.TemplatesDir,
 		AssetsDir:       cfg.Render.AssetsDir,
@@ -115,6 +119,9 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	}
 	if renderMinItemsPerFeed >= 0 {
 		config.MinItemsPerFeed = renderMinItemsPerFeed
+	}
+	if renderFeedsPerPage >= 0 {
+		config.FeedsPerPage = renderFeedsPerPage
 	}
 	if renderOutput != defaultOutputDir {
 		config.OutputDir = renderOutput

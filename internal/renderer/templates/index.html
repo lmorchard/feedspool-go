@@ -35,6 +35,19 @@
     <layout-controller>
         <main>
             <feed-navigator>
+                {{if gt .TotalPages 1}}
+                {{/* Paginated version: Load page fragments */}}
+                {{range $pageNum := sequence 1 .TotalPages}}
+                {{$range := feedRange $pageNum $.FeedsPerPage (len $.Feeds)}}
+                <link-loader>
+                    <div class="page-loader-placeholder">
+                        <p>Loading feeds {{$range.Start}} - {{$range.End}}...</p>
+                    </div>
+                    <a href="feeds/page-{{$pageNum}}.html#page-{{$pageNum}}">Load page {{$pageNum}}</a>
+                </link-loader>
+                {{end}}
+                {{else}}
+                {{/* Non-paginated version: Show all feeds directly */}}
                 {{range .Feeds}}
                 {{$items := index $.Items .URL}}
                 {{if $items}}
@@ -49,6 +62,7 @@
                     </div>
                     <a href="feeds/{{.ID}}.html#feed-{{.ID}}">Read more...</a>
                 </link-loader>
+                {{end}}
                 {{end}}
                 {{end}}
             </feed-navigator>

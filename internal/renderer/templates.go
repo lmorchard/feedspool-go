@@ -86,6 +86,41 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 			// #nosec G203 - Intentional URL output for iframe src
 			return template.URL("data:text/html;charset=utf-8;base64," + encoded)
 		},
+		// Template helper functions for pagination
+		"sequence": func(start, end int) []int {
+			result := make([]int, end-start+1)
+			for i := range result {
+				result[i] = start + i
+			}
+			return result
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"mul": func(a, b int) int {
+			return a * b
+		},
+		"min": func(a, b int) int {
+			if a < b {
+				return a
+			}
+			return b
+		},
+		// Helper for feed range display in pagination
+		"feedRange": func(pageNum, feedsPerPage, totalFeeds int) map[string]int {
+			start := (pageNum-1)*feedsPerPage + 1
+			end := pageNum * feedsPerPage
+			if end > totalFeeds {
+				end = totalFeeds
+			}
+			return map[string]int{
+				"Start": start,
+				"End":   end,
+			}
+		},
 	})
 
 	content, err := fs.ReadFile(fsys, name)

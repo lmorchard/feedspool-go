@@ -40,6 +40,18 @@ type FeedTemplateContext struct {
 	FeedID      string // Hash-based ID for the feed
 }
 
+// PageTemplateContext contains data for a paginated feed list fragment.
+type PageTemplateContext struct {
+	Feeds       []FeedWithID
+	Items       map[string][]database.Item
+	Metadata    map[string]*database.URLMetadata
+	FeedFavicon map[string]string
+	GeneratedAt time.Time
+	TimeWindow  string
+	PageNumber  int // 1-indexed page number
+	TotalPages  int // Total number of pages
+}
+
 // Renderer handles template loading and rendering.
 type Renderer struct {
 	templateDir string
