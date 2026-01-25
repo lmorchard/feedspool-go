@@ -3,12 +3,7 @@
 /* Link Loader Component */
 link-loader {
     display: block;
-    margin: 1rem 0;
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    transition: all 0.3s ease;
+    /* No margin, padding, border, or background - these would cause layout shift when removed */
 }
 
 link-loader .feed-header {
@@ -17,6 +12,7 @@ link-loader .feed-header {
 
 link-loader a {
     display: inline-block;
+    padding: 0.5rem 1rem;
     background: var(--accent-color);
     color: var(--text-primary);
     text-decoration: none;

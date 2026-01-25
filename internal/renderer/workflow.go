@@ -18,6 +18,7 @@ type WorkflowConfig struct {
 	Start           string
 	End             string
 	MinItemsPerFeed int // Minimum items to show per feed (0 = no minimum, use timespan only)
+	MaxItemsPerFeed int // Maximum items to show per feed (0 = no limit)
 	FeedsPerPage    int // Feeds per page for pagination (0 = no pagination)
 	OutputDir       string
 	TemplatesDir    string
@@ -76,6 +77,13 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 		return nil
 	}
 
+	// Apply max items per feed limit if configured
+	if config.MaxItemsPerFeed > 0 {
+		items = limitItemsPerFeed(items, config.MaxItemsPerFeed)
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+	}
+
 	// Generate site
 	return generateSite(config, feeds, items, startTime, endTime)
 }
@@ -123,6 +131,23 @@ func queryData(
 
 	fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
 	return feeds, items, nil
+}
+
+// limitItemsPerFeed limits the number of items for each feed to the specified maximum.
+func limitItemsPerFeed(items map[string][]database.Item, maxItems int) map[string][]database.Item {
+	if maxItems <= 0 {
+		return items
+	}
+
+	limited := make(map[string][]database.Item)
+	for feedURL, feedItems := range items {
+		if len(feedItems) <= maxItems {
+			limited[feedURL] = feedItems
+		} else {
+			limited[feedURL] = feedItems[:maxItems]
+		}
+	}
+	return limited
 }
 
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
