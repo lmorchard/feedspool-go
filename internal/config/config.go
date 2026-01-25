@@ -23,6 +23,7 @@ const (
 	DefaultDirPerm           = 0o755
 	DefaultMinItemsPerFeed   = 5  // Render: minimum items to show per feed
 	DefaultMinItemsKeepPurge = 10 // Purge: minimum items to keep per feed
+	DefaultFeedsPerPage      = 25 // Render: feeds per page for pagination
 )
 
 type Config struct {
@@ -58,6 +59,7 @@ type RenderConfig struct {
 	DefaultMaxAge          string
 	DefaultClean           bool `mapstructure:"default_clean"`
 	DefaultMinItemsPerFeed int  `mapstructure:"default_min_items_per_feed"`
+	FeedsPerPage           int  `mapstructure:"feeds_per_page"`
 }
 
 type ServeConfig struct {
@@ -111,6 +113,7 @@ func LoadConfig() *Config {
 			DefaultMaxAge:          viper.GetString("render.default_max_age"),
 			DefaultClean:           viper.GetBool("render.default_clean"),
 			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", DefaultMinItemsPerFeed),
+			FeedsPerPage:           getIntWithDefault("render.feeds_per_page", DefaultFeedsPerPage),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
@@ -152,6 +155,7 @@ func GetDefault() *Config {
 			AssetsDir:              "",
 			DefaultMaxAge:          "24h",
 			DefaultMinItemsPerFeed: DefaultMinItemsPerFeed,
+			FeedsPerPage:           DefaultFeedsPerPage,
 		},
 		Serve: ServeConfig{
 			Port: defaultPort,

@@ -66,13 +66,23 @@ class LinkLoader extends HTMLElement {
                 throw new Error(`Element with ID '${fragmentId}' not found`);
             }
 
-            // Remove all existing content (placeholder header and link)
-            while (this.firstChild) {
-                this.firstChild.remove();
+            // Save reference to parent
+            const parent = this.parentNode;
+
+            // Extract all children from the target element
+            const children = [];
+            while (targetElement.firstChild) {
+                children.push(targetElement.firstChild);
+                targetElement.firstChild.remove();
             }
 
-            // Append the loaded content
-            this.appendChild(targetElement);
+            // Insert children into parent before this element
+            children.forEach(child => {
+                parent.insertBefore(child, this);
+            });
+
+            // Remove this link-loader element now that content is loaded
+            this.remove();
             
         } catch (error) {
             console.error('LinkLoader failed to load content:', error);

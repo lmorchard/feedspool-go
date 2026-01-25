@@ -30,8 +30,17 @@ class FeedNavigator extends HTMLElement {
      * @returns {boolean} True if the node is a feed container
      */
     isFeedContainer(node) {
-        return node.nodeType === Node.ELEMENT_NODE &&
-               FeedNavigator.FEED_CONTAINER_TAGS.includes(node.tagName);
+        if (node.nodeType !== Node.ELEMENT_NODE ||
+            !FeedNavigator.FEED_CONTAINER_TAGS.includes(node.tagName)) {
+            return false;
+        }
+
+        // Exclude page loaders (they have page-loader-placeholder children)
+        if (node.querySelector('.page-loader-placeholder')) {
+            return false;
+        }
+
+        return true;
     }
 
     connectedCallback() {
@@ -363,7 +372,9 @@ class FeedNavigator extends HTMLElement {
         }
 
         // Find all feed containers (link-loader or lazy-image-loader) as direct children
-        this.feedContainers = Array.from(this.querySelectorAll(FeedNavigator.FEED_CONTAINER_SELECTOR));
+        // Filter out page loaders
+        this.feedContainers = Array.from(this.querySelectorAll(FeedNavigator.FEED_CONTAINER_SELECTOR))
+            .filter(container => this.isFeedContainer(container));
         console.log('[feed-navigator] Found', this.feedContainers.length, 'feed containers');
 
         // Observe all feed containers
@@ -392,7 +403,17 @@ class FeedNavigator extends HTMLElement {
 
         // Populate with feed titles
         this.feedContainers.forEach((container, index) => {
-            const feedHeader = container.querySelector('.feed-header h2');
+            // Check inside container first (collapsed feeds)
+            let feedHeader = container.querySelector('.feed-header h2');
+
+            // If not found, check previous sibling (expanded feeds)
+            if (!feedHeader) {
+                const prevSibling = container.previousElementSibling;
+                if (prevSibling && prevSibling.classList.contains('feed-header')) {
+                    feedHeader = prevSibling.querySelector('h2');
+                }
+            }
+
             const title = feedHeader ? feedHeader.textContent.trim() : `Feed ${index + 1}`;
 
             const option = document.createElement('option');
@@ -458,7 +479,12 @@ class FeedNavigator extends HTMLElement {
 
         const targetFeed = this.feedContainers[index];
         if (targetFeed) {
-            targetFeed.scrollIntoView({
+            // Check if there's a feed-header sibling before this feed
+            const prevSibling = targetFeed.previousElementSibling;
+            const hasHeaderClass = prevSibling && prevSibling.classList.contains('feed-header');
+            const scrollTarget = hasHeaderClass ? prevSibling : targetFeed;
+
+            scrollTarget.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
             });
@@ -482,7 +508,12 @@ class FeedNavigator extends HTMLElement {
         let prevFeed = currentContainer.previousElementSibling;
         while (prevFeed) {
             if (this.isFeedContainer(prevFeed)) {
-                prevFeed.scrollIntoView({
+                // Check if there's a feed-header sibling before this feed
+                const headerSibling = prevFeed.previousElementSibling;
+                const hasHeaderClass = headerSibling && headerSibling.classList.contains('feed-header');
+                const scrollTarget = hasHeaderClass ? headerSibling : prevFeed;
+
+                scrollTarget.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });
@@ -509,7 +540,12 @@ class FeedNavigator extends HTMLElement {
         let nextFeed = currentContainer.nextElementSibling;
         while (nextFeed) {
             if (this.isFeedContainer(nextFeed)) {
-                nextFeed.scrollIntoView({
+                // Check if there's a feed-header sibling before this feed
+                const headerSibling = nextFeed.previousElementSibling;
+                const hasHeaderClass = headerSibling && headerSibling.classList.contains('feed-header');
+                const scrollTarget = hasHeaderClass ? headerSibling : nextFeed;
+
+                scrollTarget.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });

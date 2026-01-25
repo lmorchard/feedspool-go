@@ -18,6 +18,7 @@ type WorkflowConfig struct {
 	Start           string
 	End             string
 	MinItemsPerFeed int // Minimum items to show per feed (0 = no minimum, use timespan only)
+	FeedsPerPage    int // Feeds per page for pagination (0 = no pagination)
 	OutputDir       string
 	TemplatesDir    string
 	AssetsDir       string
@@ -141,9 +142,17 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	// Generate template context
 	context := createTemplateContext(feeds, items, metadata, feedFavicon, startTime, endTime, config.MaxAge)
 
+	// Calculate pagination info
+	feedsPerPage := config.FeedsPerPage
+	if feedsPerPage <= 0 {
+		feedsPerPage = len(feeds) // Disable pagination
+	}
+	pages := splitFeedsIntoPages(context.Feeds, feedsPerPage)
+	totalPages := len(pages)
+
 	// Render main index file
 	outputFile := filepath.Join(config.OutputDir, "index.html")
-	if err := renderIndexFile(r, outputFile, context); err != nil {
+	if err := renderIndexFile(r, outputFile, context, totalPages, feedsPerPage); err != nil {
 		return err
 	}
 
@@ -152,10 +161,20 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		return fmt.Errorf("failed to copy assets: %w", err)
 	}
 
+	feedsDir := filepath.Join(config.OutputDir, "feeds")
+
+	// Render feed list page fragments (if pagination enabled)
+	if totalPages > 1 {
+		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
+			feedFavicon, endTime, getTimeWindow(startTime, endTime, config.MaxAge),
+			feedsPerPage); err != nil {
+			return err
+		}
+	}
+
 	// Render individual feed pages (only if feed.html template exists)
 	feedsGenerated := 0
 	if hasFeedTemplate(config.TemplatesDir) {
-		feedsDir := filepath.Join(config.OutputDir, "feeds")
 		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
 			getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
 			return err
@@ -213,16 +232,91 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	}
 }
 
-func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext) error {
+func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext, totalPages, feedsPerPage int) error {
+	// Wrap context with pagination info for template
+	type IndexContext struct {
+		*TemplateContext
+		TotalPages   int
+		FeedsPerPage int
+	}
+
+	indexContext := &IndexContext{
+		TemplateContext: context,
+		TotalPages:      totalPages,
+		FeedsPerPage:    feedsPerPage,
+	}
+
 	file, err := os.Create(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer file.Close()
 
-	if err := r.Render(file, "index.html", context); err != nil {
+	if err := r.Render(file, "index.html", indexContext); err != nil {
 		return fmt.Errorf("failed to render template: %w", err)
 	}
+
+	return nil
+}
+
+// splitFeedsIntoPages divides feeds into pages of the specified size.
+// Returns a slice of feed slices, one per page.
+func splitFeedsIntoPages(feeds []FeedWithID, pageSize int) [][]FeedWithID {
+	if pageSize <= 0 {
+		return [][]FeedWithID{feeds} // No pagination
+	}
+
+	var pages [][]FeedWithID
+	for i := 0; i < len(feeds); i += pageSize {
+		end := i + pageSize
+		if end > len(feeds) {
+			end = len(feeds)
+		}
+		pages = append(pages, feeds[i:end])
+	}
+	return pages
+}
+
+// renderFeedPages renders paginated feed list pages in feeds/page-N.html.
+func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
+	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
+	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
+	feedsPerPage int,
+) error {
+	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
+		return fmt.Errorf("failed to create feeds directory: %w", err)
+	}
+
+	pages := splitFeedsIntoPages(feeds, feedsPerPage)
+	totalPages := len(pages)
+
+	for pageNum, pageFeeds := range pages {
+		pageContext := &PageTemplateContext{
+			Feeds:       pageFeeds,
+			Items:       items, // Full items map (feeds reference what they need)
+			Metadata:    metadata,
+			FeedFavicon: feedFavicon,
+			GeneratedAt: generatedAt,
+			TimeWindow:  timeWindow,
+			PageNumber:  pageNum + 1, // 1-indexed
+			TotalPages:  totalPages,
+		}
+
+		pageFile := filepath.Join(feedsDir, fmt.Sprintf("page-%d.html", pageNum+1))
+		file, err := os.Create(pageFile)
+		if err != nil {
+			return fmt.Errorf("failed to create page file %s: %w", pageFile, err)
+		}
+
+		err = r.Render(file, "feed-list-page.html", pageContext)
+		file.Close() // Close immediately to avoid defer accumulation
+
+		if err != nil {
+			return fmt.Errorf("failed to render page %d: %w", pageNum+1, err)
+		}
+	}
+
+	fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
 
 	return nil
 }
