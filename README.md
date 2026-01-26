@@ -65,6 +65,7 @@ You can get general help and subcommand-specific help with embedded documentatio
 ./feedspool --help
 ./feedspool init --help
 ./feedspool version
+./feedspool --version  # Alternative to version subcommand
 ```
 
 ### Initialize database
@@ -147,6 +148,15 @@ Extract OpenGraph metadata, Twitter Cards, and favicons from web pages:
 ./feedspool render --max-age 24h
 ./feedspool render --start 2023-01-01T00:00:00Z --end 2023-12-31T23:59:59Z
 
+# Control how many items are shown per feed
+./feedspool render --min-items-per-feed 5 --max-items-per-feed 50
+
+# Enable pagination (show 25 feeds per page)
+./feedspool render --feeds-per-page 25
+
+# Disable pagination entirely
+./feedspool render --feeds-per-page 0
+
 # Generate HTML from specific feeds
 ./feedspool render https://example.com/feed.xml
 
@@ -160,8 +170,14 @@ Extract OpenGraph metadata, Twitter Cards, and favicons from web pages:
 ### Cleanup Operations
 
 ```bash
-# Clean up old archived items that no longer appear in feeds
+# Clean up old archived items (items no longer in feeds)
 ./feedspool purge --age 30d
+
+# Clean up old items while preserving a minimum per feed
+./feedspool purge --age 30d --min-items 10
+
+# Preview what would be deleted without actually deleting
+./feedspool purge --age 30d --dry-run
 
 # Remove unsubscribed feeds (keep only those in feed list)
 ./feedspool purge --format opml --filename feeds.opml
@@ -190,7 +206,16 @@ feedlist:
 fetch:
   with_unfurl: true     # Enable parallel unfurling during fetch
   concurrency: 16       # Fetch-specific concurrency
-  max_items: 50         # Max items per feed
+  max_items: 50         # Max items per feed to store
+```
+
+### Render Configuration
+```yaml
+render:
+  output_dir: "./build"             # Output directory for generated HTML
+  default_max_age: "24h"            # Default time range for items
+  default_min_items_per_feed: 5    # Minimum items to show per feed
+  feeds_per_page: 25                # Feeds per page (0 = disable pagination)
 ```
 
 ### Unfurl Configuration  
@@ -452,6 +477,10 @@ The `render` command generates a static HTML site from your feeds. The generated
 - Main index page with all feeds and items
 - Collapsible feed items using HTML `<details>` elements
 - Feed descriptions available as tooltips on feed titles
+- Optional pagination support for large feed collections
+- Interactive feed navigation UI with feed selector
+- Per-feed item limits (min/max) for flexible content display
+- Incremental loading optimizations for smooth scrolling
 
 ### Customization
 
