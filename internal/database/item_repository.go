@@ -11,9 +11,9 @@ import (
 // UpsertItem inserts or updates an item record in the database.
 func (db *DB) UpsertItem(item *Item) error {
 	query := `
-		INSERT INTO items (feed_url, guid, title, link, published_date, 
+		INSERT INTO items (feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(feed_url, guid) DO UPDATE SET
 			title = excluded.title,
 			link = excluded.link,
@@ -24,7 +24,7 @@ func (db *DB) UpsertItem(item *Item) error {
 	`
 
 	_, err := db.conn.Exec(query,
-		item.FeedURL, item.GUID, item.Title, item.Link, item.PublishedDate,
+		item.FeedURL, item.GUID, item.Title, item.Link, item.PublishedDate, item.FirstSeen,
 		item.Content, item.Summary, item.Archived, item.ItemJSON)
 	if err != nil {
 		return fmt.Errorf("failed to upsert item: %w", err)
@@ -37,7 +37,7 @@ func (db *DB) UpsertItem(item *Item) error {
 // GetItemsForFeed retrieves items for a specific feed with optional filtering by time range and limit.
 func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item, error) {
 	query := `
-		SELECT id, feed_url, guid, title, link, published_date,
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json
 		FROM items
 		WHERE feed_url = ?
@@ -72,7 +72,7 @@ func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time)
 		item := &Item{}
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
@@ -249,7 +249,7 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 
 	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(`
-		SELECT id, feed_url, guid, title, link, published_date,
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json
 		FROM items
 		WHERE feed_url IN (%s)
@@ -268,7 +268,7 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 		item := Item{}
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)

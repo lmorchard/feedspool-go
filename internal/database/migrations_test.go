@@ -224,8 +224,8 @@ func TestRunMigrationsOnProperlyInitializedDatabase(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 3 {
-		t.Errorf("After InitSchema + RunMigrations, version should be 3, got %d", version)
+	if version != 4 {
+		t.Errorf("After InitSchema + RunMigrations, version should be 4, got %d", version)
 	}
 
 	// Verify we have the latest_item_date column
@@ -286,8 +286,8 @@ func TestRunMigrationsOnExistingDatabase(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 3 {
-		t.Errorf("After migration, version should be 3, got %d", version)
+	if version != 4 {
+		t.Errorf("After migration, version should be 4, got %d", version)
 	}
 
 	// Verify latest_item_date column was added
@@ -333,8 +333,8 @@ func TestRunMigrationsIdempotent(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 3 {
-		t.Errorf("After double migration, version should be 3, got %d", version)
+	if version != 4 {
+		t.Errorf("After double migration, version should be 4, got %d", version)
 	}
 
 	// Should still have exactly one latest_item_date column
@@ -399,8 +399,8 @@ func TestRunMigrationsWithExistingColumn(t *testing.T) {
 		t.Fatalf("GetMigrationVersion() error = %v", err)
 	}
 
-	if version != 3 {
-		t.Errorf("With existing column, version should be 3, got %d", version)
+	if version != 4 {
+		t.Errorf("With existing column, version should be 4, got %d", version)
 	}
 
 	// Verify column still exists and works

@@ -28,16 +28,17 @@ type Feed struct {
 }
 
 type Item struct {
-	ID            int64     `db:"id"`
-	FeedURL       string    `db:"feed_url"`
-	GUID          string    `db:"guid"`
-	Title         string    `db:"title"`
-	Link          string    `db:"link"`
-	PublishedDate time.Time `db:"published_date"`
-	Content       string    `db:"content"`
-	Summary       string    `db:"summary"`
-	Archived      bool      `db:"archived"`
-	ItemJSON      JSON      `db:"item_json"`
+	ID            int64        `db:"id"`
+	FeedURL       string       `db:"feed_url"`
+	GUID          string       `db:"guid"`
+	Title         string       `db:"title"`
+	Link          string       `db:"link"`
+	PublishedDate time.Time    `db:"published_date"`
+	FirstSeen     sql.NullTime `db:"first_seen"`
+	Content       string       `db:"content"`
+	Summary       string       `db:"summary"`
+	Archived      bool         `db:"archived"`
+	ItemJSON      JSON         `db:"item_json"`
 }
 
 type URLMetadata struct {

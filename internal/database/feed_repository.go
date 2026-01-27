@@ -12,7 +12,7 @@ import (
 // UpsertFeed inserts or updates a feed record in the database.
 func (db *DB) UpsertFeed(feed *Feed) error {
 	query := `
-		INSERT INTO feeds (url, title, description, last_updated, etag, last_modified, 
+		INSERT INTO feeds (url, title, description, last_updated, etag, last_modified,
 			last_fetch_time, last_successful_fetch, error_count, last_error, latest_item_date, feed_json)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(url) DO UPDATE SET
@@ -25,7 +25,7 @@ func (db *DB) UpsertFeed(feed *Feed) error {
 			last_successful_fetch = excluded.last_successful_fetch,
 			error_count = excluded.error_count,
 			last_error = excluded.last_error,
-			latest_item_date = excluded.latest_item_date,
+			latest_item_date = COALESCE(excluded.latest_item_date, feeds.latest_item_date),
 			feed_json = excluded.feed_json
 	`
 
@@ -158,7 +158,11 @@ func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []stri
 	}
 
 	// Order by latest item date (newest first), falling back to last_updated if null
-	feedsQuery += " ORDER BY COALESCE(f.latest_item_date, f.last_updated) DESC"
+	// Cap future dates to now to prevent them from dominating sort order
+	feedsQuery += " ORDER BY COALESCE(" +
+		"CASE WHEN f.latest_item_date > datetime('now') " +
+		"THEN datetime('now') ELSE f.latest_item_date END, " +
+		"f.last_updated) DESC"
 
 	// Query feeds
 	rows, err := db.conn.Query(feedsQuery, feedsArgs...)
@@ -272,7 +276,11 @@ func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 		query += " WHERE url IN (" + strings.Join(placeholders, ",") + ")"
 	}
 
-	query += " ORDER BY COALESCE(latest_item_date, last_updated) DESC"
+	// Cap future dates to now to prevent them from dominating sort order
+	query += " ORDER BY COALESCE(" +
+		"CASE WHEN latest_item_date > datetime('now') " +
+		"THEN datetime('now') ELSE latest_item_date END, " +
+		"last_updated) DESC"
 
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
