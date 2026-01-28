@@ -134,15 +134,17 @@ func (f *Fetcher) processParsedFeed(
 		return result
 	}
 
-	// Process items and get the latest item date
+	// Process items and get the latest item date (only from new items)
 	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
 	if !latestItemDate.IsZero() {
+		// Only update if we found new items with first_seen timestamps
 		feed.LatestItemDate = sql.NullTime{Time: latestItemDate, Valid: true}
 		// Update feed with latest item date
 		if err := f.db.UpsertFeed(feed); err != nil {
 			logrus.Warnf("Failed to update feed with latest item date: %v", err)
 		}
 	}
+	// Note: If no new items, we preserve the existing latest_item_date in the database
 
 	result.ItemCount = itemCount
 	result.Feed = feed
@@ -172,13 +174,22 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 			continue
 		}
 
-		// Track the latest item date
-		if latestItemDate.IsZero() || item.PublishedDate.After(latestItemDate) {
-			latestItemDate = item.PublishedDate
-		}
-
 		// Check if this is a new item (before upserting)
 		isNewItem := f.isNewItem(feedURL, item.GUID)
+
+		// Set first_seen timestamp for new items
+		if isNewItem {
+			item.FirstSeen = sql.NullTime{Time: time.Now(), Valid: true}
+		}
+
+		// Track the latest item date - only count items with first_seen set
+		// This ensures we track when content actually appeared, not re-fetch times
+		if item.FirstSeen.Valid {
+			itemDate := item.FirstSeen.Time
+			if latestItemDate.IsZero() || itemDate.After(latestItemDate) {
+				latestItemDate = itemDate
+			}
+		}
 
 		item.Archived = false
 		if err := f.db.UpsertItem(item); err != nil {
