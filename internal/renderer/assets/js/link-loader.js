@@ -116,6 +116,15 @@ class LinkLoader extends HTMLElement {
                 parent.insertBefore(child, this);
             });
 
+            // Dispatch custom event for other components that need to process new content
+            if (children.length > 0) {
+                const event = new CustomEvent('content-loaded', {
+                    bubbles: true,
+                    detail: { element: parent }
+                });
+                document.dispatchEvent(event);
+            }
+
             // Remove this link-loader element now that content is loaded
             this.remove();
 

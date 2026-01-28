@@ -3,7 +3,7 @@
  *
  * Provides a floating button to navigate between feeds on the page.
  * Uses IntersectionObserver to track the current feed near the top of the viewport,
- * and MutationObserver to detect when new feeds are added to the page.
+ * and listens for content-loaded events to detect when new feeds are added.
  *
  * Mobile-first design with responsive styling.
  */
@@ -18,10 +18,10 @@ class FeedNavigator extends HTMLElement {
         this.feedContainers = [];
         this.currentFeedIndex = -1;
         this.intersectionObserver = null;
-        this.mutationObserver = null;
         this.prevButton = null;
         this.nextButton = null;
         this.feedSelector = null;
+        this.handleContentLoaded = this.handleContentLoaded.bind(this);
     }
 
     /**
@@ -78,17 +78,23 @@ class FeedNavigator extends HTMLElement {
     connectedCallback() {
         this.render();
         this.setupIntersectionObserver();
-        this.setupMutationObserver();
         this.updateFeedContainers();
+
+        // Listen for dynamically loaded content
+        document.addEventListener('content-loaded', this.handleContentLoaded);
     }
 
     disconnectedCallback() {
         if (this.intersectionObserver) {
             this.intersectionObserver.disconnect();
         }
-        if (this.mutationObserver) {
-            this.mutationObserver.disconnect();
-        }
+
+        document.removeEventListener('content-loaded', this.handleContentLoaded);
+    }
+
+    handleContentLoaded() {
+        // Check if any new feed containers were added
+        this.updateFeedContainers();
     }
 
     render() {
@@ -342,30 +348,6 @@ class FeedNavigator extends HTMLElement {
                 }
             });
         }, options);
-    }
-
-    setupMutationObserver() {
-        // Observer to detect when feed containers are added/removed
-        const config = {
-            childList: true,
-            subtree: false // Only watch direct children
-        };
-
-        this.mutationObserver = new MutationObserver((mutations) => {
-            const hasRelevantChanges = mutations.some(mutation => {
-                if (mutation.type !== 'childList') return false;
-
-                // Check if any added or removed nodes are feed containers
-                const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
-                return nodes.some(node => this.isFeedContainer(node));
-            });
-
-            if (hasRelevantChanges) {
-                this.updateFeedContainers();
-            }
-        });
-
-        this.mutationObserver.observe(this, config);
     }
 
     updateFeedContainers() {
