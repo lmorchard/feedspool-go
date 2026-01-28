@@ -116,7 +116,12 @@ class LinkLoader extends HTMLElement {
                 parent.insertBefore(child, this);
             });
 
+            // Remove this link-loader element now that content is loaded
+            this.remove();
+
             // Dispatch custom event for other components that need to process new content
+            // This happens AFTER removal to ensure other components don't see both the
+            // old link-loader and the newly inserted content at the same time
             if (children.length > 0) {
                 const event = new CustomEvent('content-loaded', {
                     bubbles: true,
@@ -124,9 +129,6 @@ class LinkLoader extends HTMLElement {
                 });
                 document.dispatchEvent(event);
             }
-
-            // Remove this link-loader element now that content is loaded
-            this.remove();
 
             // Notify queue that load is complete
             if (onComplete) onComplete();
