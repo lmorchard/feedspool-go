@@ -134,21 +134,47 @@ func (f *Fetcher) processParsedFeed(
 		return result
 	}
 
-	// Process items and get the latest item date (only from new items)
+	// Process items and get the latest item date based on clamped published dates
 	itemCount, latestItemDate := f.processFeedItems(gofeedData, feedURL)
 	if !latestItemDate.IsZero() {
-		// Only update if we found new items with first_seen timestamps
+		// Update feed with latest item date from processed items
 		feed.LatestItemDate = sql.NullTime{Time: latestItemDate, Valid: true}
-		// Update feed with latest item date
 		if err := f.db.UpsertFeed(feed); err != nil {
 			logrus.Warnf("Failed to update feed with latest item date: %v", err)
 		}
 	}
-	// Note: If no new items, we preserve the existing latest_item_date in the database
+	// Note: If no items with valid dates, we preserve the existing latest_item_date in the database
 
 	result.ItemCount = itemCount
 	result.Feed = feed
 	return result
+}
+
+// clampItemDate clamps a date to a reasonable range (not in the future, not too far in the past).
+func clampItemDate(itemDate time.Time) time.Time {
+	if itemDate.IsZero() {
+		return itemDate
+	}
+
+	now := time.Now()
+
+	// Clamp future dates to now
+	if itemDate.After(now) {
+		return now
+	}
+
+	// Clamp very old dates to minimum reasonable date
+	minDate, err := time.Parse("2006-01-02", database.MinReasonableItemDate)
+	if err != nil {
+		// This should never happen with a valid constant, but log if it does
+		logrus.WithError(err).Error("Failed to parse MinReasonableItemDate constant")
+		return itemDate
+	}
+	if itemDate.Before(minDate) {
+		return minDate
+	}
+
+	return itemDate
 }
 
 //nolint:cyclop // Complex feed processing logic requires multiple conditions
@@ -181,20 +207,28 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 		if isNewItem {
 			item.FirstSeen = sql.NullTime{Time: time.Now(), Valid: true}
 		} else {
-			// Load first_seen from database for existing items
+			// Load first_seen from database for existing items (needed as fallback)
 			existingFirstSeen, err := f.getItemFirstSeen(feedURL, item.GUID)
 			if err == nil && existingFirstSeen.Valid {
 				item.FirstSeen = existingFirstSeen
 			}
 		}
 
-		// Track the latest item date - only count items with first_seen set
-		// This ensures we track when content actually appeared, not re-fetch times
-		if item.FirstSeen.Valid {
-			itemDate := item.FirstSeen.Time
-			if latestItemDate.IsZero() || itemDate.After(latestItemDate) {
-				latestItemDate = itemDate
-			}
+		// Track the latest item date based on published_date (clamped to reasonable range)
+		// This shows users when content was published, not when we discovered it
+		// Use first_seen as fallback if published_date is missing/invalid
+		itemDate := item.PublishedDate
+		if itemDate.IsZero() && item.FirstSeen.Valid {
+			// Fallback to first_seen if no published date
+			itemDate = item.FirstSeen.Time
+		}
+
+		// Clamp date to reasonable range
+		itemDate = clampItemDate(itemDate)
+
+		// Track the latest (most recent) clamped date
+		if !itemDate.IsZero() && (latestItemDate.IsZero() || itemDate.After(latestItemDate)) {
+			latestItemDate = itemDate
 		}
 
 		item.Archived = false
@@ -260,6 +294,7 @@ func (f *Fetcher) isNewItem(feedURL, guid string) bool {
 }
 
 // getItemFirstSeen retrieves the first_seen timestamp for an existing item.
+// This is used as a fallback when published_date is missing or invalid.
 func (f *Fetcher) getItemFirstSeen(feedURL, guid string) (sql.NullTime, error) {
 	query := `SELECT first_seen FROM items WHERE feed_url = ? AND guid = ?`
 	var firstSeen sql.NullTime

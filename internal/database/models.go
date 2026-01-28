@@ -12,6 +12,18 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+const (
+	// MinReasonableItemDate is the minimum date we consider reasonable for feed items.
+	// Items with dates before this are likely due to:
+	// - Missing or malformed dates in feeds
+	// - Timezone bugs causing dates to appear centuries in the past
+	// - Epoch time (1970-01-01) or other sentinel values
+	//
+	// We use 2000-01-01 as a practical lower bound to allow legitimate old archives
+	// while still catching epoch dates and other obviously invalid timestamps.
+	MinReasonableItemDate = "2000-01-01"
+)
+
 type Feed struct {
 	URL                 string       `db:"url"`
 	Title               string       `db:"title"`

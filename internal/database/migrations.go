@@ -7,16 +7,6 @@ import (
 )
 
 const (
-	// minReasonableItemDate is the minimum date we consider reasonable for feed items.
-	// Items with dates before this are likely due to:
-	// - Missing or malformed dates in feeds
-	// - Timezone bugs causing dates to appear centuries in the past
-	// - Epoch time (1970-01-01) or other sentinel values
-	//
-	// We use 2000-01-01 as a practical lower bound to allow legitimate old archives
-	// while still catching epoch dates and other obviously invalid timestamps.
-	minReasonableItemDate = "2000-01-01"
-
 	// Migration version constants.
 	migrationVersion1   = 1 // Initial schema (handled by InitSchema)
 	migrationVersion2   = 2 // Add latest_item_date column to feeds
@@ -234,7 +224,7 @@ func (db *DB) applyMigration4WithBackfill() error {
 				ELSE published_date
 			END
 		WHERE first_seen IS NULL
-	`, minReasonableItemDate, minReasonableItemDate)
+	`, MinReasonableItemDate, MinReasonableItemDate)
 	if _, err = tx.Exec(backfillSQL); err != nil {
 		return fmt.Errorf("failed to backfill first_seen: %w", err)
 	}
