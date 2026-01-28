@@ -177,9 +177,15 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 		// Check if this is a new item (before upserting)
 		isNewItem := f.isNewItem(feedURL, item.GUID)
 
-		// Set first_seen timestamp for new items
+		// Set first_seen timestamp for new items, or load it for existing items
 		if isNewItem {
 			item.FirstSeen = sql.NullTime{Time: time.Now(), Valid: true}
+		} else {
+			// Load first_seen from database for existing items
+			existingFirstSeen, err := f.getItemFirstSeen(feedURL, item.GUID)
+			if err == nil && existingFirstSeen.Valid {
+				item.FirstSeen = existingFirstSeen
+			}
 		}
 
 		// Track the latest item date - only count items with first_seen set
@@ -251,6 +257,17 @@ func (f *Fetcher) isNewItem(feedURL, guid string) bool {
 		return false // Assume not new if we can't check
 	}
 	return count == 0
+}
+
+// getItemFirstSeen retrieves the first_seen timestamp for an existing item.
+func (f *Fetcher) getItemFirstSeen(feedURL, guid string) (sql.NullTime, error) {
+	query := `SELECT first_seen FROM items WHERE feed_url = ? AND guid = ?`
+	var firstSeen sql.NullTime
+	err := f.db.GetConnection().QueryRow(query, feedURL, guid).Scan(&firstSeen)
+	if err != nil {
+		return sql.NullTime{}, err
+	}
+	return firstSeen, nil
 }
 
 // filterURLsNeedingUnfurl filters URLs to only include those that don't already have metadata.
