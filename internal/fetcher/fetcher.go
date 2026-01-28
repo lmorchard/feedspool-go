@@ -150,16 +150,24 @@ func (f *Fetcher) processParsedFeed(
 	return result
 }
 
-// clampItemDate clamps a date to a reasonable range (not in the future, not too far in the past).
-func clampItemDate(itemDate time.Time) time.Time {
+// clampItemDate clamps a date to a reasonable range.
+// For future dates, clamps to firstSeen (when we first saw the item), or now() as fallback.
+// For very old dates, clamps to MinReasonableItemDate.
+func clampItemDate(itemDate time.Time, firstSeen sql.NullTime) time.Time {
 	if itemDate.IsZero() {
 		return itemDate
 	}
 
 	now := time.Now()
 
-	// Clamp future dates to now
-	if itemDate.After(now) {
+	// Clamp future dates to when we first saw the item
+	// This prevents feeds with future-dated items from staying at the top on every fetch
+	if firstSeen.Valid && itemDate.After(firstSeen.Time) {
+		return firstSeen.Time
+	}
+
+	// Fallback: if first_seen not available but date is in the future, clamp to now
+	if !firstSeen.Valid && itemDate.After(now) {
 		return now
 	}
 
@@ -223,8 +231,8 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 			itemDate = item.FirstSeen.Time
 		}
 
-		// Clamp date to reasonable range
-		itemDate = clampItemDate(itemDate)
+		// Clamp date to reasonable range (using first_seen to clamp future dates)
+		itemDate = clampItemDate(itemDate, item.FirstSeen)
 
 		// Track the latest (most recent) clamped date
 		if !itemDate.IsZero() && (latestItemDate.IsZero() || itemDate.After(latestItemDate)) {
