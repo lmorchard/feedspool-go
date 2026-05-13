@@ -55,360 +55,38 @@ Use the Makefile:
 make build
 ```
 
-## Usage
+## Documentation
 
-### Help
+- **[MANUAL.md](MANUAL.md)** — operator's manual: every subcommand and flag, full configuration reference, SQLite data model, SQL and workflow recipes, behavior gotchas, Docker reference. Read this first.
+- **[CLAUDE.md](CLAUDE.md)** — development notes for contributors and AI assistants.
 
-You can get general help and subcommand-specific help with embedded documentation:
-
-```bash
-./feedspool --help
-./feedspool init --help
-./feedspool version
-./feedspool --version  # Alternative to version subcommand
-```
-
-### Initialize database
+## Quick start
 
 ```bash
-# Initialize database only
-./feedspool init
+feedspool init
+echo "https://example.com/feed.xml" > feeds.txt
+feedspool fetch --format text --filename feeds.txt
+feedspool render --feeds feeds.txt --format text
+feedspool serve   # http://localhost:8080
 ```
 
-### Feed Fetching
+`feedspool --help` and `feedspool <subcommand> --help` show inline reference.
+For everything beyond the basics, see [MANUAL.md](MANUAL.md).
+
+## Docker
 
 ```bash
-# Fetch a single feed
-./feedspool fetch https://example.com/feed.xml
-
-# Fetch all feeds from OPML file
-./feedspool fetch --format opml --filename feeds.opml
-
-# Fetch all feeds from text list
-./feedspool fetch --format text --filename feeds.txt
-
-# Fetch all feeds in database
-./feedspool fetch
-
-# Fetch feeds with parallel metadata extraction (unfurling)
-./feedspool fetch --with-unfurl
-```
-
-### Subscription Management
-
-```bash
-# Subscribe to a feed (adds to your default feed list)
-./feedspool subscribe https://example.com/feed.xml
-
-# Subscribe with autodiscovery from HTML page
-./feedspool subscribe --discover https://example.com/blog
-
-# Unsubscribe from a feed
-./feedspool unsubscribe https://example.com/feed.xml
-
-# Export database feeds to OPML
-./feedspool export --format opml feeds.opml
-
-# Export database feeds to text list
-./feedspool export --format text feeds.txt
-```
-
-### URL Metadata Extraction (Unfurling)
-
-Extract OpenGraph metadata, Twitter Cards, and favicons from web pages:
-
-```bash
-# Extract metadata from a single URL
-./feedspool unfurl https://example.com/article
-
-# Extract metadata from a single URL as JSON
-./feedspool unfurl https://example.com/article --format json
-
-# Process all item URLs in database without metadata  
-./feedspool unfurl
-
-# Process with custom limits and options
-./feedspool unfurl --limit 100 --concurrency 8
-./feedspool unfurl --retry-immediate --skip-robots
-```
-
-### Show items on the command line
-
-```bash
-./feedspool show https://example.com/feed.xml
-```
-
-### Generate static HTML site
-
-```bash
-# Generate HTML from all feeds in database
-./feedspool render
-
-# Generate HTML with a time range of feed items
-./feedspool render --max-age 24h
-./feedspool render --start 2023-01-01T00:00:00Z --end 2023-12-31T23:59:59Z
-
-# Control how many items are shown per feed
-./feedspool render --min-items-per-feed 5 --max-items-per-feed 50
-
-# Enable pagination (show 25 feeds per page)
-./feedspool render --feeds-per-page 25
-
-# Disable pagination entirely
-./feedspool render --feeds-per-page 0
-
-# Generate HTML from specific feeds
-./feedspool render https://example.com/feed.xml
-
-# Generate HTML with custom output directory
-./feedspool render --output-dir /path/to/output
-
-# Use custom templates and assets (extract first with init command)
-./feedspool render --templates ./my-templates --assets ./my-assets
-```
-
-### Cleanup Operations
-
-```bash
-# Clean up old archived items (items no longer in feeds)
-./feedspool purge --age 30d
-
-# Clean up old items while preserving a minimum per feed
-./feedspool purge --age 30d --min-items 10
-
-# Preview what would be deleted without actually deleting
-./feedspool purge --age 30d --dry-run
-
-# Remove unsubscribed feeds (keep only those in feed list)
-./feedspool purge --format opml --filename feeds.opml
-```
-
-## Configuration
-
-You can set defaults for just about every command line option in a YAML
-configuration file, aiming to make CLI usage simple.
-
-Create a `feedspool.yaml` file (see `feedspool.yaml.example`) or use command-line flags:
-
-### Global Options
-- `--database` - Database file path (default: ./feeds.db)
-- `--json` - Output in JSON format
-
-### Default Feed List Configuration
-```yaml
-feedlist:
-  format: "opml"        # or "text"
-  filename: "feeds.opml" # or "feeds.txt"
-```
-
-### Fetch Configuration
-```yaml
-fetch:
-  with_unfurl: true     # Enable parallel unfurling during fetch
-  concurrency: 16       # Fetch-specific concurrency
-  max_items: 50         # Max items per feed to store
-```
-
-### Render Configuration
-```yaml
-render:
-  output_dir: "./build"             # Output directory for generated HTML
-  default_max_age: "24h"            # Default time range for items
-  default_min_items_per_feed: 5    # Minimum items to show per feed
-  feeds_per_page: 25                # Feeds per page (0 = disable pagination)
-```
-
-### Unfurl Configuration  
-```yaml
-unfurl:
-  skip_robots: false    # Respect robots.txt (default: true)
-  retry_after: "1h"     # Retry failed fetches after duration
-  concurrency: 8        # Unfurl-specific concurrency
-```
-
-### Command Options
-- `--concurrency` - Max concurrent fetches (default: 32)
-- `--timeout` - Per-feed timeout (default: 30s) 
-- `--max-items` - Max items per feed (default: 100)
-- `--force` - Ignore cache headers and fetch anyway
-- `--max-age` - Skip feeds fetched within this duration
-- `--with-unfurl` - Extract metadata in parallel with feed fetching
-- `--format` - Feed list format (opml or text)
-- `--filename` - Feed list filename
-
-## Docker Usage
-
-feedspool is available as a Docker container for easy deployment and hosting.
-
-### Quick Start
-
-The simplest way to get started is with just a feeds file:
-
-```bash
-# Create a directory and add your feeds
 mkdir feedspool-data
 echo "https://feeds.bbci.co.uk/news/rss.xml" > feedspool-data/feeds.txt
-echo "https://www.reddit.com/r/programming.rss" >> feedspool-data/feeds.txt
-
-# Run the container
 docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
 ```
 
-The container will automatically:
-- Detect your `feeds.txt` (or `feeds.opml`) file
-- Create a default configuration optimized for Docker
-- Initialize the database
-- Fetch and render your feeds immediately
-- Start the web server on port 8889
-- Update feeds every 30 minutes via cron
+The container auto-detects `feeds.txt` or `feeds.opml`, generates a default
+config, initializes the database, fetches and renders, then runs feedspool
+every 30 minutes via cron and serves the result on port 8889.
 
-### Minimal Configuration
-
-The Docker container is designed to work with minimal setup. Just provide one of these files in your mounted volume:
-
-- **feeds.txt** - Simple text file with one feed URL per line
-- **feeds.opml** - OPML format feed list
-
-The container will automatically detect which format you're using and configure itself accordingly. No `feedspool.yaml` required!
-
-### Advanced Configuration
-
-For more control, you can provide a custom configuration. Place these files in your mounted directory:
-
-#### Files (all optional - sensible defaults are provided)
-- **feedspool.yaml** - Custom configuration (auto-generated if missing)
-- **feeds.txt** or **feeds.opml** - Your feed subscriptions
-- **feeds.db** - SQLite database (created automatically)
-- **build/** - Generated HTML files (created automatically)
-
-#### Sample feedspool.yaml
-```yaml
-# Database file path
-database: ./feeds.db
-
-# Default feed list settings
-feedlist:
-  format: "text"        # or "opml"
-  filename: "feeds.txt" # or "feeds.opml"
-
-# Static site generator settings
-render:
-  output_dir: "./build"
-  default_max_age: "24h"
-
-# HTTP server settings (will be overridden by PORT env var in container)
-serve:
-  port: 8889
-  dir: "./build"
-```
-
-#### Sample feeds.txt
-```
-https://feeds.bbci.co.uk/news/rss.xml
-https://www.reddit.com/r/programming.rss
-https://example.com/blog/feed.xml
-```
-
-### Environment Variables
-
-- **PORT** - Server port (default: 8889)
-  ```bash
-  docker run -d -p 9000:9000 -e PORT=9000 -v ./feedspool-data:/data lmorchard/feedspool:latest
-  ```
-
-- **CRON_SCHEDULE** - Cron schedule for automatic feed updates (default: */30 * * * *)
-  ```bash
-  # Update every 5 minutes instead of every 30 minutes
-  docker run -d -p 8889:8889 -e CRON_SCHEDULE="*/5 * * * *" -v ./feedspool-data:/data lmorchard/feedspool:latest
-  
-  # Update hourly at the top of the hour
-  docker run -d -p 8889:8889 -e CRON_SCHEDULE="0 * * * *" -v ./feedspool-data:/data lmorchard/feedspool:latest
-  ```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-
-services:
-  feedspool:
-    image: lmorchard/feedspool:latest
-    container_name: feedspool
-    ports:
-      - "8889:8889"
-    volumes:
-      - ./feedspool-data:/data
-    environment:
-      - PORT=8889
-      # - CRON_SCHEDULE=*/5 * * * *  # Optional: customize update frequency
-    restart: unless-stopped
-```
-
-### Build from Source
-
-```bash
-git clone https://github.com/lmorchard/feedspool-go.git
-cd feedspool-go
-docker build -t feedspool .
-```
-
-#### Docker Build Options
-
-This project includes two Docker build approaches:
-
-- **`Dockerfile`** - Multi-stage build that compiles from source code
-  - Use when building locally or when you don't have a pre-built binary
-  - Slower build but completely self-contained
-  - `docker build -t feedspool .`
-
-- **`Dockerfile.prebuilt`** - Single-stage build using a pre-compiled binary
-  - Used by GitHub Actions for faster CI/CD builds
-  - Requires the `feedspool` binary to exist in the build context
-  - `make build && docker build -f Dockerfile.prebuilt -t feedspool .`
-
-### Manual Operations
-
-Run one-time commands without starting the full service:
-
-```bash
-# Initialize database
-docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest init
-
-# Fetch feeds manually
-docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest fetch
-
-# Generate HTML manually
-docker run --rm -v ./feedspool-data:/data lmorchard/feedspool:latest render
-```
-
-### Troubleshooting
-
-#### View Container Logs
-```bash
-docker logs <container-name>
-```
-
-#### Check Container Status
-```bash
-docker ps
-```
-
-#### Access Container Shell
-```bash
-docker exec -it <container-name> /bin/sh
-```
-
-#### Manual Feed Update
-The container automatically fetches and renders feeds every 30 minutes. To trigger manually:
-```bash
-docker exec <container-name> /usr/local/bin/feedspool fetch
-docker exec <container-name> /usr/local/bin/feedspool render
-```
-
-#### Common Issues
-- **Permission denied**: Ensure your host directory is readable/writable
-- **Database errors**: Make sure `feedspool.yaml` specifies correct database path
-- **Empty feeds**: Check your `feeds.txt` or `feeds.opml` file exists and has valid URLs
+For environment variables, docker-compose, manual operations, and the two
+Dockerfile variants, see [MANUAL.md#docker-reference](MANUAL.md#docker-reference).
 
 ## Development
 
@@ -470,37 +148,6 @@ make test
 # Check linting
 make lint
 ```
-
-## HTML Site Generation
-
-The `render` command generates a static HTML site from your feeds. The generated site includes:
-- Main index page with all feeds and items
-- Collapsible feed items using HTML `<details>` elements
-- Feed descriptions available as tooltips on feed titles
-- Optional pagination support for large feed collections
-- Interactive feed navigation UI with feed selector
-- Per-feed item limits (min/max) for flexible content display
-- Incremental loading optimizations for smooth scrolling
-
-### Customization
-
-There's a default template and static assets embedded in the binary.
-These can be extracted as files and customized:
-
-```bash
-# Extract default templates and assets to filesystem
-./feedspool init --extract-templates --extract-assets
-
-# Customize the files in ./templates/ and ./assets/ directories
-# Then use your custom files:
-./feedspool render --templates ./templates --assets ./assets
-```
-
-This allows you to:
-- Modify the HTML template structure in `templates/index.html`
-- Customize the CSS styling in `assets/style.css`
-- Add your own branding, colors, and layout changes
-- Create completely custom site designs while keeping the data structure
 
 ## TODO
 
