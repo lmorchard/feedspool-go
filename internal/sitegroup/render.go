@@ -135,7 +135,7 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 		return nil, err
 	}
 
-	logrus.Infof("Generated %d sites in %s", len(summary.Sites), base.OutputDir)
+	logrus.Infof("Generated %d site(s) in %s", len(summary.Sites), base.OutputDir)
 	return summary, nil
 }
 
