@@ -150,8 +150,8 @@ func TestDiscoverPathIsFile(t *testing.T) {
 
 func TestDiscoverSkipsMalformedFile(t *testing.T) {
 	dir := writeDir(t, map[string]string{
-		"good.opml": opmlWith("Good", feedA),
-		badOPML:     "<opml><head><title>unclosed",
+		goodOPML: opmlWith("Good", feedA),
+		badOPML:  badOPMLContent,
 	})
 
 	sites, skipped, err := Discover(dir)
