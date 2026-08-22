@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -41,8 +40,9 @@ Use 'feedspool <command> --help' for detailed command information.`,
 }
 
 func Execute() {
+	// Cobra already prints the error (with an "Error: " prefix) before
+	// returning it, so printing here too would duplicate every message.
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
