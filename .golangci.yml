@@ -1,28 +1,20 @@
+version: "2"
 run:
-  timeout: 5m
   tests: true
-
 linters:
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
     - containedctx
+    - copyloopvar
     - cyclop
     - dupl
     - durationcheck
     - errname
     - errorlint
     - exhaustive
-    - copyloopvar
     - forbidigo
     - funlen
     - gochecknoglobals
@@ -30,18 +22,15 @@ linters:
     - goconst
     - gocritic
     - godot
-    - gofmt
-    - gofumpt
     - goheader
-    - goimports
-    - mnd
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - lll
     - makezero
     - misspell
+    - mnd
     - nakedret
     - nestif
     - nilerr
@@ -51,138 +40,140 @@ linters:
     - revive
     - rowserrcheck
     - sqlclosecheck
-    - stylecheck
-    - usetesting
+    - staticcheck
     - testpackage
     - tparallel
     - unconvert
     - unparam
+    - usetesting
     - wastedassign
     - whitespace
   disable:
-    - nilnil          # Returning nil,nil is sometimes appropriate
-
-linters-settings:
-  cyclop:
-    max-complexity: 15
-    package-average: 10.0
-    skip-tests: false
-
-  dupl:
-    threshold: 100
-
-  funlen:
-    lines: 100
-    statements: 50
-
-  gocognit:
-    min-complexity: 20
-
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - ifElseChain  # Often produces false positives for different condition types
-      - whyNoLint
-      - wrapperFunc
-
-  gocyclo:
-    min-complexity: 15
-
-  mnd:
-    checks:
-      - argument
-      - case
-      - condition
-      - operation
-      - return
-      - assign
-    ignored-numbers: 0,1,2,8,10,16,32,60,64,100,256,404,500,503,1024
-    ignored-functions: 'make'
-
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment  # Struct field alignment is optimization, not correctness
-      - shadow         # Variable shadowing warnings are often false positives in tests
-
-  lll:
-    line-length: 120
-
-  misspell:
-    locale: US
-
-  nolintlint:
-    allow-leading-space: true
-    allow-unused: false
-    require-explanation: false
-    require-specific: false
-
-issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-        - gocognit
-        - lll
-
-    # Exclude magic number checks for regex match count (tied to specific regex structure)
-    - text: "Magic number: 3"
-      linters:
-        - mnd
-
-    # Allow globals in cmd package (normal for Cobra CLI apps)
-    - path: cmd/
-      linters:
-        - gochecknoglobals
-
-    # Allow init functions in cmd package
-    - path: cmd/
-      linters:
-        - gochecknoinits
-
-    # Allow print statements in main CLI commands for user output
-    - path: cmd/(fetch|show|purge|export|render|serve|subscribe|unsubscribe|version)\.go
-      linters:
-        - forbidigo
-
-    # Allow complex nested blocks in main CLI commands (user interface logic)
-    - path: cmd/(fetch|purge|render|root)\.go
-      linters:
-        - nestif
-
-    # Allow complex nested blocks in initialization logic
-    - path: internal/initialize/initialize\.go
-      linters:
-        - nestif
-
-    # Allow complex test functions
-    - path: _test\.go
-      linters:
-        - cyclop
-        - gocognit
-
-    # Allow test package naming conventions
-    - path: _test\.go
-      linters:
-        - testpackage
-
-    # Allow unused parameters in test helper functions
-    - path: _test\.go
-      linters:
-        - unparam
-
+    - nilnil
+  settings:
+    cyclop:
+      max-complexity: 15
+      package-average: 10
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 50
+    gocognit:
+      min-complexity: 20
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      disabled-checks:
+        - dupImport
+        - ifElseChain
+        - whyNoLint
+        - wrapperFunc
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 15
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+      enable-all: true
+    lll:
+      line-length: 120
+    misspell:
+      locale: US
+    mnd:
+      checks:
+        - argument
+        - case
+        - condition
+        - operation
+        - return
+        - assign
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "8"
+        - "10"
+        - "16"
+        - "32"
+        - "60"
+        - "64"
+        - "100"
+        - "256"
+        - "404"
+        - "500"
+        - "503"
+        - "1024"
+      ignored-functions:
+        - make
+    nolintlint:
+      require-explanation: false
+      require-specific: false
+      allow-unused: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - funlen
+          - gocognit
+          - gocyclo
+          - gosec
+          - lll
+        path: _test\.go
+      - linters:
+          - mnd
+        text: 'Magic number: 3'
+      - linters:
+          - gochecknoglobals
+        path: cmd/
+      - linters:
+          - gochecknoinits
+        path: cmd/
+      - linters:
+          - forbidigo
+        path: cmd/(fetch|show|purge|export|render|serve|subscribe|unsubscribe|version)\.go
+      - linters:
+          - nestif
+        path: cmd/(fetch|purge|render|root)\.go
+      - linters:
+          - nestif
+        path: internal/initialize/initialize\.go
+      - linters:
+          - cyclop
+          - gocognit
+        path: _test\.go
+      - linters:
+          - testpackage
+        path: _test\.go
+      - linters:
+          - unparam
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
