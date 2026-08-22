@@ -91,8 +91,9 @@ func runRender(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Execute the render operation
-	return renderer.ExecuteWorkflow(renderConfig)
+	// Execute the render operation.
+	_, err := renderer.ExecuteWorkflow(renderConfig)
+	return err
 }
 
 func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {

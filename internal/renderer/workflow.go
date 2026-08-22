@@ -29,52 +29,74 @@ type WorkflowConfig struct {
 	Clean           bool
 }
 
+// Result summarizes what a single ExecuteWorkflow call produced. It feeds the
+// multi-site index page.
+type Result struct {
+	FeedCount  int       // Feeds matching the time window and feed-list filter.
+	ItemCount  int       // Items rendered, after min/max per-feed limits.
+	NewestItem time.Time // Newest PublishedDate rendered; zero if no items.
+}
+
+// summarize computes a Result from the data about to be rendered.
+func summarize(feeds []database.Feed, items map[string][]database.Item) *Result {
+	result := &Result{FeedCount: len(feeds)}
+	for i := range feeds {
+		feedItems := items[feeds[i].URL]
+		result.ItemCount += len(feedItems)
+		for j := range feedItems {
+			if feedItems[j].PublishedDate.After(result.NewestItem) {
+				result.NewestItem = feedItems[j].PublishedDate
+			}
+		}
+	}
+	return result
+}
+
 // ExecuteWorkflow performs the complete render operation with the given configuration.
-func ExecuteWorkflow(config *WorkflowConfig) error {
+func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	// Clean output directory if requested (do this early to avoid dependency issues)
 	if config.Clean {
 		if err := cleanOutputDirectory(config.OutputDir); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	// Setup database
 	db, err := database.New(config.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
 
 	if err := db.IsInitialized(); err != nil {
-		return fmt.Errorf("database not initialized: %w", err)
+		return nil, fmt.Errorf("database not initialized: %w", err)
 	}
 
 	// Parse time window
 	startTime, endTime, err := database.ParseTimeWindow(config.MaxAge, config.Start, config.End)
 	if err != nil {
-		return fmt.Errorf("invalid time parameters: %w", err)
+		return nil, fmt.Errorf("invalid time parameters: %w", err)
 	}
 
 	// Load feed URLs if specified
 	feedURLs, err := loadFeedURLs(config.FeedsFile, config.Format)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create output directory
 	if err := os.MkdirAll(config.OutputDir, configpkg.DefaultDirPerm); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Query data with minimum items per feed guarantee
 	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(feeds) == 0 {
 		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
-		return nil
 	}
 
 	// Apply max items per feed limit if configured
@@ -84,8 +106,12 @@ func ExecuteWorkflow(config *WorkflowConfig) error {
 		fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
 	}
 
-	// Generate site
-	return generateSite(config, feeds, items, startTime, endTime)
+	// Generate site.
+	if err := generateSite(config, feeds, items, startTime, endTime); err != nil {
+		return nil, err
+	}
+
+	return summarize(feeds, items), nil
 }
 
 func loadFeedURLs(feedsFile, format string) ([]string, error) {
