@@ -29,7 +29,7 @@ jobs:
       if: steps.skip_check.outputs.skip != 'true'
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.22'
 
     - name: Download dependencies
       if: steps.skip_check.outputs.skip != 'true'
@@ -37,9 +37,9 @@ jobs:
 
     - name: Run golangci-lint
       if: steps.skip_check.outputs.skip != 'true'
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@v8
       with:
-        version: latest
+        version: v2.13.1
         args: --timeout=5m
 
     - name: Run tests
