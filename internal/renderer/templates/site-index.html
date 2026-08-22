@@ -21,8 +21,8 @@
             <li class="site-entry{{if eq .ItemCount 0}} site-entry-quiet{{end}}">
                 <a class="site-link" href="{{.Slug}}/">{{.Title}}</a>
                 <p class="site-stats">
-                    <span class="site-stat">{{.FeedCount}} feeds</span>
-                    <span class="site-stat">{{.ItemCount}} new items</span>
+                    <span class="site-stat">{{.FeedCount}} {{pluralize .FeedCount "feed" "feeds"}}</span>
+                    <span class="site-stat">{{.ItemCount}} new {{pluralize .ItemCount "item" "items"}}</span>
                     {{if not .NewestItem.IsZero}}
                     <span class="site-stat">newest
                         <time datetime="{{.NewestItem.Format "2006-01-02T15:04:05Z07:00"}}">{{.NewestItem.Format "Jan 2, 2006 15:04 UTC"}}</time>

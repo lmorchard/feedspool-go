@@ -11,6 +11,7 @@ import (
 const (
 	testSiteIndexTechBlogsTitle = "Tech Blogs"
 	testSiteIndexLocalNewsTitle = "Local News"
+	testSiteIndexSoloFeedTitle  = "Solo Feed"
 	testSiteIndexTimeWindow     = "Last 24h"
 )
 
@@ -25,6 +26,7 @@ func TestRenderSiteIndex(t *testing.T) {
 				FeedCount: 42, ItemCount: 118, NewestItem: newest,
 			},
 			{Slug: "local-news", Title: testSiteIndexLocalNewsTitle, FeedCount: 15, ItemCount: 0},
+			{Slug: "solo-feed", Title: testSiteIndexSoloFeedTitle, FeedCount: 1, ItemCount: 1, NewestItem: newest},
 		},
 		GeneratedAt: newest,
 		TimeWindow:  testSiteIndexTimeWindow,
@@ -43,16 +45,27 @@ func TestRenderSiteIndex(t *testing.T) {
 	for _, want := range []string{
 		`href="tech-blogs/"`,
 		`href="local-news/"`,
+		`href="solo-feed/"`,
 		testSiteIndexTechBlogsTitle,
 		testSiteIndexLocalNewsTitle,
+		testSiteIndexSoloFeedTitle,
 		"42 feeds",
 		"118 new items",
+		"1 feed<",
+		"1 new item<",
 		"site-entry-quiet",
 		`datetime="2026-08-22T09:14:00Z"`,
 		testSiteIndexTimeWindow,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+
+	// A site with exactly one feed/item must use the singular form, not "1 feeds" / "1 new items".
+	for _, unwanted := range []string{"1 feeds", "1 new items"} {
+		if strings.Contains(html, unwanted) {
+			t.Errorf("index.html incorrectly pluralized a count of 1: found %q", unwanted)
 		}
 	}
 
