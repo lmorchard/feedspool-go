@@ -105,13 +105,15 @@ func runRender(_ *cobra.Command, _ []string) error {
 	if feedsDir == "" && renderFeeds == "" && cfg.HasFeedListDir() {
 		feedsDir = cfg.FeedList.Dir
 	}
-	if feedsDir != "" {
-		return runDirRender(feedsDir, renderConfig)
-	}
 
-	// Validate configuration.
+	// Validate configuration before anything destructive (e.g. --clean) runs,
+	// in either single-list or directory mode.
 	if err := validateRenderConfig(renderConfig); err != nil {
 		return err
+	}
+
+	if feedsDir != "" {
+		return runDirRender(feedsDir, renderConfig)
 	}
 
 	// Execute the render operation.
