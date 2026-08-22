@@ -54,11 +54,33 @@ func (o *Orchestrator) FetchSingle(ctx context.Context, feedURL string, opts Fet
 	return result, result.Error
 }
 
+// FetchFromURLs fetches an explicit list of feed URLs with optional unfurl.
+// Per-feed failures are reported inside the returned results, not as an error.
+func (o *Orchestrator) FetchFromURLs(
+	ctx context.Context, feedURLs []string, opts FetchOptions,
+) []*FetchResult {
+	if len(feedURLs) == 0 {
+		return []*FetchResult{}
+	}
+
+	results := o.fetchConcurrentWithUnfurl(ctx, feedURLs, opts)
+
+	// Handle feed removal if requested.
+	if opts.RemoveMissing {
+		removedCount := o.removeMissingFeeds(feedURLs)
+		if removedCount > 0 {
+			logrus.Infof("Removed %d feeds not in list", removedCount)
+		}
+	}
+
+	return results
+}
+
 // FetchFromFile executes fetch from a feed list file with optional unfurl.
 func (o *Orchestrator) FetchFromFile(
 	ctx context.Context, format feedlist.Format, filename string, opts FetchOptions,
 ) ([]*FetchResult, error) {
-	// Load feed URLs from file
+	// Load feed URLs from file.
 	list, err := feedlist.LoadFeedList(format, filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load feed list %s: %w", filename, err)
@@ -76,17 +98,7 @@ func (o *Orchestrator) FetchFromFile(
 		logrus.Infof("Found %d feeds in %s", len(feedURLs), filename)
 	}
 
-	results := o.fetchConcurrentWithUnfurl(ctx, feedURLs, opts)
-
-	// Handle feed removal if requested
-	if opts.RemoveMissing {
-		removedCount := o.removeMissingFeeds(feedURLs)
-		if removedCount > 0 {
-			logrus.Infof("Removed %d feeds not in list", removedCount)
-		}
-	}
-
-	return results, nil
+	return o.FetchFromURLs(ctx, feedURLs, opts), nil
 }
 
 // FetchFromDatabase executes fetch from all feeds in database with optional unfurl.
