@@ -397,20 +397,23 @@ func runCommand(binary string, args ...string) (string, error) {
 // logic lives in cmd/ and isn't otherwise reachable from a package-main test
 // without invoking the real binary. Callers that only need any working
 // binary can keep using the faster, plain `go build` in buildBinary.
+//
+// The binary is built to a temp file via `make build BINARY=<path>` rather
+// than the repo-root `feedspool`, so this test never clobbers a developer's
+// existing build artifact.
 func buildBinaryViaMake(t *testing.T) string {
 	t.Helper()
 
-	binaryPath, err := filepath.Abs("feedspool")
-	if err != nil {
-		t.Fatal(err)
-	}
+	binaryPath := filepath.Join(t.TempDir(), "feedspool")
+	// Registered up front so a failed `make build` can't leave a partial
+	// artifact behind.
+	t.Cleanup(func() { os.Remove(binaryPath) })
 
-	cmd := exec.Command("make", "build")
+	cmd := exec.Command("make", "build", "BINARY="+binaryPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("make build failed: %v, output: %s", err, output)
 	}
-	t.Cleanup(func() { os.Remove(binaryPath) })
 
 	return binaryPath
 }
