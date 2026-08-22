@@ -19,8 +19,11 @@ echo "Setting up cron job for feed updates (schedule: $CRON_SCHEDULE)..."
 cat > /etc/crontabs/root << EOF
 # Disable email notifications
 MAILTO=""
-# Run fetch and render on schedule, output to Docker logs
-$CRON_SCHEDULE (cd /data && /usr/local/bin/feedspool purge && /usr/local/bin/feedspool fetch && /usr/local/bin/feedspool render) > /proc/1/fd/1 2> /proc/1/fd/2
+# Run purge and build (fetch + render) on schedule, output to Docker logs.
+# 'build' continues on to render even when a feed list partially fails to
+# fetch, then exits non-zero -- so one bad file in feeds.d/ never skips the
+# scheduled publish (see MANUAL.md's failure policy).
+$CRON_SCHEDULE (cd /data && /usr/local/bin/feedspool purge && /usr/local/bin/feedspool build) > /proc/1/fd/1 2> /proc/1/fd/2
 EOF
 
 # Start crond in foreground mode in background to capture PID correctly
