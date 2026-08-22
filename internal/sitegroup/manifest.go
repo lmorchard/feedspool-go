@@ -51,11 +51,11 @@ func emptyManifest() *Manifest {
 func ReadManifest(outputDir string) (*Manifest, error) {
 	path := filepath.Join(outputDir, ManifestName)
 	data, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return emptyManifest(), nil
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", ManifestName, err)
+		if !errors.Is(err, fs.ErrNotExist) {
+			logrus.Warnf("Ignoring %s: failed to read manifest: %v", ManifestName, err)
+		}
+		return emptyManifest(), nil
 	}
 
 	m := &Manifest{}

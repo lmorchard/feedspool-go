@@ -113,6 +113,26 @@ func TestReadManifestEmptyFile(t *testing.T) {
 	}
 }
 
+// TestReadManifestUnreadablePath guards against a bug where a manifest path
+// that exists but cannot be read as a regular file (e.g. it is a directory)
+// was treated as fatal, wedging every future render until someone manually
+// removed it. Per the doc comment above ReadManifest, any problem reading or
+// interpreting the manifest must degrade to "nothing to prune".
+func TestReadManifestUnreadablePath(t *testing.T) {
+	out := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(out, ManifestName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	m, err := ReadManifest(out)
+	if err != nil {
+		t.Fatalf("ReadManifest() error = %v, want nil when the manifest path is a directory", err)
+	}
+	if len(m.Slugs) != 0 {
+		t.Errorf("Slugs = %v, want empty when the manifest path is a directory", m.Slugs)
+	}
+}
+
 func TestPruneRemovesDepartedSlug(t *testing.T) {
 	out := t.TempDir()
 	mkdirs(t, out, comicsSlug, techSlug)
