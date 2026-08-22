@@ -143,7 +143,7 @@ func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
 // WorkflowConfig.Quiet, so this is the only confirmation the user sees.
 func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
 	fmt.Printf("Generated %d %s in %s\n", len(summary.Sites),
-		renderPluralize(len(summary.Sites), "site", "sites"), outputDir)
+		pluralize(len(summary.Sites), "site", "sites"), outputDir)
 
 	slugWidth := 0
 	for i := range summary.Sites {
@@ -159,8 +159,8 @@ func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
 			continue
 		}
 		fmt.Printf("  %-*s %d %s, %d %s\n", slugWidth, s.Slug,
-			s.FeedCount, renderPluralize(s.FeedCount, "feed", "feeds"),
-			s.ItemCount, renderPluralize(s.ItemCount, "item", "items"))
+			s.FeedCount, pluralize(s.FeedCount, "feed", "feeds"),
+			s.ItemCount, pluralize(s.ItemCount, "item", "items"))
 	}
 
 	switch len(summary.Removed) {
@@ -176,8 +176,8 @@ func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
 	fmt.Printf("Open %s in your browser to view the site\n", filepath.Join(outputDir, "index.html"))
 }
 
-// renderPluralize returns singular when n is exactly 1, and plural otherwise.
-func renderPluralize(n int, singular, plural string) string {
+// pluralize returns singular when n is exactly 1, and plural otherwise.
+func pluralize(n int, singular, plural string) string {
 	if n == 1 {
 		return singular
 	}
