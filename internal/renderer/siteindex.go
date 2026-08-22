@@ -48,7 +48,7 @@ func RenderSiteIndex(outputDir, templatesDir, assetsDir string, ctx *SiteIndexCo
 		return fmt.Errorf("failed to render site index: %w", err)
 	}
 
-	if err := r.CopyAssets(outputDir); err != nil {
+	if err := r.CopySiteIndexAssets(outputDir); err != nil {
 		return fmt.Errorf("failed to copy site index assets: %w", err)
 	}
 

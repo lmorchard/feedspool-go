@@ -75,9 +75,55 @@ func TestRenderSiteIndex(t *testing.T) {
 	}
 
 	// Assets must land in the output root.
-	for _, name := range []string{"site-index.css", "site-index.js"} {
+	for _, name := range []string{assetSiteIndexCSS, assetSiteIndexJS} {
 		if _, err := os.Stat(filepath.Join(out, name)); err != nil {
 			t.Errorf("expected %s in output root: %v", name, err)
+		}
+	}
+}
+
+// TestRenderSiteIndexCopiesOnlyThinBundle guards against RenderSiteIndex
+// copying the entire feed-reader asset tree into the output root instead of
+// the documented thin bundle. Before the fix, RenderSiteIndex called the same
+// CopyAssets used by per-site renders, which walked every embedded asset --
+// 22 files instead of the 6 the index page actually needs. That collided
+// with any site directory coincidentally named "css" or "js".
+func TestRenderSiteIndexCopiesOnlyThinBundle(t *testing.T) {
+	out := t.TempDir()
+	ctx := &SiteIndexContext{GeneratedAt: time.Now().UTC()}
+
+	if err := RenderSiteIndex(out, "", "", ctx); err != nil {
+		t.Fatalf("RenderSiteIndex() error = %v", err)
+	}
+
+	// The index's transitive CSS/JS dependencies must be present.
+	for _, want := range []string{
+		assetSiteIndexCSS, assetSiteIndexJS,
+		assetCSSVariables, assetCSSBase, assetCSSSiteIndex, assetJSTimeFormatter,
+	} {
+		if _, err := os.Stat(filepath.Join(out, want)); err != nil {
+			t.Errorf("expected %s in site index output: %v", want, err)
+		}
+	}
+
+	// The full feed-reader bundle must NOT be copied into the index root.
+	for _, unwanted := range []string{
+		testAssetIndexCSS, testAssetIndexJS,
+		filepath.Join("css", "feed.css"),
+		filepath.Join("css", "item.css"),
+		filepath.Join("css", "layout.css"),
+		filepath.Join("css", "lightbox.css"),
+		filepath.Join("css", "view-modes.css"),
+		filepath.Join("js", "content-isolation-iframe.js"),
+		filepath.Join("js", "feed-navigator.js"),
+		filepath.Join("js", "layout-controller.js"),
+		filepath.Join("js", "lazy-image-loader.js"),
+		filepath.Join("js", "lightbox-overlay.js"),
+		filepath.Join("js", "link-loader.js"),
+		filepath.Join("js", "utils.js"),
+	} {
+		if _, err := os.Stat(filepath.Join(out, unwanted)); err == nil {
+			t.Errorf("site index output contains %s, which belongs only to the feed-reader bundle", unwanted)
 		}
 	}
 }

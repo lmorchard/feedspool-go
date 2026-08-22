@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -89,16 +90,65 @@ func (r *Renderer) Render(writer io.Writer, templateName string, context interfa
 	return tmpl.Execute(writer, context)
 }
 
-// CopyAssets copies static assets to the output directory.
-func (r *Renderer) CopyAssets(outputDir string) error {
-	var sourceFS fs.FS
+// Asset paths shared between the feed-reader and site-index bundles below.
+// Named as constants (rather than inline literals) so goconst doesn't flag
+// their reuse across the two bundle definitions.
+const (
+	assetSiteIndexCSS    = "site-index.css"
+	assetSiteIndexJS     = "site-index.js"
+	assetCSSVariables    = "css/variables.css"
+	assetCSSBase         = "css/base.css"
+	assetCSSSiteIndex    = "css/site-index.css"
+	assetJSTimeFormatter = "js/time-formatter.js"
+)
 
-	// Use custom assets directory if specified, otherwise use embedded
-	if r.assetsDir != "" {
-		sourceFS = fsFromDirImpl(r.assetsDir)
-	} else {
-		sourceFS = GetEmbeddedAssets()
+// isSiteIndexOnlyAsset reports whether path names an asset that exists
+// solely for the multi-site directory index page. CopyAssets (the
+// feed-reader bundle used by single-list and per-site renders) excludes
+// these, so that bundle stays exactly what it was before multi-site
+// directory mode existed.
+func isSiteIndexOnlyAsset(path string) bool {
+	switch path {
+	case assetSiteIndexCSS, assetSiteIndexJS, assetCSSSiteIndex:
+		return true
+	default:
+		return false
 	}
+}
+
+// siteIndexAssetPaths are the only files the multi-site directory index page
+// needs: its two entry points (site-index.css, site-index.js) plus the
+// CSS/JS files they respectively @import/import -- css/variables.css and
+// css/base.css for the shared design tokens, css/site-index.css for the
+// site-list rules, and js/time-formatter.js for the <time-formatter> custom
+// element. Copying only these keeps the index's asset copy to a thin bundle
+// instead of the entire feed-reader tree, which previously collided with any
+// site directory coincidentally named "css" or "js".
+func siteIndexAssetPaths() []string {
+	return []string{
+		assetSiteIndexCSS,
+		assetSiteIndexJS,
+		assetCSSVariables,
+		assetCSSBase,
+		assetCSSSiteIndex,
+		assetJSTimeFormatter,
+	}
+}
+
+// assetsSourceFS returns the filesystem CopyAssets and CopySiteIndexAssets
+// read from: a custom assets directory if one was configured, otherwise the
+// embedded default bundle.
+func (r *Renderer) assetsSourceFS() fs.FS {
+	if r.assetsDir != "" {
+		return fsFromDirImpl(r.assetsDir)
+	}
+	return GetEmbeddedAssets()
+}
+
+// CopyAssets copies the feed-reader asset bundle to the output directory,
+// excluding the site-index-only assets (see isSiteIndexOnlyAsset).
+func (r *Renderer) CopyAssets(outputDir string) error {
+	sourceFS := r.assetsSourceFS()
 
 	return fs.WalkDir(sourceFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -110,34 +160,62 @@ func (r *Renderer) CopyAssets(outputDir string) error {
 			return nil
 		}
 
-		// Read source file
-		srcFile, err := sourceFS.Open(path)
-		if err != nil {
-			return fmt.Errorf("failed to open source asset %s: %w", path, err)
-		}
-		defer srcFile.Close()
-
-		// Create destination file
-		destPath := filepath.Join(outputDir, path)
-		destDir := filepath.Dir(destPath)
-
-		if err := os.MkdirAll(destDir, config.DefaultDirPerm); err != nil {
-			return fmt.Errorf("failed to create asset directory %s: %w", destDir, err)
+		if isSiteIndexOnlyAsset(path) {
+			return nil
 		}
 
-		destFile, err := os.Create(destPath)
-		if err != nil {
-			return fmt.Errorf("failed to create destination asset %s: %w", destPath, err)
-		}
-		defer destFile.Close()
-
-		// Copy file content
-		if _, err := io.Copy(destFile, srcFile); err != nil {
-			return fmt.Errorf("failed to copy asset %s: %w", path, err)
-		}
-
-		return nil
+		return copyAssetFile(sourceFS, outputDir, path)
 	})
+}
+
+// CopySiteIndexAssets copies the thin bundle the multi-site directory index
+// page needs (see siteIndexAssetPaths) to the output directory.
+func (r *Renderer) CopySiteIndexAssets(outputDir string) error {
+	sourceFS := r.assetsSourceFS()
+
+	for _, path := range siteIndexAssetPaths() {
+		if err := copyAssetFile(sourceFS, outputDir, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// copyAssetFile copies one file identified by its slash-separated relative
+// path from sourceFS to outputDir, creating parent directories as needed. A
+// missing source file is not an error: a custom --assets directory is not
+// guaranteed to mirror the embedded layout exactly, and CopySiteIndexAssets'
+// bundle is best-effort against it.
+func copyAssetFile(sourceFS fs.FS, outputDir, path string) error {
+	srcFile, err := sourceFS.Open(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("failed to open source asset %s: %w", path, err)
+	}
+	defer srcFile.Close()
+
+	// Create destination file
+	destPath := filepath.Join(outputDir, path)
+	destDir := filepath.Dir(destPath)
+
+	if err := os.MkdirAll(destDir, config.DefaultDirPerm); err != nil {
+		return fmt.Errorf("failed to create asset directory %s: %w", destDir, err)
+	}
+
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination asset %s: %w", destPath, err)
+	}
+	defer destFile.Close()
+
+	// Copy file content
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		return fmt.Errorf("failed to copy asset %s: %w", path, err)
+	}
+
+	return nil
 }
 
 // ExtractTemplates extracts embedded templates to filesystem.

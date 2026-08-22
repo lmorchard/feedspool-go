@@ -12,6 +12,14 @@ import (
 
 const testFeedURL = "https://example.com/feed.xml"
 
+// testAssetIndexCSS and testAssetIndexJS name the feed-reader bundle's entry
+// points, shared with siteindex_test.go's assertion that those files must
+// not appear in the site-index bundle.
+const (
+	testAssetIndexCSS = "index.css"
+	testAssetIndexJS  = "index.js"
+)
+
 // newTestWorkflow builds a database with one feed and two items, and returns a
 // WorkflowConfig pointing at it with a fresh output directory.
 func newTestWorkflow(t *testing.T, withFeed bool) *WorkflowConfig {
@@ -95,5 +103,32 @@ func TestExecuteWorkflowWritesIndexWhenEmpty(t *testing.T) {
 	indexPath := filepath.Join(cfg.OutputDir, "index.html")
 	if _, err := os.Stat(indexPath); err != nil {
 		t.Errorf("expected %s to exist even with zero feeds: %v", indexPath, err)
+	}
+}
+
+// TestExecuteWorkflowAssetBundleExcludesSiteIndexAssets guards spec Goal 4:
+// a single-list render's asset bundle must be byte-for-byte what it was
+// before multi-site directory mode existed. CopyAssets previously walked the
+// entire embedded assets tree indiscriminately, so once site-index.css,
+// site-index.js, and css/site-index.css were added for the multi-site index
+// page, every single-list render started emitting them too.
+func TestExecuteWorkflowAssetBundleExcludesSiteIndexAssets(t *testing.T) {
+	cfg := newTestWorkflow(t, true)
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	for _, unwanted := range []string{assetSiteIndexCSS, assetSiteIndexJS, assetCSSSiteIndex} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, unwanted)); err == nil {
+			t.Errorf("single-list render output contains %s, which belongs only to the multi-site index bundle", unwanted)
+		}
+	}
+
+	// The feed-reader bundle itself must still be present.
+	for _, want := range []string{testAssetIndexCSS, testAssetIndexJS, assetCSSBase, assetJSTimeFormatter} {
+		if _, err := os.Stat(filepath.Join(cfg.OutputDir, want)); err != nil {
+			t.Errorf("expected %s in single-list render output: %v", want, err)
+		}
 	}
 }
