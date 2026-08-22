@@ -83,14 +83,14 @@ func runServe(_ *cobra.Command, _ []string) error {
 }
 
 func buildServeConfig(cfg *config.Config) *server.Config {
-	// Start with viper values (includes serveConfig file values)
+	// Start with viper values (includes config file values)
 	serveConfig := &server.Config{
 		Port:    viper.GetInt("serve.port"),
 		Dir:     viper.GetString("serve.dir"),
 		Verbose: cfg.Verbose,
 	}
 
-	// Check for PORT environment variable (overrides serveConfig file)
+	// Check for PORT environment variable (overrides config file)
 	if portEnv := os.Getenv("PORT"); portEnv != "" {
 		if port, err := strconv.Atoi(portEnv); err == nil {
 			serveConfig.Port = port

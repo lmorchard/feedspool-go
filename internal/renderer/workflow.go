@@ -235,8 +235,9 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	}
 
 	// Render individual feed pages (only if feed.html template exists)
+	feedTemplateExists := hasFeedTemplate(config.TemplatesDir)
 	feedsGenerated := 0
-	if hasFeedTemplate(config.TemplatesDir) {
+	if feedTemplateExists {
 		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
 			FormatTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
 			return err
@@ -244,7 +245,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		feedsGenerated = len(feeds)
 	}
 
-	printSuccessMessage(feedsGenerated, config.OutputDir, outputFile, config.Quiet)
+	printSuccessMessage(feedsGenerated, feedTemplateExists, config.OutputDir, outputFile, config.Quiet)
 	return nil
 }
 
@@ -463,7 +464,7 @@ func hasFeedTemplate(templatesDir string) bool {
 	return err == nil
 }
 
-func printSuccessMessage(feedCount int, outputDir, outputFile string, quiet bool) {
+func printSuccessMessage(feedCount int, feedTemplateExists bool, outputDir, outputFile string, quiet bool) {
 	if quiet {
 		return
 	}
@@ -475,8 +476,13 @@ func printSuccessMessage(feedCount int, outputDir, outputFile string, quiet bool
 	} else {
 		//nolint:forbidigo // User-facing output
 		fmt.Printf("Single-page site generated successfully in: %s\n", outputDir)
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+		if feedTemplateExists {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("(no feeds matched - no individual feed pages to generate)\n")
+		} else {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+		}
 	}
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Open %s in your browser to view the site\n", outputFile)

@@ -13,9 +13,11 @@ import (
 )
 
 // ErrPartialFailure reports that the run completed but some feed lists were
-// skipped or failed to render. Callers should surface a non-zero exit status
-// so cron and CI notice, even though a site was still published.
-var ErrPartialFailure = errors.New("one or more feed lists were skipped or failed to render")
+// skipped or failed. It is returned from both the fetch path (a feed list
+// failed to parse and was skipped) and the render path (a site failed to
+// render). Callers should surface a non-zero exit status so cron and CI
+// notice, even though a site was still published.
+var ErrPartialFailure = errors.New("one or more feed lists were skipped or failed")
 
 // FetchPlan is the deduped work for a directory-mode fetch.
 type FetchPlan struct {

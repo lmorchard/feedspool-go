@@ -86,14 +86,14 @@ func init() {
 	rootCmd.AddCommand(renderCmd)
 }
 
-func runRender(_ *cobra.Command, _ []string) error {
+func runRender(cmd *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
 	// Build configuration from flags and config file.
-	renderConfig := buildRenderConfig(cfg)
+	renderConfig := buildRenderConfig(cmd, cfg)
 
 	// An explicit --feeds overrides a configured feedlist.dir; combining it
 	// with the --feeds-dir flag is a contradiction.
@@ -186,7 +186,7 @@ func pluralize(n int, singular, plural string) string {
 	return plural
 }
 
-func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
+func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.WorkflowConfig {
 	// Start with config file values
 	renderConfig := &renderer.WorkflowConfig{
 		MaxAge:          cfg.Render.DefaultMaxAge,
@@ -223,7 +223,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	if renderFeedsPerPage >= 0 {
 		renderConfig.FeedsPerPage = renderFeedsPerPage
 	}
-	if renderOutput != defaultOutputDir {
+	if cmd.Flags().Changed("output") {
 		renderConfig.OutputDir = renderOutput
 	}
 	if renderTemplates != "" {
@@ -235,7 +235,7 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	if renderFeeds != "" {
 		renderConfig.FeedsFile = renderFeeds
 	}
-	if renderFormat != defaultFormat {
+	if cmd.Flags().Changed("format") {
 		renderConfig.Format = renderFormat
 	}
 	if renderClean {

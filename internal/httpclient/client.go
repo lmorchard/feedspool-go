@@ -32,10 +32,10 @@ type Config struct {
 	MaxResponseSize int64
 }
 
-// NewClient creates a new HTTP client with the given configuration.
 // methodGET is the HTTP method used for every request this client makes.
 const methodGET = "GET"
 
+// NewClient creates a new HTTP client with the given configuration.
 func NewClient(config *Config) *Client {
 	if config == nil {
 		config = &Config{}
