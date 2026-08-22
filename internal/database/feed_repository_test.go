@@ -9,8 +9,8 @@ func TestUpsertAndGetFeed(t *testing.T) {
 	db := setupTestDB(t)
 
 	feed := &Feed{
-		URL:          "https://example.com/feed.xml",
-		Title:        "Test Feed",
+		URL:          fixtureFeedURL,
+		Title:        fixtureFeedTitle,
 		Description:  "Test Description",
 		LastUpdated:  time.Now().UTC().Truncate(time.Second),
 		ETag:         "test-etag",
@@ -65,7 +65,7 @@ func TestGetAllFeeds(t *testing.T) {
 
 	feeds := []*Feed{
 		{
-			URL:      "https://example1.com/feed.xml",
+			URL:      fixtureFeedURL1,
 			Title:    "Feed 1",
 			FeedJSON: JSON(`{"title": "Feed 1"}`),
 		},
@@ -95,7 +95,7 @@ func TestGetAllFeeds(t *testing.T) {
 	}
 
 	// Check ordering (should be by URL)
-	if retrieved[0].URL != "https://example1.com/feed.xml" {
-		t.Errorf("First feed URL = %v, want %v", retrieved[0].URL, "https://example1.com/feed.xml")
+	if retrieved[0].URL != fixtureFeedURL1 {
+		t.Errorf("First feed URL = %v, want %v", retrieved[0].URL, fixtureFeedURL1)
 	}
 }

@@ -33,6 +33,9 @@ type Config struct {
 }
 
 // NewClient creates a new HTTP client with the given configuration.
+// methodGET is the HTTP method used for every request this client makes.
+const methodGET = "GET"
+
 func NewClient(config *Config) *Client {
 	if config == nil {
 		config = &Config{}
@@ -97,7 +100,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	}
 
 	if req.Method == "" {
-		req.Method = "GET"
+		req.Method = methodGET
 	}
 
 	httpReq, err := http.NewRequestWithContext(req.Context, req.Method, req.URL, req.Body)
@@ -145,7 +148,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 func (c *Client) Get(url string) (*Response, error) {
 	return c.Do(&Request{
 		URL:    url,
-		Method: "GET",
+		Method: methodGET,
 	})
 }
 
@@ -153,7 +156,7 @@ func (c *Client) Get(url string) (*Response, error) {
 func (c *Client) GetWithHeaders(url string, headers map[string]string) (*Response, error) {
 	return c.Do(&Request{
 		URL:     url,
-		Method:  "GET",
+		Method:  methodGET,
 		Headers: headers,
 	})
 }
@@ -162,7 +165,7 @@ func (c *Client) GetWithHeaders(url string, headers map[string]string) (*Respons
 func (c *Client) GetLimited(url string) (*Response, error) {
 	return c.Do(&Request{
 		URL:               url,
-		Method:            "GET",
+		Method:            methodGET,
 		LimitResponseSize: true,
 	})
 }

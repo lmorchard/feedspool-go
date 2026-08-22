@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	testFeedsTxt    = "feeds.txt"
+	testMyFeedsOPML = "my-feeds.opml"
+	testFormatOPML  = "opml"
+	testFormatText  = "text"
+)
+
 func TestGetDefault(t *testing.T) {
 	cfg := GetDefault()
 
@@ -49,21 +57,21 @@ func TestHasDefaultFeedList(t *testing.T) {
 		{
 			name: "Format only",
 			config: Config{
-				FeedList: FeedListConfig{Format: "text", Filename: ""},
+				FeedList: FeedListConfig{Format: testFormatText, Filename: ""},
 			},
 			expected: false,
 		},
 		{
 			name: "Filename only",
 			config: Config{
-				FeedList: FeedListConfig{Format: "", Filename: "feeds.txt"},
+				FeedList: FeedListConfig{Format: "", Filename: testFeedsTxt},
 			},
 			expected: false,
 		},
 		{
 			name: "Both configured",
 			config: Config{
-				FeedList: FeedListConfig{Format: "text", Filename: "feeds.txt"},
+				FeedList: FeedListConfig{Format: testFormatText, Filename: testFeedsTxt},
 			},
 			expected: true,
 		},
@@ -82,18 +90,18 @@ func TestHasDefaultFeedList(t *testing.T) {
 func TestGetDefaultFeedList(t *testing.T) {
 	config := Config{
 		FeedList: FeedListConfig{
-			Format:   "opml",
-			Filename: "my-feeds.opml",
+			Format:   testFormatOPML,
+			Filename: testMyFeedsOPML,
 		},
 	}
 
 	format, filename := config.GetDefaultFeedList()
 
-	if format != "opml" {
-		t.Errorf("GetDefaultFeedList() format = %v, want %v", format, "opml")
+	if format != testFormatOPML {
+		t.Errorf("GetDefaultFeedList() format = %v, want %v", format, testFormatOPML)
 	}
 
-	if filename != "my-feeds.opml" {
-		t.Errorf("GetDefaultFeedList() filename = %v, want %v", filename, "my-feeds.opml")
+	if filename != testMyFeedsOPML {
+		t.Errorf("GetDefaultFeedList() filename = %v, want %v", filename, testMyFeedsOPML)
 	}
 }

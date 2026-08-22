@@ -24,6 +24,10 @@ const (
 	MinReasonableItemDate = "2000-01-01"
 )
 
+// sqlLimitClause is appended to a query when a row limit is requested; the
+// limit itself is always bound as a query argument.
+const sqlLimitClause = " LIMIT ?"
+
 type Feed struct {
 	URL                 string       `db:"url"`
 	Title               string       `db:"title"`

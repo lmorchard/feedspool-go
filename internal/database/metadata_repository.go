@@ -60,7 +60,8 @@ func (db *DB) UpsertMetadata(metadata *URLMetadata) error {
 			updated_at = CURRENT_TIMESTAMP
 	`
 
-	_, err := db.conn.Exec(query,
+	_, err := db.conn.Exec(
+		query,
 		metadata.URL,
 		metadata.Title,
 		metadata.Description,
@@ -98,11 +99,13 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 		ORDER BY i.published_date DESC
 	`
 
+	args := []interface{}{retryTime}
 	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", limit)
+		query += sqlLimitClause
+		args = append(args, limit)
 	}
 
-	rows, err := db.conn.Query(query, retryTime)
+	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get URLs needing fetch: %w", err)
 	}

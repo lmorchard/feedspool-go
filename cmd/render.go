@@ -84,20 +84,20 @@ func runRender(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
 	// Build configuration from flags and config file
-	config := buildRenderConfig(cfg)
+	renderConfig := buildRenderConfig(cfg)
 
 	// Validate configuration
-	if err := validateRenderConfig(config); err != nil {
+	if err := validateRenderConfig(renderConfig); err != nil {
 		return err
 	}
 
 	// Execute the render operation
-	return renderer.ExecuteWorkflow(config)
+	return renderer.ExecuteWorkflow(renderConfig)
 }
 
 func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 	// Start with config file values
-	config := &renderer.WorkflowConfig{
+	renderConfig := &renderer.WorkflowConfig{
 		MaxAge:          cfg.Render.DefaultMaxAge,
 		Start:           "",
 		End:             "",
@@ -115,49 +115,49 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 
 	// Override with command line flags if provided
 	if renderMaxAge != "" {
-		config.MaxAge = renderMaxAge
+		renderConfig.MaxAge = renderMaxAge
 	}
 	if renderStart != "" {
-		config.Start = renderStart
+		renderConfig.Start = renderStart
 	}
 	if renderEnd != "" {
-		config.End = renderEnd
+		renderConfig.End = renderEnd
 	}
 	if renderMinItemsPerFeed >= 0 {
-		config.MinItemsPerFeed = renderMinItemsPerFeed
+		renderConfig.MinItemsPerFeed = renderMinItemsPerFeed
 	}
 	if renderMaxItemsPerFeed >= 0 {
-		config.MaxItemsPerFeed = renderMaxItemsPerFeed
+		renderConfig.MaxItemsPerFeed = renderMaxItemsPerFeed
 	}
 	if renderFeedsPerPage >= 0 {
-		config.FeedsPerPage = renderFeedsPerPage
+		renderConfig.FeedsPerPage = renderFeedsPerPage
 	}
 	if renderOutput != defaultOutputDir {
-		config.OutputDir = renderOutput
+		renderConfig.OutputDir = renderOutput
 	}
 	if renderTemplates != "" {
-		config.TemplatesDir = renderTemplates
+		renderConfig.TemplatesDir = renderTemplates
 	}
 	if renderAssets != "" {
-		config.AssetsDir = renderAssets
+		renderConfig.AssetsDir = renderAssets
 	}
 	if renderFeeds != "" {
-		config.FeedsFile = renderFeeds
+		renderConfig.FeedsFile = renderFeeds
 	}
 	if renderFormat != defaultFormat {
-		config.Format = renderFormat
+		renderConfig.Format = renderFormat
 	}
 	if renderClean {
-		config.Clean = renderClean
+		renderConfig.Clean = renderClean
 	}
 
-	return config
+	return renderConfig
 }
 
-func validateRenderConfig(config *renderer.WorkflowConfig) error {
-	return validateRenderParams(config.MaxAge, config.Start, config.End,
-		config.OutputDir, config.TemplatesDir, config.AssetsDir,
-		config.FeedsFile, config.Format)
+func validateRenderConfig(renderConfig *renderer.WorkflowConfig) error {
+	return validateRenderParams(renderConfig.MaxAge, renderConfig.Start, renderConfig.End,
+		renderConfig.OutputDir, renderConfig.TemplatesDir, renderConfig.AssetsDir,
+		renderConfig.FeedsFile, renderConfig.Format)
 }
 
 func validateRenderParams(maxAge, start, end, outputDir, templatesDir, assetsDir, feedsFile, format string) error {

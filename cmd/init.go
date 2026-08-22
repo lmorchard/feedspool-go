@@ -57,15 +57,15 @@ func runInit(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
 	// Build configuration from flags and config file
-	config := buildInitConfig(cfg)
+	initConfig := buildInitConfig(cfg)
 
 	// Execute the initialization operation
-	return initialize.Execute(config)
+	return initialize.Execute(initConfig)
 }
 
 func buildInitConfig(cfg *config.Config) *initialize.Config {
 	// Get values from viper (includes config file values)
-	config := &initialize.Config{
+	initConfig := &initialize.Config{
 		Database:         cfg.Database,
 		Upgrade:          upgradeFlag,
 		ExtractTemplates: extractTemplates,
@@ -77,11 +77,11 @@ func buildInitConfig(cfg *config.Config) *initialize.Config {
 
 	// Override with command line flags if provided
 	if templatesDir != "./templates" {
-		config.TemplatesDir = templatesDir
+		initConfig.TemplatesDir = templatesDir
 	}
 	if assetsDir != "./assets" {
-		config.AssetsDir = assetsDir
+		initConfig.AssetsDir = assetsDir
 	}
 
-	return config
+	return initConfig
 }

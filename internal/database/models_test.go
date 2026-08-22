@@ -8,6 +8,26 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	fixtureFeedURL      = "https://example.com/feed.xml"
+	fixtureFeedURL1     = "https://example1.com/feed.xml"
+	fixtureItemLink     = "https://example.com/item"
+	fixtureFeedTitle    = "Test Feed"
+	fixtureItemContent  = "Test content"
+	fixtureItemSummary  = "Test summary"
+	fixtureGUID         = "test-guid"
+	fixtureGUID1        = "item1"
+	fixtureGUID2        = "item2"
+	fixtureGUID3        = "item3"
+	fixtureJSONNull     = "null"
+	fixtureJSONArray    = "[1, 2, 3]"
+	fixtureJSONObject   = "{\"test\": \"value\"}"
+	caseNilJSON         = "nil JSON"
+	caseValidJSONArray  = "valid JSON array"
+	caseValidJSONObject = "valid JSON object"
+)
+
 const (
 	testItemTitle = "Test Item"
 	testBBCLink   = "https://www.bbc.com/news/articles/ce9y1747z3go"
@@ -20,14 +40,14 @@ func TestJSONValue(t *testing.T) {
 		want string
 	}{
 		{
-			name: "nil JSON",
+			name: caseNilJSON,
 			j:    nil,
 			want: "",
 		},
 		{
 			name: "valid JSON",
-			j:    JSON(`{"test": "value"}`),
-			want: `{"test": "value"}`,
+			j:    JSON(fixtureJSONObject),
+			want: fixtureJSONObject,
 		},
 	}
 
@@ -61,17 +81,17 @@ func TestJSONScan(t *testing.T) {
 		{
 			name:  "nil value",
 			value: nil,
-			want:  "null",
+			want:  fixtureJSONNull,
 		},
 		{
 			name:  "byte slice",
-			value: []byte(`{"test": "value"}`),
-			want:  `{"test": "value"}`,
+			value: []byte(fixtureJSONObject),
+			want:  fixtureJSONObject,
 		},
 		{
 			name:  "string value",
-			value: `{"test": "value"}`,
-			want:  `{"test": "value"}`,
+			value: fixtureJSONObject,
+			want:  fixtureJSONObject,
 		},
 	}
 
@@ -105,24 +125,24 @@ func TestJSONMarshalJSON(t *testing.T) {
 		want string
 	}{
 		{
-			name: "nil JSON",
+			name: caseNilJSON,
 			j:    nil,
-			want: "null",
+			want: fixtureJSONNull,
 		},
 		{
 			name: "empty JSON",
 			j:    JSON{},
-			want: "null",
+			want: fixtureJSONNull,
 		},
 		{
-			name: "valid JSON object",
+			name: caseValidJSONObject,
 			j:    JSON(`{"test": "value", "number": 42}`),
 			want: `{"test": "value", "number": 42}`,
 		},
 		{
-			name: "valid JSON array",
-			j:    JSON(`[1, 2, 3]`),
-			want: `[1, 2, 3]`,
+			name: caseValidJSONArray,
+			j:    JSON(fixtureJSONArray),
+			want: fixtureJSONArray,
 		},
 		{
 			name: "nested JSON",
@@ -152,19 +172,19 @@ func TestJSONUnmarshalJSON(t *testing.T) {
 		want string
 	}{
 		{
-			name: "valid JSON object",
-			data: []byte(`{"test": "value"}`),
-			want: `{"test": "value"}`,
+			name: caseValidJSONObject,
+			data: []byte(fixtureJSONObject),
+			want: fixtureJSONObject,
 		},
 		{
-			name: "valid JSON array",
-			data: []byte(`[1, 2, 3]`),
-			want: `[1, 2, 3]`,
+			name: caseValidJSONArray,
+			data: []byte(fixtureJSONArray),
+			want: fixtureJSONArray,
 		},
 		{
 			name: "null JSON",
-			data: []byte(`null`),
-			want: `null`,
+			data: []byte(fixtureJSONNull),
+			want: fixtureJSONNull,
 		},
 	}
 
@@ -220,10 +240,10 @@ func TestItemJSONMarshalNotBase64(t *testing.T) {
 	// This test ensures that ItemJSON is not base64 encoded when marshaled
 	item := &Item{
 		ID:            1,
-		FeedURL:       "https://example.com/feed.xml",
-		GUID:          "test-guid",
+		FeedURL:       fixtureFeedURL,
+		GUID:          fixtureGUID,
 		Title:         testItemTitle,
-		Link:          "https://example.com/item",
+		Link:          fixtureItemLink,
 		PublishedDate: time.Now(),
 		ItemJSON:      JSON(`{"title":"` + testItemTitle + `","custom":{"field":"value"}}`),
 	}
@@ -265,8 +285,8 @@ func TestItemJSONMarshalNotBase64(t *testing.T) {
 
 func TestFeedFromGofeed(t *testing.T) {
 	const (
-		testFeedTitle       = "Test Feed"
-		testFeedURL         = "https://example.com/feed.xml"
+		testFeedTitle       = fixtureFeedTitle
+		testFeedURL         = fixtureFeedURL
 		testFeedDescription = "Test Description"
 	)
 
@@ -311,15 +331,15 @@ func TestFeedFromGofeed(t *testing.T) {
 }
 
 func TestItemFromGofeed(t *testing.T) {
-	const testItemURL = "https://example.com/feed.xml"
+	const testItemURL = fixtureFeedURL
 
 	now := time.Now()
 	gofeedItem := &gofeed.Item{
-		GUID:            "test-guid",
+		GUID:            fixtureGUID,
 		Title:           testItemTitle,
-		Link:            "https://example.com/item",
-		Content:         "Test content",
-		Description:     "Test summary",
+		Link:            fixtureItemLink,
+		Content:         fixtureItemContent,
+		Description:     fixtureItemSummary,
 		PublishedParsed: &now,
 	}
 
@@ -333,8 +353,8 @@ func TestItemFromGofeed(t *testing.T) {
 		t.Errorf("Item.FeedURL = %v, want %v", item.FeedURL, testItemURL)
 	}
 
-	if item.GUID != "test-guid" {
-		t.Errorf("Item.GUID = %v, want %v", item.GUID, "test-guid")
+	if item.GUID != fixtureGUID {
+		t.Errorf("Item.GUID = %v, want %v", item.GUID, fixtureGUID)
 	}
 
 	if item.Title != testItemTitle {
@@ -349,10 +369,10 @@ func TestItemFromGofeed(t *testing.T) {
 func TestItemFromGofeedNoGUID(t *testing.T) {
 	gofeedItem := &gofeed.Item{
 		Title: testItemTitle,
-		Link:  "https://example.com/item",
+		Link:  fixtureItemLink,
 	}
 
-	item, err := ItemFromGofeed(gofeedItem, "https://example.com/feed.xml")
+	item, err := ItemFromGofeed(gofeedItem, fixtureFeedURL)
 	if err != nil {
 		t.Errorf("ItemFromGofeed() error = %v", err)
 		return
@@ -364,14 +384,14 @@ func TestItemFromGofeedNoGUID(t *testing.T) {
 	}
 
 	// Should be consistent
-	item2, _ := ItemFromGofeed(gofeedItem, "https://example.com/feed.xml")
+	item2, _ := ItemFromGofeed(gofeedItem, fixtureFeedURL)
 	if item.GUID != item2.GUID {
 		t.Errorf("Generated GUID should be consistent: %v != %v", item.GUID, item2.GUID)
 	}
 }
 
 func TestGenerateGUID(t *testing.T) {
-	link := "https://example.com/item"
+	link := fixtureItemLink
 	title := testItemTitle
 
 	guid1 := generateGUID(link, title)
@@ -403,21 +423,21 @@ func TestNormalizeGUID(t *testing.T) {
 		{
 			name:        "BBC-style GUID with fragment",
 			guid:        "https://www.bbc.com/news/articles/ce9y1747z3go#0",
-			link:        "https://www.bbc.com/news/articles/ce9y1747z3go",
+			link:        testBBCLink,
 			title:       testItemTitle,
 			description: "Should normalize BBC-style GUIDs with incrementing fragments",
 		},
 		{
 			name:        "BBC-style GUID with different fragment number",
 			guid:        "https://www.bbc.com/news/articles/ce9y1747z3go#5",
-			link:        "https://www.bbc.com/news/articles/ce9y1747z3go",
+			link:        testBBCLink,
 			title:       testItemTitle,
 			description: "Should produce same result regardless of fragment number",
 		},
 		{
 			name:        "Normal GUID not matching link",
 			guid:        "some-unique-guid-12345",
-			link:        "https://example.com/item",
+			link:        fixtureItemLink,
 			title:       testItemTitle,
 			description: "Should leave normal GUIDs unchanged",
 		},
@@ -430,8 +450,8 @@ func TestNormalizeGUID(t *testing.T) {
 		},
 		{
 			name:        "GUID without fragment",
-			guid:        "https://example.com/item",
-			link:        "https://example.com/item",
+			guid:        fixtureItemLink,
+			link:        fixtureItemLink,
 			title:       testItemTitle,
 			description: "Should return GUID unchanged when no fragment present",
 		},

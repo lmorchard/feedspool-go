@@ -155,7 +155,7 @@ func TestFetchFeedNotModified(t *testing.T) {
 	// First, insert a feed with ETag
 	existingFeed := &database.Feed{
 		URL:           server.URL,
-		Title:         "Existing Feed",
+		Title:         testExistingFeedTitle,
 		ETag:          testETag,
 		LastFetchTime: time.Now(),
 		FeedJSON:      database.JSON(`{"title": "Existing Feed"}`),
@@ -271,7 +271,7 @@ func TestFetchFeedForce(t *testing.T) {
 	// Insert existing feed with ETag
 	existingFeed := &database.Feed{
 		URL:           server.URL,
-		Title:         "Existing Feed",
+		Title:         testExistingFeedTitle,
 		ETag:          "test-etag",
 		LastFetchTime: time.Now(),
 		FeedJSON:      database.JSON(`{"title": "Existing Feed"}`),
