@@ -247,7 +247,7 @@ func runDirFetch(
 		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
 	}
 
-	logrus.Infof("Found %d feed lists, %d unique feeds (%d references)",
+	fmt.Printf("Found %d feed lists, %d unique feeds (%d references)\n",
 		len(plan.Sites), len(plan.URLs), plan.References)
 
 	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)

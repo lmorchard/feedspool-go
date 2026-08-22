@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/lmorchard/feedspool-go/internal/sitegroup"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -128,18 +128,60 @@ func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
 		return err
 	}
 
-	for i := range summary.Sites {
-		s := &summary.Sites[i]
-		if s.Err != nil {
-			continue
-		}
-		logrus.Infof("  %s: %d feeds, %d items", s.Slug, s.FeedCount, s.ItemCount)
-	}
+	printDirRenderSummary(summary, renderConfig.OutputDir)
 
 	if summary.HasFailures() {
 		return sitegroup.ErrPartialFailure
 	}
 	return nil
+}
+
+// printDirRenderSummary prints the user-facing summary of a directory-mode
+// render: one line per site (or its failure), a pruned-directory line when
+// anything was actually pruned, and a closing pointer at the top-level
+// index. Per-site ExecuteWorkflow progress output is suppressed via
+// WorkflowConfig.Quiet, so this is the only confirmation the user sees.
+func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
+	fmt.Printf("Generated %d %s in %s\n", len(summary.Sites),
+		renderPluralize(len(summary.Sites), "site", "sites"), outputDir)
+
+	slugWidth := 0
+	for i := range summary.Sites {
+		if l := len(summary.Sites[i].Slug); l > slugWidth {
+			slugWidth = l
+		}
+	}
+
+	for i := range summary.Sites {
+		s := &summary.Sites[i]
+		if s.Err != nil {
+			fmt.Printf("  %-*s failed to render: %v\n", slugWidth, s.Slug, s.Err)
+			continue
+		}
+		fmt.Printf("  %-*s %d %s, %d %s\n", slugWidth, s.Slug,
+			s.FeedCount, renderPluralize(s.FeedCount, "feed", "feeds"),
+			s.ItemCount, renderPluralize(s.ItemCount, "item", "items"))
+	}
+
+	switch len(summary.Removed) {
+	case 0:
+		// Nothing pruned; no line to print.
+	case 1:
+		fmt.Printf("Pruned 1 stale site directory: %s\n", summary.Removed[0])
+	default:
+		fmt.Printf("Pruned %d stale site directories: %s\n",
+			len(summary.Removed), strings.Join(summary.Removed, ", "))
+	}
+
+	fmt.Printf("Open %s in your browser to view the site\n", filepath.Join(outputDir, "index.html"))
+}
+
+// renderPluralize returns singular when n is exactly 1, and plural otherwise.
+func renderPluralize(n int, singular, plural string) string {
+	if n == 1 {
+		return singular
+	}
+	return plural
 }
 
 func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {

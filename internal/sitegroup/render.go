@@ -136,7 +136,6 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 	}
 
 	logrus.Infof("Generated %d sites in %s", len(summary.Sites), base.OutputDir)
-	logrus.Infof("Open %s in your browser to view the site", filepath.Join(base.OutputDir, "index.html"))
 	return summary, nil
 }
 
