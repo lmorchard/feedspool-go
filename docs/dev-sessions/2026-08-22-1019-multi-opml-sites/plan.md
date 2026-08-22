@@ -607,6 +607,7 @@ package sitegroup
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
@@ -712,7 +713,7 @@ func TestDiscoverSlugCollision(t *testing.T) {
 		t.Fatal("Discover() error = nil, want a slug collision error")
 	}
 	for _, want := range []string{"tech blogs.opml", "tech-blogs.opml"} {
-		if !contains(err.Error(), want) {
+		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error %q does not name %q", err.Error(), want)
 		}
 	}
@@ -725,7 +726,7 @@ func TestDiscoverEmptyDirectory(t *testing.T) {
 	if err == nil {
 		t.Fatal("Discover() error = nil, want an error for a directory with no feed lists")
 	}
-	if !contains(err.Error(), dir) {
+	if !strings.Contains(err.Error(), dir) {
 		t.Errorf("error %q does not name the directory", err.Error())
 	}
 }
@@ -810,23 +811,9 @@ func TestUnionURLsEmpty(t *testing.T) {
 		t.Errorf("UnionURLs(nil) = %v, want empty", got)
 	}
 }
-
-// contains reports whether s contains substr.
-func contains(s, substr string) bool {
-	return len(substr) == 0 || (len(s) >= len(substr) && stringIndex(s, substr) >= 0)
-}
-
-func stringIndex(s, substr string) int {
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
 ```
 
-Note: `contains`/`stringIndex` avoid importing `strings` purely for one call in a way `goconst` and `gocritic` are happy with. If you prefer, replace them with `strings.Contains` and add the import — either is fine, just be consistent.
+The tests above use `strings.Contains`; add `"strings"` to the import block.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
