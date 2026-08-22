@@ -30,9 +30,13 @@ Features:
 • Configurable defaults for streamlined workflows
 
 Use 'feedspool <command> --help' for detailed command information.`,
-	PersistentPreRun: func(_ *cobra.Command, _ []string) {
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 		initConfig()
 		setupLogging()
+		// Flag parsing has already succeeded by this point, so silencing usage
+		// here only affects RunE errors (business-logic failures), not
+		// genuine flag-parse errors, which Cobra reports before this hook runs.
+		cmd.SilenceUsage = true
 	},
 }
 
