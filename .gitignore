@@ -49,3 +49,7 @@ tmp/
 feedspool.yaml
 
 .playwright-mcp/
+
+# Agent scratch space
+.claude/worktrees/
+.superpowers/
