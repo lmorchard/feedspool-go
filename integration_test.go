@@ -390,6 +390,31 @@ func runCommand(binary string, args ...string) (string, error) {
 	return string(output), err
 }
 
+// buildBinaryViaMake builds the feedspool binary with `make build`, per this
+// project's CLAUDE.md rule that `go build` alone skips version metadata
+// injection. It is used instead of buildBinary by tests that exercise the
+// `build` command's own error-handling wrapper (cmd/build.go), since that
+// logic lives in cmd/ and isn't otherwise reachable from a package-main test
+// without invoking the real binary. Callers that only need any working
+// binary can keep using the faster, plain `go build` in buildBinary.
+func buildBinaryViaMake(t *testing.T) string {
+	t.Helper()
+
+	binaryPath, err := filepath.Abs("feedspool")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("make", "build")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make build failed: %v, output: %s", err, output)
+	}
+	t.Cleanup(func() { os.Remove(binaryPath) })
+
+	return binaryPath
+}
+
 const integrationMaxAgeWindow = "168h"
 
 // integrationSharedItemTitle names the item served by the "shared" feed used in
@@ -634,4 +659,102 @@ func siteTreeContains(t *testing.T, outDir, slug, want string) bool {
 	}
 
 	return found
+}
+
+// buildBadFeedListContent is deliberately unparseable: sitegroup.Discover
+// skips a file like this rather than treating it as a feed list, which is
+// what lets TestBuildCommandPartialFetchFailureStillRenders exercise a
+// partial fetch failure (as opposed to a fatal one) alongside a feed list
+// that fetches and renders normally.
+const buildBadFeedListContent = "<opml><head><title>unclosed"
+
+const (
+	buildGoodFeedListName = "good.opml"
+	buildBadFeedListName  = "malformed.opml"
+)
+
+// TestBuildCommandPartialFetchFailureStillRenders covers the one behavior
+// that belongs to the `build` command itself rather than to `fetch` or
+// `render` individually: cmd/build.go's runBuild deliberately swallows
+// sitegroup.ErrPartialFailure from the fetch phase (logging a warning
+// instead) and proceeds to render, rather than aborting the whole build
+// because one feed list in the directory was bad. That error-tolerance
+// decision lives in cmd/build.go, which this project deliberately leaves
+// untested at the unit level (see CLAUDE.md), and it isn't reachable by
+// composing the underlying sitegroup/fetcher/renderer library calls
+// directly the way TestMultiSiteDirectoryBuild does above: that would only
+// prove the library functions behave correctly in isolation, not that
+// cmd.runBuild actually chains them the way it claims to (ignore
+// ErrPartialFailure from fetch, still call render, still surface a non-zero
+// exit at the end). So this test drives the real compiled binary as a
+// subprocess instead, guarded by testing.Short() like the other
+// binary-driving integration tests in this file. It builds via `make build`
+// (not plain `go build`) per this project's CLAUDE.md.
+func TestBuildCommandPartialFetchFailureStillRenders(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	binaryPath := buildBinaryViaMake(t)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationFeedXML))
+	}))
+	defer server.Close()
+
+	tmp := t.TempDir()
+	listDir := filepath.Join(tmp, "opml")
+	if err := os.MkdirAll(listDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	goodOPML := `<?xml version="1.0" encoding="UTF-8"?>` + "\n<opml version=\"2.0\">\n<head><title>Good</title></head>\n<body>\n" +
+		`<outline text="x" type="rss" xmlUrl="` + server.URL + `" />` + "\n</body>\n</opml>\n"
+	if err := os.WriteFile(filepath.Join(listDir, buildGoodFeedListName), []byte(goodOPML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(listDir, buildBadFeedListName), []byte(buildBadFeedListContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	dbPath := filepath.Join(tmp, "feeds.db")
+	if output, err := runCommand(binaryPath, "--database", dbPath, "init"); err != nil {
+		t.Fatalf("init failed: %v, output: %s", err, output)
+	}
+
+	outDir := filepath.Join(tmp, "build")
+	output, err := runCommand(binaryPath, "--database", dbPath, "build", "--feeds-dir", listDir, "--output", outDir)
+
+	// The malformed feed list makes this a partial failure: build must still
+	// report a non-zero exit (so cron/CI notice), even though the good list
+	// published successfully. sitegroup.ErrPartialFailure is exactly what
+	// flows through runBuild to produce this.
+	if err == nil {
+		t.Errorf("build with a malformed feed list alongside a good one exited 0, want non-zero; output: %s", output)
+	}
+	if !strings.Contains(output, buildBadFeedListName) {
+		t.Errorf("build output does not name the skipped feed list %s; output: %s", buildBadFeedListName, output)
+	}
+
+	// The unique part: the good list's site must be fully rendered despite
+	// the other list's failure, not just left out or half-written.
+	for _, path := range []string{
+		filepath.Join(outDir, "index.html"),
+		filepath.Join(outDir, "good", "index.html"),
+		filepath.Join(outDir, "good", "index.css"),
+	} {
+		if _, statErr := os.Stat(path); statErr != nil {
+			t.Errorf("expected %s to exist after a partial-failure build: %v", path, statErr)
+		}
+	}
+	if !siteTreeContains(t, outDir, "good", integrationSharedItemTitle) {
+		t.Errorf("good site output does not contain the fetched item %q; "+
+			"the fetch phase did not reach the render phase", integrationSharedItemTitle)
+	}
+
+	// The malformed list must never have produced a site directory of its own.
+	if _, statErr := os.Stat(filepath.Join(outDir, "malformed")); !os.IsNotExist(statErr) {
+		t.Error("a site directory was created for the malformed feed list, which should have been skipped entirely")
+	}
 }

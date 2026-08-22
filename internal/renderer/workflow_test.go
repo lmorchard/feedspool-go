@@ -21,8 +21,11 @@ const (
 )
 
 // newTestWorkflow builds a database with one feed and two items, and returns a
-// WorkflowConfig pointing at it with a fresh output directory.
-func newTestWorkflow(t *testing.T, withFeed bool) *WorkflowConfig {
+// WorkflowConfig pointing at it with a fresh output directory, along with the
+// published date of the newest of the two items it inserted (zero if
+// withFeed is false). The caller can assert Result.NewestItem against that
+// value exactly, rather than merely checking it is non-zero.
+func newTestWorkflow(t *testing.T, withFeed bool) (*WorkflowConfig, time.Time) {
 	t.Helper()
 
 	tmpDir := t.TempDir()
@@ -36,6 +39,7 @@ func newTestWorkflow(t *testing.T, withFeed bool) *WorkflowConfig {
 		t.Fatal(err)
 	}
 
+	var newestItem time.Time
 	if withFeed {
 		now := time.Now().UTC()
 		if err := db.UpsertFeed(&database.Feed{
@@ -48,14 +52,18 @@ func newTestWorkflow(t *testing.T, withFeed bool) *WorkflowConfig {
 			t.Fatal(err)
 		}
 		for i, offset := range []time.Duration{-2 * time.Hour, -1 * time.Hour} {
+			publishedDate := now.Add(offset)
 			if err := db.UpsertItem(&database.Item{
 				FeedURL:       testFeedURL,
 				GUID:          string(rune('a' + i)),
 				Title:         "Item",
 				Link:          "https://example.com/item",
-				PublishedDate: now.Add(offset),
+				PublishedDate: publishedDate,
 			}); err != nil {
 				t.Fatal(err)
+			}
+			if publishedDate.After(newestItem) {
+				newestItem = publishedDate
 			}
 		}
 	}
@@ -65,11 +73,11 @@ func newTestWorkflow(t *testing.T, withFeed bool) *WorkflowConfig {
 		MaxAge:    "24h",
 		OutputDir: filepath.Join(tmpDir, "build"),
 		Database:  dbPath,
-	}
+	}, newestItem
 }
 
 func TestExecuteWorkflowResult(t *testing.T) {
-	cfg := newTestWorkflow(t, true)
+	cfg, wantNewestItem := newTestWorkflow(t, true)
 
 	result, err := ExecuteWorkflow(cfg)
 	if err != nil {
@@ -81,13 +89,18 @@ func TestExecuteWorkflowResult(t *testing.T) {
 	if result.ItemCount != 2 {
 		t.Errorf("ItemCount = %d, want 2", result.ItemCount)
 	}
-	if result.NewestItem.IsZero() {
-		t.Error("NewestItem is zero, want the most recent item's published date")
+	// The database round-trips a time.Time through SQLite with full
+	// nanosecond precision and normalizes it to UTC, so exact equality (via
+	// Equal, not ==, since the round-tripped value may carry a different
+	// *time.Location representing the same instant) is reliable here rather
+	// than needing a tolerance window.
+	if !result.NewestItem.Equal(wantNewestItem) {
+		t.Errorf("NewestItem = %v, want %v (the newest of the two inserted items)", result.NewestItem, wantNewestItem)
 	}
 }
 
 func TestExecuteWorkflowWritesIndexWhenEmpty(t *testing.T) {
-	cfg := newTestWorkflow(t, false)
+	cfg, _ := newTestWorkflow(t, false)
 
 	result, err := ExecuteWorkflow(cfg)
 	if err != nil {
@@ -113,7 +126,7 @@ func TestExecuteWorkflowWritesIndexWhenEmpty(t *testing.T) {
 // site-index.js, and css/site-index.css were added for the multi-site index
 // page, every single-list render started emitting them too.
 func TestExecuteWorkflowAssetBundleExcludesSiteIndexAssets(t *testing.T) {
-	cfg := newTestWorkflow(t, true)
+	cfg, _ := newTestWorkflow(t, true)
 
 	if _, err := ExecuteWorkflow(cfg); err != nil {
 		t.Fatalf("ExecuteWorkflow() error = %v", err)

@@ -124,6 +124,37 @@ func TestDiscoverSlugCollision(t *testing.T) {
 	}
 }
 
+// TestDiscoverRejectsEmptySlug covers Discover's hard error for a feed list
+// filename whose base contains no ASCII alphanumerics: slugify would produce
+// an empty string, which would collide with every other such file as the
+// output directory name, so Discover refuses the whole run rather than
+// silently picking one file to keep (or worse, letting outputs overwrite
+// each other). This is intentional, user-confirmed behavior, not something
+// to soften into a per-file skip.
+func TestDiscoverRejectsEmptySlug(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+	}{
+		{name: "entirely non-ASCII filename", filename: "日本語.opml"},
+		{name: "entirely punctuation filename", filename: "---.opml"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := writeDir(t, map[string]string{tt.filename: opmlWith("Title", feedA)})
+
+			_, _, err := Discover(dir)
+			if err == nil {
+				t.Fatalf("Discover() error = nil, want an error naming %s", tt.filename)
+			}
+			if !strings.Contains(err.Error(), tt.filename) {
+				t.Errorf("error %q does not name %q", err.Error(), tt.filename)
+			}
+		})
+	}
+}
+
 func TestDiscoverEmptyDirectory(t *testing.T) {
 	dir := writeDir(t, map[string]string{notesMD: "hi"})
 
