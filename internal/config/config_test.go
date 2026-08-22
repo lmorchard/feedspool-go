@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -11,6 +12,8 @@ const (
 	testMyFeedsOPML = "my-feeds.opml"
 	testFormatOPML  = "opml"
 	testFormatText  = "text"
+	testOpmlDir     = "./opml"
+	testFeedsOPML   = "feeds.opml"
 )
 
 func TestGetDefault(t *testing.T) {
@@ -103,5 +106,51 @@ func TestGetDefaultFeedList(t *testing.T) {
 
 	if filename != testMyFeedsOPML {
 		t.Errorf("GetDefaultFeedList() filename = %v, want %v", filename, testMyFeedsOPML)
+	}
+}
+
+func TestConfigValidateAmbiguousFeedList(t *testing.T) {
+	cfg := Config{FeedList: FeedListConfig{Dir: testOpmlDir, Filename: testFeedsOPML}}
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("Validate() = nil, want an error when both dir and filename are set")
+	}
+	for _, want := range []string{"feedlist.dir", "feedlist.filename"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q does not name %q", err.Error(), want)
+		}
+	}
+}
+
+func TestConfigValidateAccepts(t *testing.T) {
+	cases := []Config{
+		{},
+		{FeedList: FeedListConfig{Dir: testOpmlDir}},
+		{FeedList: FeedListConfig{Format: testFormatOPML, Filename: testFeedsOPML}},
+	}
+
+	for i := range cases {
+		if err := cases[i].Validate(); err != nil {
+			t.Errorf("case %d: Validate() = %v, want nil", i, err)
+		}
+	}
+}
+
+func TestHasFeedListDir(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want bool
+	}{
+		{"empty", Config{}, false},
+		{"dir set", Config{FeedList: FeedListConfig{Dir: testOpmlDir}}, true},
+		{"filename only", Config{FeedList: FeedListConfig{Format: testFormatOPML, Filename: testMyFeedsOPML}}, false},
+	}
+
+	for _, tt := range tests {
+		if got := tt.cfg.HasFeedListDir(); got != tt.want {
+			t.Errorf("%s: HasFeedListDir() = %v, want %v", tt.name, got, tt.want)
+		}
 	}
 }

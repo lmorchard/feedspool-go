@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"time"
 
 	"github.com/spf13/viper"
@@ -45,6 +46,7 @@ type Config struct {
 type FeedListConfig struct {
 	Format   string
 	Filename string
+	Dir      string
 }
 
 type FetchConfig struct {
@@ -102,6 +104,7 @@ func LoadConfig() *Config {
 		FeedList: FeedListConfig{
 			Format:   viper.GetString("feedlist.format"),
 			Filename: viper.GetString("feedlist.filename"),
+			Dir:      viper.GetString("feedlist.dir"),
 		},
 		Fetch: FetchConfig{
 			WithUnfurl:  viper.GetBool("fetch.with_unfurl"),
@@ -146,6 +149,7 @@ func GetDefault() *Config {
 		FeedList: FeedListConfig{
 			Format:   "", // Empty strings indicate not configured
 			Filename: "",
+			Dir:      "",
 		},
 		Fetch: FetchConfig{
 			WithUnfurl:  false, // Default to false
@@ -184,6 +188,21 @@ func GetDefault() *Config {
 // HasDefaultFeedList returns true if both format and filename are configured.
 func (c *Config) HasDefaultFeedList() bool {
 	return c.FeedList.Format != "" && c.FeedList.Filename != ""
+}
+
+// HasFeedListDir returns true if a feed list directory is configured.
+func (c *Config) HasFeedListDir() bool {
+	return c.FeedList.Dir != ""
+}
+
+// Validate reports configuration that cannot be acted on unambiguously.
+func (c *Config) Validate() error {
+	if c.FeedList.Dir != "" && c.FeedList.Filename != "" {
+		return errors.New(
+			"ambiguous config: set either feedlist.dir or feedlist.filename, not both",
+		)
+	}
+	return nil
 }
 
 // GetDefaultFeedList returns the configured default format and filename.

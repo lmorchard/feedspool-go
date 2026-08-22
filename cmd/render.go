@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +26,7 @@ var (
 	renderMinItemsPerFeed int
 	renderMaxItemsPerFeed int
 	renderFeedsPerPage    int
+	renderFeedsDir        string
 )
 
 var renderCmd = &cobra.Command{
@@ -74,6 +78,8 @@ func init() {
 	renderCmd.Flags().StringVar(&renderFeeds, "feeds", "", "Feed list file")
 	renderCmd.Flags().StringVar(&renderFormat, "format", defaultFormat, "Feed list format (opml or text)")
 	renderCmd.Flags().BoolVar(&renderClean, "clean", false, "Remove output directory before building")
+	renderCmd.Flags().StringVar(&renderFeedsDir, "feeds-dir", "",
+		"Directory of OPML/text feed lists; builds one site per list plus an index")
 
 	// Note: Config file values are loaded through the Config struct, not viper bindings
 
@@ -82,11 +88,28 @@ func init() {
 
 func runRender(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
 
-	// Build configuration from flags and config file
+	// Build configuration from flags and config file.
 	renderConfig := buildRenderConfig(cfg)
 
-	// Validate configuration
+	// An explicit --feeds overrides a configured feedlist.dir; combining it
+	// with the --feeds-dir flag is a contradiction.
+	if renderFeedsDir != "" && renderFeeds != "" {
+		return errors.New("--feeds-dir cannot be combined with --feeds")
+	}
+
+	feedsDir := renderFeedsDir
+	if feedsDir == "" && renderFeeds == "" {
+		feedsDir = cfg.FeedList.Dir
+	}
+	if feedsDir != "" {
+		return runDirRender(feedsDir, renderConfig)
+	}
+
+	// Validate configuration.
 	if err := validateRenderConfig(renderConfig); err != nil {
 		return err
 	}
@@ -94,6 +117,29 @@ func runRender(_ *cobra.Command, _ []string) error {
 	// Execute the render operation.
 	_, err := renderer.ExecuteWorkflow(renderConfig)
 	return err
+}
+
+func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
+	// The per-site FeedsFile is set by sitegroup; clear any inherited value.
+	renderConfig.FeedsFile = ""
+
+	summary, err := sitegroup.RenderAll(dir, renderConfig)
+	if err != nil {
+		return err
+	}
+
+	for i := range summary.Sites {
+		s := &summary.Sites[i]
+		if s.Err != nil {
+			continue
+		}
+		logrus.Infof("  %s: %d feeds, %d items", s.Slug, s.FeedCount, s.ItemCount)
+	}
+
+	if summary.HasFailures() {
+		return sitegroup.ErrPartialFailure
+	}
+	return nil
 }
 
 func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {

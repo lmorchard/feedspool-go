@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/fetcher"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +27,7 @@ var (
 	fetchFormat        string
 	fetchFilename      string
 	fetchWithUnfurl    bool
+	fetchFeedsDir      string
 )
 
 var fetchCmd = &cobra.Command{
@@ -66,6 +69,8 @@ func init() {
 	fetchCmd.Flags().StringVar(&fetchFilename, "filename", "", "Feed list filename")
 	fetchCmd.Flags().BoolVar(&fetchWithUnfurl, "with-unfurl", false,
 		"Run unfurl operations in parallel with feed fetching")
+	fetchCmd.Flags().StringVar(&fetchFeedsDir, "feeds-dir", "",
+		"Directory of OPML/text feed lists; fetches the deduped union of all of them")
 	rootCmd.AddCommand(fetchCmd)
 }
 
@@ -87,6 +92,10 @@ func setupGracefulShutdown() (context.Context, context.CancelFunc) {
 
 func runFetch(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
 
 	// Determine final withUnfurl value: CLI flag takes precedence over config
 	withUnfurl := cfg.Fetch.WithUnfurl || fetchWithUnfurl
@@ -130,16 +139,42 @@ func runFetch(_ *cobra.Command, args []string) error {
 		RemoveMissing: fetchRemoveMissing,
 	}
 
-	// Determine fetch mode and execute
+	// Determine fetch mode and execute.
+	return dispatchFetch(ctx, orchestrator, args, opts, cfg)
+}
+
+// dispatchFetch chooses among single-URL, directory, file, and database fetch
+// modes and runs the chosen one.
+func dispatchFetch(
+	ctx context.Context, orchestrator *fetcher.Orchestrator, args []string,
+	opts fetcher.FetchOptions, cfg *config.Config,
+) error {
 	if len(args) == 1 {
 		return runSingleURLFetch(ctx, orchestrator, args[0], opts, cfg)
 	}
 
-	if fetchFormat != "" || fetchFilename != "" || cfg.HasDefaultFeedList() {
+	// An explicit --filename/--format overrides a configured feedlist.dir:
+	// single-file mode wins when you ask for it directly. But combining the
+	// --feeds-dir flag with them is a contradiction, not a precedence question.
+	explicitFile := fetchFormat != "" || fetchFilename != ""
+
+	if fetchFeedsDir != "" && explicitFile {
+		return errors.New("--feeds-dir cannot be combined with --format or --filename")
+	}
+
+	feedsDir := fetchFeedsDir
+	if feedsDir == "" && !explicitFile {
+		feedsDir = cfg.FeedList.Dir
+	}
+	if feedsDir != "" {
+		return runDirFetch(ctx, orchestrator, feedsDir, opts, cfg)
+	}
+
+	if explicitFile || cfg.HasDefaultFeedList() {
 		return runFileFetch(ctx, orchestrator, opts, cfg)
 	}
 
-	// Database mode (no args, no file flags, no config defaults)
+	// Database mode (no args, no file flags, no config defaults).
 	return runDatabaseFetch(ctx, orchestrator, opts, cfg)
 }
 
@@ -182,6 +217,34 @@ func runFileFetch(
 	summary.Mode = "file"
 	summary.Print(cfg)
 
+	return nil
+}
+
+func runDirFetch(
+	ctx context.Context, orchestrator *fetcher.Orchestrator, dir string,
+	opts fetcher.FetchOptions, cfg *config.Config,
+) error {
+	plan, err := sitegroup.PlanFetch(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range plan.Skipped {
+		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
+	}
+
+	logrus.Infof("Found %d feed lists, %d unique feeds (%d references)",
+		len(plan.Sites), len(plan.URLs), plan.References)
+
+	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)
+
+	summary := fetcher.ProcessResults(results)
+	summary.Mode = "dir"
+	summary.Print(cfg)
+
+	if len(plan.Skipped) > 0 {
+		return sitegroup.ErrPartialFailure
+	}
 	return nil
 }
 
