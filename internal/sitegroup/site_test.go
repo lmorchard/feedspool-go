@@ -18,6 +18,9 @@ const (
 	techBlogsSpaceOPML = "tech blogs.opml"
 	scratchSlug        = "scratch"
 	badOPML            = "bad.opml"
+	goodOPML           = "good.opml"
+	badOPMLContent     = "<opml><head><title>unclosed"
+	notesMD            = "notes.md"
 )
 
 // opmlWith builds a minimal OPML document with the given title and feed URLs.
@@ -121,7 +124,7 @@ func TestDiscoverSlugCollision(t *testing.T) {
 }
 
 func TestDiscoverEmptyDirectory(t *testing.T) {
-	dir := writeDir(t, map[string]string{"notes.md": "hi"})
+	dir := writeDir(t, map[string]string{notesMD: "hi"})
 
 	_, _, err := Discover(dir)
 	if err == nil {

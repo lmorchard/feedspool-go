@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/sirupsen/logrus"
 )
@@ -83,11 +84,15 @@ func (s *RenderSummary) HasFailures() bool {
 // A non-nil error means the run could not proceed. Per-site failures are
 // reported in the returned summary instead, so one bad list never sinks a
 // scheduled publish.
+//
+// Validation happens before anything destructive: time parameters are parsed
+// and the directory is discovered before base.Clean ever removes anything, so
+// a bad --max-age or a typo'd directory path cannot wipe an existing
+// published site out from under the caller.
 func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error) {
-	if base.Clean {
-		if err := os.RemoveAll(base.OutputDir); err != nil {
-			return nil, fmt.Errorf("failed to clean output directory %s: %w", base.OutputDir, err)
-		}
+	startTime, endTime, err := database.ParseTimeWindow(base.MaxAge, base.Start, base.End)
+	if err != nil {
+		return nil, fmt.Errorf("invalid time parameters: %w", err)
 	}
 
 	sites, skipped, err := Discover(dir)
@@ -96,6 +101,12 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 	}
 	for _, s := range skipped {
 		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
+	}
+
+	if base.Clean {
+		if err := os.RemoveAll(base.OutputDir); err != nil {
+			return nil, fmt.Errorf("failed to clean output directory %s: %w", base.OutputDir, err)
+		}
 	}
 
 	summary := &RenderSummary{
@@ -120,7 +131,7 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 		return nil, err
 	}
 
-	if err := renderIndex(base, summary); err != nil {
+	if err := renderIndex(base, summary, startTime, endTime); err != nil {
 		return nil, err
 	}
 
@@ -153,7 +164,15 @@ func renderOneSite(site *Site, base *renderer.WorkflowConfig) SiteResult {
 // index.html exists on disk: a site that failed this run but built previously
 // stays linked with slightly stale content, and one that never built is omitted
 // rather than becoming a dead link.
-func renderIndex(base *renderer.WorkflowConfig, summary *RenderSummary) error {
+//
+// Known limitation: a stale-but-linked entry shows the zero-value FeedCount,
+// ItemCount, and NewestItem (0 feeds, 0 new items), even though its linked
+// page still has real content from the last successful render. There is no
+// stored source of "last known good" counts to show instead, so the entry
+// also picks up the template's quiet/dimmed styling. This underclaims rather
+// than overclaims, which is the safe direction, but it can look alarming next
+// to a page that is actually fine.
+func renderIndex(base *renderer.WorkflowConfig, summary *RenderSummary, startTime, endTime time.Time) error {
 	entries := make([]renderer.SiteEntry, 0, len(summary.Sites))
 	for i := range summary.Sites {
 		s := &summary.Sites[i]
@@ -174,18 +193,6 @@ func renderIndex(base *renderer.WorkflowConfig, summary *RenderSummary) error {
 		&renderer.SiteIndexContext{
 			Sites:       entries,
 			GeneratedAt: time.Now().UTC(),
-			TimeWindow:  timeWindowLabel(base),
+			TimeWindow:  renderer.FormatTimeWindow(startTime, endTime, base.MaxAge),
 		})
-}
-
-// timeWindowLabel describes the render window the same way the per-site pages
-// do, so the index and the sites agree.
-func timeWindowLabel(base *renderer.WorkflowConfig) string {
-	if base.MaxAge != "" {
-		return fmt.Sprintf("Last %s", base.MaxAge)
-	}
-	if base.Start != "" || base.End != "" {
-		return fmt.Sprintf("From %s to %s", base.Start, base.End)
-	}
-	return ""
 }

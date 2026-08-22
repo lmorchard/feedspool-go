@@ -217,7 +217,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	// Render feed list page fragments (if pagination enabled)
 	if totalPages > 1 {
 		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
-			feedFavicon, endTime, getTimeWindow(startTime, endTime, config.MaxAge),
+			feedFavicon, endTime, FormatTimeWindow(startTime, endTime, config.MaxAge),
 			feedsPerPage); err != nil {
 			return err
 		}
@@ -227,7 +227,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	feedsGenerated := 0
 	if hasFeedTemplate(config.TemplatesDir) {
 		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
-			getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
+			FormatTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
 			return err
 		}
 		feedsGenerated = len(feeds)
@@ -279,7 +279,7 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 		Metadata:    metadata,
 		FeedFavicon: feedFavicon,
 		GeneratedAt: endTime,
-		TimeWindow:  getTimeWindow(startTime, endTime, maxAge),
+		TimeWindow:  FormatTimeWindow(startTime, endTime, maxAge),
 	}
 }
 
@@ -425,7 +425,12 @@ func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
 	return nil
 }
 
-func getTimeWindow(startTime, endTime time.Time, maxAge string) string {
+// FormatTimeWindow describes the render window for display: the configured
+// max-age string when set, or the resolved start/end times otherwise.
+// Exported so other packages that render related pages (such as the
+// multi-site index) can describe the same window without duplicating this
+// formatting and risking disagreement with the per-site pages.
+func FormatTimeWindow(startTime, endTime time.Time, maxAge string) string {
 	if maxAge != "" {
 		return fmt.Sprintf("Last %s", maxAge)
 	}
