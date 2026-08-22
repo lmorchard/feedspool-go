@@ -223,6 +223,50 @@ func TestRenderAllCleanDoesNotDestroyOnBadDirectory(t *testing.T) {
 	}
 }
 
+// TestRenderAllRejectsEmptyOutputDir guards against a data-loss bug: an empty
+// OutputDir makes os.RemoveAll a silent no-op, but Prune("") still reads
+// ./.feedspool-sites.json and joins slugs against the current working
+// directory, so a stale manifest there causes real CWD-relative directories
+// to be deleted. RenderAll must reject an empty OutputDir up front, before
+// discovering feed lists or touching the filesystem.
+func TestRenderAllRejectsEmptyOutputDir(t *testing.T) {
+	cwd := t.TempDir()
+	danger := filepath.Join(cwd, "important-user-directory")
+	if err := os.MkdirAll(danger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(danger, "precious.txt"), []byte("keep me"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"version":1,"slugs":["important-user-directory"]}`
+	if err := os.WriteFile(filepath.Join(cwd, ManifestName), []byte(manifest), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	oldwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(cwd); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldwd) }()
+
+	feedsDir := writeDir(t, map[string]string{aOPML: opmlWith("A", feedA)})
+
+	_, err = RenderAll(feedsDir, &renderer.WorkflowConfig{OutputDir: "", Database: newTestDB(t)})
+	if err == nil {
+		t.Fatal("RenderAll() error = nil, want an error for an empty OutputDir")
+	}
+
+	if _, statErr := os.Stat(danger); statErr != nil {
+		t.Errorf("RenderAll with empty OutputDir touched the CWD: %v", statErr)
+	}
+	if _, statErr := os.Stat(filepath.Join(danger, "precious.txt")); statErr != nil {
+		t.Errorf("RenderAll with empty OutputDir destroyed CWD contents: %v", statErr)
+	}
+}
+
 func TestRenderAllCleanRemovesOutputRootOnce(t *testing.T) {
 	dbPath := newTestDB(t)
 	out := filepath.Join(t.TempDir(), "build")

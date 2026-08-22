@@ -90,6 +90,10 @@ func (s *RenderSummary) HasFailures() bool {
 // a bad --max-age or a typo'd directory path cannot wipe an existing
 // published site out from under the caller.
 func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error) {
+	if base.OutputDir == "" {
+		return nil, errors.New("output directory must not be empty")
+	}
+
 	startTime, endTime, err := database.ParseTimeWindow(base.MaxAge, base.Start, base.End)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time parameters: %w", err)

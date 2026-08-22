@@ -14,6 +14,7 @@ const (
 	feedB = "https://b.example.com/feed.xml"
 	feedC = "https://c.example.com/feed.xml"
 
+	aOPML              = "a.opml"
 	techBlogsOPML      = "tech-blogs.opml"
 	techBlogsSpaceOPML = "tech blogs.opml"
 	scratchSlug        = "scratch"
@@ -143,9 +144,9 @@ func TestDiscoverMissingDirectory(t *testing.T) {
 }
 
 func TestDiscoverPathIsFile(t *testing.T) {
-	dir := writeDir(t, map[string]string{"a.opml": opmlWith("A", feedA)})
+	dir := writeDir(t, map[string]string{aOPML: opmlWith("A", feedA)})
 
-	_, _, err := Discover(filepath.Join(dir, "a.opml"))
+	_, _, err := Discover(filepath.Join(dir, aOPML))
 	if err == nil {
 		t.Fatal("Discover() error = nil, want an error when the path is a file")
 	}
