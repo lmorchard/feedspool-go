@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -391,6 +392,18 @@ func runCommand(binary string, args ...string) (string, error) {
 
 const integrationMaxAgeWindow = "168h"
 
+// integrationSharedItemTitle names the item served by the "shared" feed used in
+// TestMultiSiteDirectoryBuild. It is asserted to appear on both sites that
+// reference the shared feed, proving the deduped fetch's content actually
+// reaches every site that subscribes to it.
+const integrationSharedItemTitle = "Integration Item"
+
+// integrationSoloItemTitle names the item served only by the "solo" feed,
+// which only one site subscribes to. It must never appear on a site that
+// doesn't reference the solo feed, which is what makes the shared-item
+// assertion above falsifiable rather than incidentally true.
+const integrationSoloItemTitle = "Solo-Only Item"
+
 const integrationFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
     <channel>
@@ -406,7 +419,27 @@ const integrationFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
     </channel>
 </rss>`
 
+// integrationSoloFeedXMLTemplate is formatted with integrationSoloItemTitle
+// rather than embedding the title literally, so the title constant stays the
+// single source of truth (and goconst has nothing to flag).
+const integrationSoloFeedXMLTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Solo Feed</title>
+        <description>A feed only one site subscribes to</description>
+        <link>https://example.com</link>
+        <item>
+            <title>%s</title>
+            <link>https://example.com/solo-only-item</link>
+            <description>An item only the solo feed serves</description>
+            <guid>solo-only-item-1</guid>
+        </item>
+    </channel>
+</rss>`
+
 func TestMultiSiteDirectoryBuild(t *testing.T) {
+	integrationSoloFeedXML := fmt.Sprintf(integrationSoloFeedXMLTemplate, integrationSoloItemTitle)
+
 	var sharedHits int32
 
 	shared := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -418,7 +451,7 @@ func TestMultiSiteDirectoryBuild(t *testing.T) {
 
 	solo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/rss+xml")
-		_, _ = w.Write([]byte(integrationFeedXML))
+		_, _ = w.Write([]byte(integrationSoloFeedXML))
 	}))
 	defer solo.Close()
 
@@ -521,6 +554,30 @@ func TestMultiSiteDirectoryBuild(t *testing.T) {
 		t.Error("index.html incorrectly pluralized a feed count of 1 as \"1 feeds\"")
 	}
 
+	// The dedup payoff: one fetch of the shared feed must serve both sites that
+	// reference it. Item content is rendered into per-feed fragment pages
+	// under <site>/feeds/, not inlined into <site>/index.html (which is a
+	// shell that lazy-loads those fragments), so search the whole site
+	// output tree rather than just the shell page. The solo item's content
+	// is checked as a control: alpha (which subscribes to both feeds) must
+	// have it, but beta (which only subscribes to the shared feed) must not,
+	// or the shared-item match above would be proving nothing (e.g. if it
+	// were satisfied by shared site chrome instead of actual item content).
+	if !siteTreeContains(t, outDir, "alpha", integrationSharedItemTitle) {
+		t.Errorf("alpha site output does not contain shared item title %q", integrationSharedItemTitle)
+	}
+	if !siteTreeContains(t, outDir, "beta", integrationSharedItemTitle) {
+		t.Errorf("beta site output does not contain shared item title %q; "+
+			"the deduped fetch did not reach both sites", integrationSharedItemTitle)
+	}
+	if !siteTreeContains(t, outDir, "alpha", integrationSoloItemTitle) {
+		t.Errorf("alpha site output does not contain solo item title %q", integrationSoloItemTitle)
+	}
+	if siteTreeContains(t, outDir, "beta", integrationSoloItemTitle) {
+		t.Errorf("beta site output unexpectedly contains solo item title %q; "+
+			"beta does not subscribe to the solo feed", integrationSoloItemTitle)
+	}
+
 	// Removing a list must prune its directory and drop it from the index.
 	if err := os.Remove(filepath.Join(listDir, "beta.opml")); err != nil {
 		t.Fatal(err)
@@ -544,4 +601,37 @@ func TestMultiSiteDirectoryBuild(t *testing.T) {
 	if strings.Contains(string(indexHTML), `href="beta/"`) {
 		t.Error("index.html still links the pruned beta site")
 	}
+}
+
+// siteTreeContains reports whether any regular file under outDir/slug
+// contains want. Item content is rendered into per-feed fragment pages
+// (outDir/slug/feeds/*.html) rather than the site's shell index.html, so
+// callers checking for rendered item content need to search the whole
+// site output tree.
+func siteTreeContains(t *testing.T, outDir, slug, want string) bool {
+	t.Helper()
+
+	found := false
+	root := filepath.Join(outDir, slug)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() {
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		if strings.Contains(string(data), want) {
+			found = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking %s: %v", root, err)
+	}
+
+	return found
 }
