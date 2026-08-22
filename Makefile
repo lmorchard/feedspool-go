@@ -40,7 +40,7 @@ format fmt:
 lint:
 	@GOPATH=$$(go env GOPATH); \
 	if [ ! -f "$$GOPATH/bin/golangci-lint" ]; then \
-		echo "golangci-lint not found. Please install it: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		echo "golangci-lint not found. Please install it: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"; \
 		exit 1; \
 	fi
 	$$(go env GOPATH)/bin/golangci-lint run --timeout=5m
@@ -48,5 +48,5 @@ lint:
 setup:
 	@echo "Installing development tools..."
 	go install mvdan.cc/gofumpt@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	@echo "Tools installed successfully!"
