@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Build with `make build`, never `go build`.** The Makefile injects version ldflags and names the binary `feedspool`.
-- **After every task: `make format`, then `make lint`, then `make test`.** All three must pass before committing.
+- **After every task: `make format`, then `make lint`, then `make test`.** All three must pass before committing. The baseline is clean — `make lint` reports **0 issues** before this plan starts, so any finding it reports is yours and must be fixed, never suppressed.
 - **`internal/` is tested; `cmd/` is not.** Put logic in `internal/` so it can be tested; keep `cmd/` to flag parsing and config merging.
 - **Lint rules that will bite you** (from `.golangci.yml`):
   - `lll`: max line length **120**.
@@ -543,14 +543,14 @@ In `cmd/render.go`, change:
 
 ```go
 	// Execute the render operation
-	return renderer.ExecuteWorkflow(config)
+	return renderer.ExecuteWorkflow(renderConfig)
 ```
 
 to:
 
 ```go
 	// Execute the render operation.
-	_, err := renderer.ExecuteWorkflow(config)
+	_, err := renderer.ExecuteWorkflow(renderConfig)
 	return err
 ```
 
@@ -2393,7 +2393,7 @@ func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
 }
 ```
 
-Add `"errors"`, `logrus`, and `sitegroup` to the imports. Note the local variable was renamed from `config` to `renderConfig` — the old name shadowed the imported `config` package, which worked only because the package was referenced before the shadow. Renaming avoids that trap in the new code.
+Add `"errors"`, `logrus`, and `sitegroup` to the imports. The local is already named `renderConfig` (a prior lint-cleanup commit renamed it — the old name `config` shadowed the imported `config` package); keep that name.
 
 - [ ] **Step 7: Verify the wiring by hand**
 
@@ -2476,19 +2476,18 @@ A thin fetch-then-render convenience for cron. It deliberately does **not** re-e
 
 - [ ] **Step 1: Allow print statements in the new command**
 
-In `.golangci.yml`, add `build` to both `cmd/(...)` exclusion regexes:
+`.golangci.yml` is in **v2 schema** (migrated in a prior commit), so the exclusion rules live under `linters.exclusions.rules` and put `linters:` before `path:`. Add `build` to both `cmd/(...)` regexes:
 
 ```yaml
-    # Allow print statements in main CLI commands for user output
-    - path: cmd/(build|fetch|show|purge|export|render|serve|subscribe|unsubscribe|version)\.go
-      linters:
-        - forbidigo
-
-    # Allow complex nested blocks in main CLI commands (user interface logic)
-    - path: cmd/(build|fetch|purge|render|root)\.go
-      linters:
-        - nestif
+      - linters:
+          - forbidigo
+        path: cmd/(build|fetch|show|purge|export|render|serve|subscribe|unsubscribe|version)\.go
+      - linters:
+          - nestif
+        path: cmd/(build|fetch|purge|render|root)\.go
 ```
+
+Do not restructure the file or add a v1-style block — `make lint` will refuse to start if the schema is wrong.
 
 - [ ] **Step 2: Write `cmd/build.go`**
 
