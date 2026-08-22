@@ -247,10 +247,12 @@ func runDirFetch(
 		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
 	}
 
-	fmt.Printf("Found %d %s, %d unique %s (%d %s)\n",
-		len(plan.Sites), pluralize(len(plan.Sites), "feed list", "feed lists"),
-		len(plan.URLs), pluralize(len(plan.URLs), "feed", "feeds"),
-		plan.References, pluralize(plan.References, "reference", "references"))
+	if !cfg.JSON {
+		fmt.Printf("Found %d %s, %d unique %s (%d %s)\n",
+			len(plan.Sites), pluralize(len(plan.Sites), "feed list", "feed lists"),
+			len(plan.URLs), pluralize(len(plan.URLs), "feed", "feeds"),
+			plan.References, pluralize(plan.References, "reference", "references"))
+	}
 
 	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)
 
