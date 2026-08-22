@@ -44,6 +44,12 @@ build/
 ├── index.html               # site directory index
 ├── site-index.css
 ├── site-index.js
+├── css/                     # site-index.css's @imports
+│   ├── base.css
+│   ├── site-index.css
+│   └── variables.css
+├── js/                      # site-index.js's imports
+│   └── time-formatter.js
 ├── .feedspool-sites.json    # prune manifest
 ├── tech-blogs/
 │   ├── index.html

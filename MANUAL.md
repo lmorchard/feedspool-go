@@ -529,6 +529,12 @@ build/
 ├── index.html               # site directory index
 ├── site-index.css
 ├── site-index.js
+├── css/                     # site-index.css's @imports
+│   ├── base.css
+│   ├── site-index.css
+│   └── variables.css
+├── js/                      # site-index.js's imports
+│   └── time-formatter.js
 ├── .feedspool-sites.json    # prune manifest
 ├── tech-blogs/
 │   ├── index.html
@@ -557,7 +563,8 @@ feedspool build  --feeds-dir ./opml/    # convenience: fetch then render
 Config key: `feedlist.dir`. The flag is `--feeds-dir`, not `--dir`, because
 `serve --dir` already means "the directory to serve."
 
-`fetch --feeds-dir` prints the dedup win, e.g.:
+`fetch --feeds-dir` prints the dedup win, unless `--json` is set (in which
+case the line is suppressed so stdout stays machine-parseable), e.g.:
 
 ```
 Found 2 feed lists, 1 unique feed (2 references)
