@@ -24,6 +24,7 @@ Further feature highlights:
 - URL metadata extraction (unfurling) with OpenGraph, Twitter Cards, and favicons
 - Parallel unfurling during feed fetching for enhanced content presentation
 - Static HTML site generation with responsive design, dark mode, and rich metadata
+- Multi-site builds from a directory of feed lists, with a shared deduped fetch
 - RSS/Atom feed autodiscovery from HTML pages
 - Export database feeds to OPML or text formats
 - SQLite database storage with feed history
@@ -72,6 +73,15 @@ feedspool serve   # http://localhost:8080
 
 `feedspool --help` and `feedspool <subcommand> --help` show inline reference.
 For everything beyond the basics, see [MANUAL.md](MANUAL.md).
+
+Building several sites from a directory of feed lists:
+
+```bash
+mkdir opml
+# drop tech.opml, comics.opml, news.txt … in there
+feedspool build --feeds-dir ./opml
+feedspool serve   # index at http://localhost:8080 linking one site per list
+```
 
 ## Docker
 

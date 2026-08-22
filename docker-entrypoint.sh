@@ -49,11 +49,17 @@ trap 'shutdown_handler' SIGTERM SIGINT
 if [ ! -f "/data/feedspool.yaml" ]; then
     echo "Creating default feedspool.yaml configuration..."
     
-    # Detect which feed file format is present and configure accordingly
+    # Detect which feed list source is present and configure accordingly
     FEED_FORMAT="text"
     FEED_FILENAME="feeds.txt"
-    
-    if [ -f "/data/feeds.opml" ]; then
+    FEED_DIR=""
+
+    if [ -d "/data/feeds.d" ]; then
+        echo "Detected feeds.d/ directory - configuring for multi-site mode"
+        FEED_DIR="/data/feeds.d"
+        FEED_FORMAT=""
+        FEED_FILENAME=""
+    elif [ -f "/data/feeds.opml" ]; then
         echo "Detected feeds.opml - configuring for OPML format"
         FEED_FORMAT="opml"
         FEED_FILENAME="feeds.opml"
@@ -64,7 +70,7 @@ if [ ! -f "/data/feedspool.yaml" ]; then
     else
         echo "No feed file detected - will use default configuration (feeds.txt)"
     fi
-    
+
     cat > /data/feedspool.yaml << YAML
 # Auto-generated feedspool configuration for Docker
 database: /data/feeds.db
@@ -73,6 +79,7 @@ database: /data/feeds.db
 feedlist:
   format: "$FEED_FORMAT"
   filename: "$FEED_FILENAME"
+  dir: "$FEED_DIR"
 
 # Render output settings  
 render:
@@ -96,7 +103,11 @@ unfurl:
   retry_after: "1h"
   concurrency: 8
 YAML
-    echo "Default configuration created at /data/feedspool.yaml (format: $FEED_FORMAT, file: $FEED_FILENAME)"
+    if [ -n "$FEED_DIR" ]; then
+        echo "Default configuration created at /data/feedspool.yaml (multi-site dir: $FEED_DIR)"
+    else
+        echo "Default configuration created at /data/feedspool.yaml (format: $FEED_FORMAT, file: $FEED_FILENAME)"
+    fi
 fi
 
 # Initialize database if it doesn't exist
@@ -106,7 +117,7 @@ if [ ! -f "/data/feeds.db" ]; then
 fi
 
 # Check if feed file exists before running fetch
-if [ -f "/data/feeds.txt" ] || [ -f "/data/feeds.opml" ]; then
+if [ -d "/data/feeds.d" ] || [ -f "/data/feeds.txt" ] || [ -f "/data/feeds.opml" ]; then
     # Run initial fetch and render in background to populate content
     echo "Starting initial fetch and render in background..."
     (
@@ -138,8 +149,9 @@ else
     echo "WARNING: No feed file found!"
     echo ""
     echo "Please create one of the following files in your mounted volume:"
-    echo "  - feeds.txt   (one URL per line)"  
+    echo "  - feeds.txt   (one URL per line)"
     echo "  - feeds.opml  (OPML format)"
+    echo "  - feeds.d/    (a directory of .opml/.txt lists - builds one site each)"
     echo ""
     echo "Example feeds.txt:"
     echo "  https://feeds.bbci.co.uk/news/rss.xml"
