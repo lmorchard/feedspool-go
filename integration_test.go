@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +11,12 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/config"
+	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/fetcher"
+	"github.com/lmorchard/feedspool-go/internal/renderer"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 )
 
 const integrationTestFeed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -380,4 +387,161 @@ func runCommand(binary string, args ...string) (string, error) {
 	cmd := exec.Command(binary, args...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
+}
+
+const integrationMaxAgeWindow = "168h"
+
+const integrationFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Integration Feed</title>
+        <description>Feed for integration tests</description>
+        <link>https://example.com</link>
+        <item>
+            <title>Integration Item</title>
+            <link>https://example.com/integration-item</link>
+            <description>An item</description>
+            <guid>integration-item-1</guid>
+        </item>
+    </channel>
+</rss>`
+
+func TestMultiSiteDirectoryBuild(t *testing.T) {
+	var sharedHits int32
+
+	shared := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		atomic.AddInt32(&sharedHits, 1)
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationFeedXML))
+	}))
+	defer shared.Close()
+
+	solo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationFeedXML))
+	}))
+	defer solo.Close()
+
+	tmp := t.TempDir()
+	listDir := filepath.Join(tmp, "opml")
+	if err := os.MkdirAll(listDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	writeOPML := func(name, title string, urls ...string) {
+		doc := `<?xml version="1.0" encoding="UTF-8"?>` + "\n<opml version=\"2.0\">\n<head><title>" +
+			title + "</title></head>\n<body>\n"
+		for _, u := range urls {
+			doc += `<outline text="x" type="rss" xmlUrl="` + u + `" />` + "\n"
+		}
+		doc += "</body>\n</opml>\n"
+		if err := os.WriteFile(filepath.Join(listDir, name), []byte(doc), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	writeOPML("alpha.opml", "Alpha", shared.URL, solo.URL)
+	writeOPML("beta.opml", "Beta", shared.URL)
+
+	dbPath := filepath.Join(tmp, "feeds.db")
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	// Fetch phase: the shared feed must be requested exactly once.
+	plan, err := sitegroup.PlanFetch(listDir)
+	if err != nil {
+		t.Fatalf("PlanFetch() error = %v", err)
+	}
+	if len(plan.URLs) != 2 {
+		t.Fatalf("len(plan.URLs) = %d, want 2 (the shared feed must be deduped)", len(plan.URLs))
+	}
+
+	fetchDB, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orchestrator := fetcher.NewOrchestrator(fetchDB, config.GetDefault())
+	results := orchestrator.FetchFromURLs(context.Background(), plan.URLs, fetcher.FetchOptions{
+		Timeout:     config.DefaultTimeout,
+		MaxItems:    config.DefaultMaxItems,
+		Concurrency: 2,
+	})
+	fetchDB.Close()
+
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+	if got := atomic.LoadInt32(&sharedHits); got != 1 {
+		t.Errorf("shared feed was requested %d times, want exactly 1", got)
+	}
+
+	// Render phase.
+	outDir := filepath.Join(tmp, "build")
+	summary, err := sitegroup.RenderAll(listDir, &renderer.WorkflowConfig{
+		MaxAge:    integrationMaxAgeWindow,
+		OutputDir: outDir,
+		Database:  dbPath,
+		Quiet:     true,
+	})
+	if err != nil {
+		t.Fatalf("RenderAll() error = %v", err)
+	}
+	if summary.HasFailures() {
+		t.Fatalf("summary has failures: %+v", summary.Sites)
+	}
+
+	for _, path := range []string{
+		filepath.Join(outDir, "index.html"),
+		filepath.Join(outDir, "alpha", "index.html"),
+		filepath.Join(outDir, "alpha", "index.css"),
+		filepath.Join(outDir, "beta", "index.html"),
+		filepath.Join(outDir, "beta", "index.css"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("expected %s: %v", path, err)
+		}
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`href="alpha/"`, `href="beta/"`, "Alpha", "Beta", "2 feeds", "1 feed<"} {
+		if !strings.Contains(string(indexHTML), want) {
+			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+	if strings.Contains(string(indexHTML), "1 feeds") {
+		t.Error("index.html incorrectly pluralized a feed count of 1 as \"1 feeds\"")
+	}
+
+	// Removing a list must prune its directory and drop it from the index.
+	if err := os.Remove(filepath.Join(listDir, "beta.opml")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sitegroup.RenderAll(listDir, &renderer.WorkflowConfig{
+		MaxAge:    integrationMaxAgeWindow,
+		OutputDir: outDir,
+		Database:  dbPath,
+		Quiet:     true,
+	}); err != nil {
+		t.Fatalf("second RenderAll() error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outDir, "beta")); !os.IsNotExist(err) {
+		t.Error("beta directory survived pruning after its OPML was deleted")
+	}
+	indexHTML, err = os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(indexHTML), `href="beta/"`) {
+		t.Error("index.html still links the pruned beta site")
+	}
 }
