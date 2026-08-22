@@ -679,6 +679,11 @@ unions and dedupes URLs across every discovered list before fetching.
 per-file, since removing per-file would have each list delete the other
 lists' feeds.
 
+### Docker
+
+The Docker image auto-detects a `feeds.d/` directory and configures this
+mode automatically — see [Docker Reference](#docker-reference).
+
 ## Data Model
 
 The database is plain SQLite. You can query it directly with `sqlite3
@@ -948,10 +953,15 @@ Mount a host directory at `/data`. Inside it:
 
 | Path | Purpose |
 |---|---|
+| `feeds.d/` | Directory of feed lists (auto-detected); enables [Multi-Site Directory Mode](#multi-site-directory-mode) |
 | `feeds.txt` *or* `feeds.opml` | Subscription file (auto-detected) |
 | `feedspool.yaml` | Optional; auto-generated from a template if missing |
 | `feeds.db` | Created automatically |
 | `build/` | Rendered HTML, served by the container |
+
+`feeds.d/` takes precedence over `feeds.txt`/`feeds.opml` when more than one
+is present — the entrypoint checks for it first, and a generated config
+points `feedlist.dir` at it instead of `feedlist.filename`/`feedlist.format`.
 
 ### Environment variables
 

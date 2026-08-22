@@ -91,9 +91,12 @@ echo "https://feeds.bbci.co.uk/news/rss.xml" > feedspool-data/feeds.txt
 docker run -d -p 8889:8889 -v ./feedspool-data:/data lmorchard/feedspool:latest
 ```
 
-The container auto-detects `feeds.txt` or `feeds.opml`, generates a default
-config, initializes the database, fetches and renders, then runs feedspool
-every 30 minutes via cron and serves the result on port 8889.
+The container auto-detects `feeds.txt`, `feeds.opml`, or a `feeds.d/`
+directory of feed lists (which enables multi-site mode — see
+[MANUAL.md#multi-site-directory-mode](MANUAL.md#multi-site-directory-mode)),
+generates a default config, initializes the database, fetches and renders,
+then runs feedspool every 30 minutes via cron and serves the result on port
+8889.
 
 For environment variables, docker-compose, manual operations, and the two
 Dockerfile variants, see [MANUAL.md#docker-reference](MANUAL.md#docker-reference).
