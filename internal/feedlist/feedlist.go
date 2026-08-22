@@ -103,7 +103,9 @@ func DetectFormat(filename string) Format {
 func loadOPMLFeedList(reader io.Reader) (FeedList, error) {
 	opmlData, err := opml.ParseOPML(reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse OPML: %w", err)
+		// opml.ParseOPML already returns a "failed to parse OPML: ..." message;
+		// wrapping it again here would double it up.
+		return nil, err
 	}
 
 	urls := opml.ExtractFeedURLs(opmlData)
