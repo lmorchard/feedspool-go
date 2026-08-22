@@ -27,6 +27,11 @@ type WorkflowConfig struct {
 	Format          string
 	Database        string
 	Clean           bool
+	// Quiet suppresses per-site progress output (the "Rendering feeds
+	// from...", "Found N feeds...", "Open .../index.html..." lines).
+	// Directory-mode callers that print their own summary set this so a
+	// dozen sites don't each narrate their own render.
+	Quiet bool
 }
 
 // Result summarizes what a single ExecuteWorkflow call produced. It feeds the
@@ -56,7 +61,7 @@ func summarize(feeds []database.Feed, items map[string][]database.Item) *Result 
 func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	// Clean output directory if requested (do this early to avoid dependency issues)
 	if config.Clean {
-		if err := cleanOutputDirectory(config.OutputDir); err != nil {
+		if err := cleanOutputDirectory(config.OutputDir, config.Quiet); err != nil {
 			return nil, err
 		}
 	}
@@ -90,20 +95,22 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	}
 
 	// Query data with minimum items per feed guarantee
-	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed)
+	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed, config.Quiet)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(feeds) == 0 {
+	if len(feeds) == 0 && !config.Quiet {
 		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
 	}
 
 	// Apply max items per feed limit if configured
 	if config.MaxItemsPerFeed > 0 {
 		items = limitItemsPerFeed(items, config.MaxItemsPerFeed)
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+		if !config.Quiet {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+		}
 	}
 
 	// Generate site.
@@ -138,16 +145,18 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 }
 
 func queryData(
-	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int,
+	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int, quiet bool,
 ) ([]database.Feed, map[string][]database.Item, error) {
-	//nolint:forbidigo // User-facing output
-	fmt.Printf("Rendering feeds from %s to %s...\n",
-		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
-	if len(feedURLs) > 0 {
-		fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
-	}
-	if minItemsPerFeed > 0 {
-		fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+	if !quiet {
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Rendering feeds from %s to %s...\n",
+			startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
+		if len(feedURLs) > 0 {
+			fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
+		}
+		if minItemsPerFeed > 0 {
+			fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+		}
 	}
 
 	feeds, items, err := db.GetFeedsWithItemsMinimum(startTime, endTime, feedURLs, minItemsPerFeed)
@@ -155,7 +164,9 @@ func queryData(
 		return nil, nil, fmt.Errorf("failed to query feeds and items: %w", err)
 	}
 
-	fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
+	if !quiet {
+		fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
+	}
 	return feeds, items, nil
 }
 
@@ -218,7 +229,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	if totalPages > 1 {
 		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
 			feedFavicon, endTime, FormatTimeWindow(startTime, endTime, config.MaxAge),
-			feedsPerPage); err != nil {
+			feedsPerPage, config.Quiet); err != nil {
 			return err
 		}
 	}
@@ -233,7 +244,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		feedsGenerated = len(feeds)
 	}
 
-	printSuccessMessage(feedsGenerated, config.OutputDir, outputFile)
+	printSuccessMessage(feedsGenerated, config.OutputDir, outputFile, config.Quiet)
 	return nil
 }
 
@@ -332,7 +343,7 @@ func splitFeedsIntoPages(feeds []FeedWithID, pageSize int) [][]FeedWithID {
 func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
 	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
-	feedsPerPage int,
+	feedsPerPage int, quiet bool,
 ) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create feeds directory: %w", err)
@@ -367,7 +378,9 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 		}
 	}
 
-	fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
+	if !quiet {
+		fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
+	}
 
 	return nil
 }
@@ -450,7 +463,10 @@ func hasFeedTemplate(templatesDir string) bool {
 	return err == nil
 }
 
-func printSuccessMessage(feedCount int, outputDir, outputFile string) {
+func printSuccessMessage(feedCount int, outputDir, outputFile string, quiet bool) {
+	if quiet {
+		return
+	}
 	if feedCount > 0 {
 		//nolint:forbidigo // User-facing output
 		fmt.Printf("Generated %d individual feed pages\n", feedCount)
@@ -473,14 +489,16 @@ func generateFeedID(feedURL string) string {
 	return fmt.Sprintf("%x", hash)[:8]
 }
 
-func cleanOutputDirectory(outputDir string) error {
+func cleanOutputDirectory(outputDir string, quiet bool) error {
 	// Check if directory exists
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		// Directory doesn't exist, nothing to clean
 		return nil
 	}
 
-	fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
+	if !quiet {
+		fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
+	}
 
 	// Remove the entire directory
 	if err := os.RemoveAll(outputDir); err != nil {

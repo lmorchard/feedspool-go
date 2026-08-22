@@ -136,6 +136,7 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 	}
 
 	logrus.Infof("Generated %d sites in %s", len(summary.Sites), base.OutputDir)
+	logrus.Infof("Open %s in your browser to view the site", filepath.Join(base.OutputDir, "index.html"))
 	return summary, nil
 }
 
@@ -148,6 +149,9 @@ func renderOneSite(site *Site, base *renderer.WorkflowConfig) SiteResult {
 	cfg.FeedsFile = site.Path
 	cfg.Format = string(site.Format)
 	cfg.Clean = false // The output root was already cleaned once, up front.
+	// Suppress this site's own progress narration; RenderAll logs one summary
+	// line for the whole run instead of each site printing its own.
+	cfg.Quiet = true
 
 	logrus.Infof("Rendering site %q from %s", site.Title, site.Path)
 

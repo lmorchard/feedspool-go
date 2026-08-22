@@ -102,7 +102,7 @@ func runRender(_ *cobra.Command, _ []string) error {
 	}
 
 	feedsDir := renderFeedsDir
-	if feedsDir == "" && renderFeeds == "" {
+	if feedsDir == "" && renderFeeds == "" && cfg.HasFeedListDir() {
 		feedsDir = cfg.FeedList.Dir
 	}
 	if feedsDir != "" {

@@ -97,6 +97,13 @@ func runFetch(_ *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Check flag-level contradictions before anything that touches the
+	// database, so a bad flag combination is reported instead of being
+	// masked by an unrelated "database not initialized" error.
+	if err := checkFetchFlagConflicts(); err != nil {
+		return err
+	}
+
 	// Determine final withUnfurl value: CLI flag takes precedence over config
 	withUnfurl := cfg.Fetch.WithUnfurl || fetchWithUnfurl
 
@@ -143,6 +150,16 @@ func runFetch(_ *cobra.Command, args []string) error {
 	return dispatchFetch(ctx, orchestrator, args, opts, cfg)
 }
 
+// checkFetchFlagConflicts reports flag combinations that are a contradiction
+// rather than a precedence question. It only inspects the flag globals, so it
+// can run before any database or orchestrator setup.
+func checkFetchFlagConflicts() error {
+	if fetchFeedsDir != "" && (fetchFormat != "" || fetchFilename != "") {
+		return errors.New("--feeds-dir cannot be combined with --format or --filename")
+	}
+	return nil
+}
+
 // dispatchFetch chooses among single-URL, directory, file, and database fetch
 // modes and runs the chosen one.
 func dispatchFetch(
@@ -154,16 +171,13 @@ func dispatchFetch(
 	}
 
 	// An explicit --filename/--format overrides a configured feedlist.dir:
-	// single-file mode wins when you ask for it directly. But combining the
-	// --feeds-dir flag with them is a contradiction, not a precedence question.
+	// single-file mode wins when you ask for it directly. The contradiction
+	// between --feeds-dir and those flags was already rejected in
+	// checkFetchFlagConflicts, before the database was even opened.
 	explicitFile := fetchFormat != "" || fetchFilename != ""
 
-	if fetchFeedsDir != "" && explicitFile {
-		return errors.New("--feeds-dir cannot be combined with --format or --filename")
-	}
-
 	feedsDir := fetchFeedsDir
-	if feedsDir == "" && !explicitFile {
+	if feedsDir == "" && !explicitFile && cfg.HasFeedListDir() {
 		feedsDir = cfg.FeedList.Dir
 	}
 	if feedsDir != "" {
