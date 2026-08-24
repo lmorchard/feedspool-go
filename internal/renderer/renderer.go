@@ -24,8 +24,8 @@ type FeedWithID struct {
 // a render straight from the database has no list to take a name from.
 const DefaultSiteTitle = "feedspool"
 
-// SiteChrome is the page furniture every template needs: what the site is
-// called, what time window it covers, and when it was built. It is embedded
+// SiteChrome is the page furniture every per-site template needs: what the
+// site is called, what time window it covers, and when it was built. It is embedded
 // rather than repeated so the render helpers pass one value instead of
 // several parallel arguments. Templates reference the fields bare —
 // {{.SiteTitle}}, not {{.SiteChrome.SiteTitle}} — because Go promotes an
