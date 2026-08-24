@@ -113,8 +113,13 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 		}
 	}
 
-	// Generate site.
-	if err := generateSite(config, feeds, items, startTime, endTime); err != nil {
+	// Generate site. FormatTimeWindow is called once here rather than three
+	// times inside generateSite, which is what the chrome struct buys.
+	chrome := SiteChrome{
+		TimeWindow:  FormatTimeWindow(startTime, endTime, config.MaxAge),
+		GeneratedAt: endTime,
+	}
+	if err := generateSite(config, feeds, items, chrome); err != nil {
 		return nil, err
 	}
 
@@ -188,7 +193,7 @@ func limitItemsPerFeed(items map[string][]database.Item, maxItems int) map[strin
 }
 
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
-	startTime, endTime time.Time,
+	chrome SiteChrome,
 ) error {
 	db, err := database.New(config.Database)
 	if err != nil {
@@ -202,7 +207,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
 
 	// Generate template context
-	context := createTemplateContext(feeds, items, metadata, feedFavicon, startTime, endTime, config.MaxAge)
+	context := createTemplateContext(feeds, items, metadata, feedFavicon, chrome)
 
 	// Calculate pagination info
 	feedsPerPage := config.FeedsPerPage
@@ -228,8 +233,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	// Render feed list page fragments (if pagination enabled)
 	if totalPages > 1 {
 		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
-			feedFavicon, endTime, FormatTimeWindow(startTime, endTime, config.MaxAge),
-			feedsPerPage, config.Quiet); err != nil {
+			feedFavicon, chrome, feedsPerPage, config.Quiet); err != nil {
 			return err
 		}
 	}
@@ -238,8 +242,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	feedTemplateExists := hasFeedTemplate(config.TemplatesDir)
 	feedsGenerated := 0
 	if feedTemplateExists {
-		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
-			FormatTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
+		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata,
+			feedFavicon, chrome); err != nil {
 			return err
 		}
 		feedsGenerated = len(feeds)
@@ -275,7 +279,7 @@ func fetchMetadataAndFavicons(db *database.DB, feeds []database.Feed,
 
 func createTemplateContext(feeds []database.Feed, items map[string][]database.Item,
 	metadata map[string]*database.URLMetadata, feedFavicon map[string]string,
-	startTime, endTime time.Time, maxAge string,
+	chrome SiteChrome,
 ) *TemplateContext {
 	feedsWithIDs := make([]FeedWithID, len(feeds))
 	for i := range feeds {
@@ -286,12 +290,11 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	}
 
 	return &TemplateContext{
+		SiteChrome:  chrome,
 		Feeds:       feedsWithIDs,
 		Items:       items,
 		Metadata:    metadata,
 		FeedFavicon: feedFavicon,
-		GeneratedAt: endTime,
-		TimeWindow:  FormatTimeWindow(startTime, endTime, maxAge),
 	}
 }
 
@@ -343,7 +346,7 @@ func splitFeedsIntoPages(feeds []FeedWithID, pageSize int) [][]FeedWithID {
 // renderFeedPages renders paginated feed list pages in feeds/page-N.html.
 func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
-	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
+	feedFavicon map[string]string, chrome SiteChrome,
 	feedsPerPage int, quiet bool,
 ) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
@@ -355,12 +358,11 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 
 	for pageNum, pageFeeds := range pages {
 		pageContext := &PageTemplateContext{
+			SiteChrome:  chrome,
 			Feeds:       pageFeeds,
 			Items:       items, // Full items map (feeds reference what they need)
 			Metadata:    metadata,
 			FeedFavicon: feedFavicon,
-			GeneratedAt: generatedAt,
-			TimeWindow:  timeWindow,
 			PageNumber:  pageNum + 1, // 1-indexed
 			TotalPages:  totalPages,
 		}
@@ -388,7 +390,7 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 
 func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
-	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
+	feedFavicon map[string]string, chrome SiteChrome,
 ) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create feeds directory: %w", err)
@@ -402,7 +404,7 @@ func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 		}
 
 		if err := renderSingleFeed(r, feedsDir, feed, feedItems, metadata,
-			feedFavicon[feed.URL], generatedAt, timeWindow); err != nil {
+			feedFavicon[feed.URL], chrome); err != nil {
 			return err
 		}
 	}
@@ -412,16 +414,15 @@ func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 
 func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
 	feedItems []database.Item, metadata map[string]*database.URLMetadata,
-	favicon string, generatedAt time.Time, timeWindow string,
+	favicon string, chrome SiteChrome,
 ) error {
 	feedID := generateFeedID(feed.URL)
 	feedContext := &FeedTemplateContext{
+		SiteChrome:  chrome,
 		Feed:        *feed,
 		Items:       feedItems,
 		Metadata:    metadata,
 		FeedFavicon: favicon,
-		GeneratedAt: generatedAt,
-		TimeWindow:  timeWindow,
 		FeedID:      feedID,
 	}
 

@@ -20,35 +20,43 @@ type FeedWithID struct {
 	ID string
 }
 
+// SiteChrome is the page furniture every template needs: what time window the
+// page covers and when it was built. It is embedded rather than repeated so
+// the render helpers pass one value instead of several parallel arguments.
+// Templates reference the fields bare — {{.TimeWindow}}, not
+// {{.SiteChrome.TimeWindow}} — because Go promotes an embedded struct's
+// fields.
+type SiteChrome struct {
+	TimeWindow  string
+	GeneratedAt time.Time
+}
+
 // TemplateContext contains all data passed to templates.
 type TemplateContext struct {
+	SiteChrome
 	Feeds       []FeedWithID
 	Items       map[string][]database.Item
 	Metadata    map[string]*database.URLMetadata // URL -> metadata
 	FeedFavicon map[string]string                // feed URL -> favicon URL
-	GeneratedAt time.Time
-	TimeWindow  string
 }
 
 // FeedTemplateContext contains data for a single feed template.
 type FeedTemplateContext struct {
+	SiteChrome
 	Feed        database.Feed
 	Items       []database.Item
 	Metadata    map[string]*database.URLMetadata // URL -> metadata
 	FeedFavicon string
-	GeneratedAt time.Time
-	TimeWindow  string
 	FeedID      string // Hash-based ID for the feed
 }
 
 // PageTemplateContext contains data for a paginated feed list fragment.
 type PageTemplateContext struct {
+	SiteChrome
 	Feeds       []FeedWithID
 	Items       map[string][]database.Item
 	Metadata    map[string]*database.URLMetadata
 	FeedFavicon map[string]string
-	GeneratedAt time.Time
-	TimeWindow  string
 	PageNumber  int // 1-indexed page number
 	TotalPages  int // Total number of pages
 }
