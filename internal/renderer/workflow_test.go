@@ -24,8 +24,10 @@ const (
 // testFormatOPML and testTitleTechBlogs are shared across the site-title
 // tests below; goconst flags the repeated literals otherwise.
 const (
-	testFormatOPML     = "opml"
-	testTitleTechBlogs = "Tech Blogs"
+	testFormatOPML         = "opml"
+	testTitleTechBlogs     = "Tech Blogs"
+	testH1TechBlogs        = "<h1>Tech Blogs</h1>"
+	testTitleTechBlogsHTML = "<title>Tech Blogs</title>"
 )
 
 // newTestWorkflow builds a database with one feed and two items, and returns a
@@ -319,7 +321,7 @@ func TestExecuteWorkflowIndexUsesFeedListTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read index.html: %v", err)
 	}
-	for _, want := range []string{"<title>Tech Blogs</title>", "<h1>Tech Blogs</h1>"} {
+	for _, want := range []string{testTitleTechBlogsHTML, testH1TechBlogs} {
 		if !strings.Contains(string(indexHTML), want) {
 			t.Errorf("index.html does not contain %q", want)
 		}
@@ -384,5 +386,73 @@ func TestExecuteWorkflowEscapesTitleMetacharacters(t *testing.T) {
 	// must re-escape them rather than emitting a live tag.
 	if strings.Contains(string(indexHTML), "<script>") {
 		t.Errorf("index.html contains an unescaped <script> from the feed list title")
+	}
+}
+
+// feedPagePath returns the path of the single feed page written under
+// outputDir. newTestWorkflow inserts exactly one feed, so exactly one page
+// exists; finding it by glob avoids duplicating generateFeedID's hashing.
+func feedPagePath(t *testing.T, outputDir string) string {
+	t.Helper()
+
+	matches, err := filepath.Glob(filepath.Join(outputDir, "feeds", "*.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pages []string
+	for _, m := range matches {
+		// Skip pagination fragments; only per-feed pages are wanted here.
+		if !strings.HasPrefix(filepath.Base(m), "page-") {
+			pages = append(pages, m)
+		}
+	}
+	if len(pages) != 1 {
+		t.Fatalf("found %d feed pages under %s, want 1: %v", len(pages), outputDir, pages)
+	}
+	return pages[0]
+}
+
+func TestFeedPageUsesFeedListTitle(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+	cfg.FeedsFile = writeOPML(t, t.TempDir(), "tech.opml", testTitleTechBlogs)
+	cfg.Format = testFormatOPML
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	page, err := os.ReadFile(feedPagePath(t, cfg.OutputDir))
+	if err != nil {
+		t.Fatalf("failed to read feed page: %v", err)
+	}
+	// newTestWorkflow's feed is titled "Example".
+	for _, want := range []string{"<title>Example - Tech Blogs</title>", testH1TechBlogs} {
+		if !strings.Contains(string(page), want) {
+			t.Errorf("feed page does not contain %q", want)
+		}
+	}
+	if strings.Contains(string(page), "Feed Reader") {
+		t.Errorf("feed page still contains the generic \"Feed Reader\" suffix")
+	}
+}
+
+func TestFeedPageDatabaseModeUsesDefaultTitle(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true) // No FeedsFile: database mode.
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	page, err := os.ReadFile(feedPagePath(t, cfg.OutputDir))
+	if err != nil {
+		t.Fatalf("failed to read feed page: %v", err)
+	}
+	for _, want := range []string{
+		"<title>Example - " + DefaultSiteTitle + "</title>",
+		"<h1>" + DefaultSiteTitle + "</h1>",
+	} {
+		if !strings.Contains(string(page), want) {
+			t.Errorf("feed page does not contain %q", want)
+		}
 	}
 }
