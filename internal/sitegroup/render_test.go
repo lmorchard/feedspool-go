@@ -13,9 +13,11 @@ import (
 )
 
 const (
-	techOPML   = "tech.opml"
-	comicsOPML = "comics.opml"
-	maxAge24h  = "24h"
+	techOPML    = "tech.opml"
+	comicsOPML  = "comics.opml"
+	maxAge24h   = "24h"
+	techTitle   = "Tech"
+	comicsTitle = "Comics"
 )
 
 // newTestDB creates an initialized database containing feedA and feedB, each
@@ -133,6 +135,56 @@ func TestRenderAllBuildsSitesAndIndex(t *testing.T) {
 	for _, want := range []string{`href="` + comicsSlug + `/"`, `href="` + techSlug + `/"`} {
 		if !strings.Contains(string(indexHTML), want) {
 			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+}
+
+// TestRenderAllTitlesEachSiteFromItsOwnList guards against renderOneSite
+// leaking one site's title into another. It copies a shared WorkflowConfig
+// per site, so a title assigned to the shared struct rather than the copy
+// would make the last site's name win everywhere.
+func TestRenderAllTitlesEachSiteFromItsOwnList(t *testing.T) {
+	dir := writeDir(t, map[string]string{
+		techOPML:   opmlWith(techTitle, feedA),
+		comicsOPML: opmlWith(comicsTitle, feedA, feedB),
+	})
+	out := filepath.Join(t.TempDir(), "build")
+
+	summary, err := RenderAll(dir, &renderer.WorkflowConfig{
+		MaxAge:    maxAge24h,
+		OutputDir: out,
+		Database:  newTestDB(t),
+	})
+	if err != nil {
+		t.Fatalf("RenderAll() error = %v", err)
+	}
+	if summary.HasFailures() {
+		t.Fatalf("summary has failures: %+v", summary.Sites)
+	}
+
+	for _, tc := range []struct {
+		slug  string
+		title string
+		other string
+	}{
+		{slug: comicsSlug, title: comicsTitle, other: techTitle},
+		{slug: techSlug, title: techTitle, other: comicsTitle},
+	} {
+		indexHTML, err := os.ReadFile(filepath.Join(out, tc.slug, "index.html"))
+		if err != nil {
+			t.Fatalf("failed to read %s/index.html: %v", tc.slug, err)
+		}
+		got := string(indexHTML)
+		for _, want := range []string{"<title>" + tc.title + "</title>", "<h1>" + tc.title + "</h1>"} {
+			if !strings.Contains(got, want) {
+				t.Errorf("%s/index.html does not contain %q", tc.slug, want)
+			}
+		}
+		if strings.Contains(got, ">"+tc.other+"<") {
+			t.Errorf("%s/index.html contains the other site's title %q", tc.slug, tc.other)
+		}
+		if strings.Contains(got, "<h1>"+renderer.DefaultSiteTitle+"</h1>") {
+			t.Errorf("%s/index.html still shows the default title", tc.slug)
 		}
 	}
 }

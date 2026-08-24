@@ -598,9 +598,18 @@ is ignored silently.
 - **Slug** (the output subdirectory name): the filename base, lowercased,
   with runs of non-alphanumeric characters collapsed to a single `-` and
   leading/trailing `-` trimmed. `Tech Blogs.opml` -> `tech-blogs`.
-- **Index label**: an OPML's `<head><title>`, falling back to the filename
-  base if absent. Text lists carry no title, so they always use the filename
-  base (`scratch.txt` -> label `scratch`).
+- **Site title**: an OPML's `<head><title>`, falling back to the filename base
+  if absent. Text lists carry no title, so they always use the filename base
+  (`scratch.txt` -> title `scratch`). This is both the label on the top-level
+  index and the `<title>` and `<h1>` of every page inside that site,
+  including its per-feed pages, whose tab titles read `Feed Name - Site
+  Title`.
+
+Single-list mode derives the same title the same way, so `render --feeds
+tech.opml` produces a site headed `Tech Blogs` rather than a generic one. A
+render straight from the database has no feed list to take a name from and
+falls back to `feedspool`. The top-level directory index is also headed
+`feedspool`, since it spans every list rather than belonging to one.
 
 **Limitation:** a filename whose base contains no ASCII letters or digits at
 all (for example, one written entirely in non-Latin script) slugifies to an

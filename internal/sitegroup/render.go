@@ -153,6 +153,9 @@ func renderOneSite(site *Site, base *renderer.WorkflowConfig) SiteResult {
 	cfg.OutputDir = filepath.Join(base.OutputDir, site.Slug)
 	cfg.FeedsFile = site.Path
 	cfg.Format = string(site.Format)
+	// Reuse the title already resolved for the index page rather than making
+	// ExecuteWorkflow re-derive it from the same file.
+	cfg.SiteTitle = site.Title
 	cfg.Clean = false // The output root was already cleaned once, up front.
 	// Suppress this site's own progress narration; RenderAll logs one summary
 	// line for the whole run instead of each site printing its own.
