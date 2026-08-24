@@ -12,8 +12,10 @@ jobs:
     steps:
     - name: Check if CI should be skipped
       id: skip_check
+      env:
+        HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
       run: |
-        if [[ "${{ github.event.head_commit.message }}" == "[noci]"* ]]; then
+        if [[ "$HEAD_COMMIT_MESSAGE" == "[noci]"* ]]; then
           echo "skip=true" >> $GITHUB_OUTPUT
           echo "CI skipped due to [noci] in commit message"
         else
