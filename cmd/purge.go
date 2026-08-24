@@ -11,6 +11,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// JSON output keys and mode values for purge results.
+const (
+	keyMode            = "mode"
+	keyDryRun          = "dryRun"
+	keyDeleted         = "deleted"
+	keyFilename        = "filename"
+	keyFormat          = "format"
+	keyMetadataDeleted = "metadataDeleted"
+	keyCutoffDate      = "cutoffDate"
+	keyMinItemsKeep    = "minItemsKeep"
+
+	modeFeedlist = "feedlist"
+	modeAge      = "age"
+)
+
 var (
 	purgeAge      string
 	purgeDryRun   bool
@@ -182,12 +197,12 @@ func processFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 func reportNoFeedsToDelete(cfg *config.Config, format, filename string) error {
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":     "feedlist",
-			"dryRun":   purgeDryRun,
-			"deleted":  0,
-			"filename": filename,
-			"format":   format,
-			"message":  "No feeds to delete - all database feeds are subscribed",
+			keyMode:     modeFeedlist,
+			keyDryRun:   purgeDryRun,
+			keyDeleted:  0,
+			keyFilename: filename,
+			keyFormat:   format,
+			"message":   "No feeds to delete - all database feeds are subscribed",
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
@@ -200,11 +215,11 @@ func reportNoFeedsToDelete(cfg *config.Config, format, filename string) error {
 func reportDryRunDeletion(cfg *config.Config, feedsToDelete []string, format, filename string) error {
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":          "feedlist",
-			"dryRun":        true,
+			keyMode:         modeFeedlist,
+			keyDryRun:       true,
 			"wouldDelete":   len(feedsToDelete),
-			"filename":      filename,
-			"format":        format,
+			keyFilename:     filename,
+			keyFormat:       format,
 			"feedsToDelete": feedsToDelete,
 		}
 		jsonData, _ := json.Marshal(result)
@@ -239,12 +254,12 @@ func executeFeedDeletion(cfg *config.Config, db *database.DB, feedsToDelete []st
 
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":            "feedlist",
-			"dryRun":          false,
-			"deleted":         deletedCount,
-			"filename":        filename,
-			"format":          format,
-			"metadataDeleted": metadataDeleted,
+			keyMode:            modeFeedlist,
+			keyDryRun:          false,
+			keyDeleted:         deletedCount,
+			keyFilename:        filename,
+			keyFormat:          format,
+			keyMetadataDeleted: metadataDeleted,
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))
@@ -275,11 +290,11 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 	if purgeDryRun {
 		if cfg.JSON {
 			result := map[string]interface{}{
-				"mode":         "age",
-				"dryRun":       true,
-				"cutoffDate":   cutoffTime.Format(time.RFC3339),
-				"minItemsKeep": minItems,
-				"deleted":      0,
+				keyMode:         modeAge,
+				keyDryRun:       true,
+				keyCutoffDate:   cutoffTime.Format(time.RFC3339),
+				keyMinItemsKeep: minItems,
+				keyDeleted:      0,
 			}
 			jsonData, _ := json.Marshal(result)
 			fmt.Println(string(jsonData))
@@ -313,12 +328,12 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 
 	if cfg.JSON {
 		result := map[string]interface{}{
-			"mode":            "age",
-			"dryRun":          false,
-			"cutoffDate":      cutoffTime.Format(time.RFC3339),
-			"minItemsKeep":    minItems,
-			"deleted":         deleted,
-			"metadataDeleted": metadataDeleted,
+			keyMode:            modeAge,
+			keyDryRun:          false,
+			keyCutoffDate:      cutoffTime.Format(time.RFC3339),
+			keyMinItemsKeep:    minItems,
+			keyDeleted:         deleted,
+			keyMetadataDeleted: metadataDeleted,
 		}
 		jsonData, _ := json.Marshal(result)
 		fmt.Println(string(jsonData))

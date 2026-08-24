@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Feed.Title}} - Feed Reader</title>
+    <title>{{.Feed.Title}} - {{.SiteTitle}}</title>
     <link rel="stylesheet" href="../index.css">
     <script type="module" src="../index.js"></script>
 </head>
 <body>
     <header>
-        <h1>feedspool</h1>
+        <h1>{{.SiteTitle}}</h1>
         <details class="layout-options">
             <summary class="options-trigger">⚙ Options</summary>
             <div class="options-menu">

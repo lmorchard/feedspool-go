@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/fetcher"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +27,7 @@ var (
 	fetchFormat        string
 	fetchFilename      string
 	fetchWithUnfurl    bool
+	fetchFeedsDir      string
 )
 
 var fetchCmd = &cobra.Command{
@@ -66,6 +69,8 @@ func init() {
 	fetchCmd.Flags().StringVar(&fetchFilename, "filename", "", "Feed list filename")
 	fetchCmd.Flags().BoolVar(&fetchWithUnfurl, "with-unfurl", false,
 		"Run unfurl operations in parallel with feed fetching")
+	fetchCmd.Flags().StringVar(&fetchFeedsDir, "feeds-dir", "",
+		"Directory of OPML/text feed lists; fetches the deduped union of all of them")
 	rootCmd.AddCommand(fetchCmd)
 }
 
@@ -87,6 +92,17 @@ func setupGracefulShutdown() (context.Context, context.CancelFunc) {
 
 func runFetch(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
+
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	// Check flag-level contradictions before anything that touches the
+	// database, so a bad flag combination is reported instead of being
+	// masked by an unrelated "database not initialized" error.
+	if err := checkFetchFlagConflicts(); err != nil {
+		return err
+	}
 
 	// Determine final withUnfurl value: CLI flag takes precedence over config
 	withUnfurl := cfg.Fetch.WithUnfurl || fetchWithUnfurl
@@ -130,16 +146,49 @@ func runFetch(_ *cobra.Command, args []string) error {
 		RemoveMissing: fetchRemoveMissing,
 	}
 
-	// Determine fetch mode and execute
+	// Determine fetch mode and execute.
+	return dispatchFetch(ctx, orchestrator, args, opts, cfg)
+}
+
+// checkFetchFlagConflicts reports flag combinations that are a contradiction
+// rather than a precedence question. It only inspects the flag globals, so it
+// can run before any database or orchestrator setup.
+func checkFetchFlagConflicts() error {
+	if fetchFeedsDir != "" && (fetchFormat != "" || fetchFilename != "") {
+		return errors.New("--feeds-dir cannot be combined with --format or --filename")
+	}
+	return nil
+}
+
+// dispatchFetch chooses among single-URL, directory, file, and database fetch
+// modes and runs the chosen one.
+func dispatchFetch(
+	ctx context.Context, orchestrator *fetcher.Orchestrator, args []string,
+	opts fetcher.FetchOptions, cfg *config.Config,
+) error {
 	if len(args) == 1 {
 		return runSingleURLFetch(ctx, orchestrator, args[0], opts, cfg)
 	}
 
-	if fetchFormat != "" || fetchFilename != "" || cfg.HasDefaultFeedList() {
+	// An explicit --filename/--format overrides a configured feedlist.dir:
+	// single-file mode wins when you ask for it directly. The contradiction
+	// between --feeds-dir and those flags was already rejected in
+	// checkFetchFlagConflicts, before the database was even opened.
+	explicitFile := fetchFormat != "" || fetchFilename != ""
+
+	feedsDir := fetchFeedsDir
+	if feedsDir == "" && !explicitFile && cfg.HasFeedListDir() {
+		feedsDir = cfg.FeedList.Dir
+	}
+	if feedsDir != "" {
+		return runDirFetch(ctx, orchestrator, feedsDir, opts, cfg)
+	}
+
+	if explicitFile || cfg.HasDefaultFeedList() {
 		return runFileFetch(ctx, orchestrator, opts, cfg)
 	}
 
-	// Database mode (no args, no file flags, no config defaults)
+	// Database mode (no args, no file flags, no config defaults).
 	return runDatabaseFetch(ctx, orchestrator, opts, cfg)
 }
 
@@ -182,6 +231,38 @@ func runFileFetch(
 	summary.Mode = "file"
 	summary.Print(cfg)
 
+	return nil
+}
+
+func runDirFetch(
+	ctx context.Context, orchestrator *fetcher.Orchestrator, dir string,
+	opts fetcher.FetchOptions, cfg *config.Config,
+) error {
+	plan, err := sitegroup.PlanFetch(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range plan.Skipped {
+		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
+	}
+
+	if !cfg.JSON {
+		fmt.Printf("Found %d %s, %d unique %s (%d %s)\n",
+			len(plan.Sites), pluralize(len(plan.Sites), "feed list", "feed lists"),
+			len(plan.URLs), pluralize(len(plan.URLs), "feed", "feeds"),
+			plan.References, pluralize(plan.References, "reference", "references"))
+	}
+
+	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)
+
+	summary := fetcher.ProcessResults(results)
+	summary.Mode = "dir"
+	summary.Print(cfg)
+
+	if len(plan.Skipped) > 0 {
+		return sitegroup.ErrPartialFailure
+	}
 	return nil
 }
 

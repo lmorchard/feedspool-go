@@ -15,6 +15,7 @@ For development workflow (build, lint, test), see [CLAUDE.md](CLAUDE.md).
 - [Configuration](#configuration)
 - [Global Flags](#global-flags)
 - [Subcommand Reference](#subcommand-reference)
+- [Multi-Site Directory Mode](#multi-site-directory-mode)
 - [Data Model](#data-model)
 - [SQL Recipes](#sql-recipes)
 - [Workflow Recipes](#workflow-recipes)
@@ -80,6 +81,8 @@ json: false                 # Default to JSON output
 feedlist:
   format: ""                # "opml" or "text"
   filename: ""              # path to feed list file
+  dir: ""                   # directory of feed lists; see Multi-Site Directory Mode.
+                             # Mutually exclusive with filename.
 
 fetch:
   with_unfurl: false        # Run unfurl in parallel with fetch
@@ -226,6 +229,7 @@ Fetch feed content. Has three modes depending on arguments.
 | `--remove-missing` | false | (file mode) Delete DB feeds that are not in the subscription file |
 | `--format` | (config) | `opml` or `text` (file mode) |
 | `--filename` | (config) | Subscription file path (file mode) |
+| `--feeds-dir` | (config: `feedlist.dir`) | Directory mode; see [Multi-Site Directory Mode](#multi-site-directory-mode) |
 | `--with-unfurl` | (config) | Run unfurl in parallel with the fetch |
 
 **Side effects:** Writes feeds and items to the database. Marks items no
@@ -360,12 +364,53 @@ included.
 | `--feeds` | (none) | Subscription file to filter feeds by |
 | `--format` | `text` | Subscription file format when `--feeds` is set |
 | `--clean` | false | Wipe output directory before render |
+| `--feeds-dir` | (config: `feedlist.dir`) | Directory mode; see [Multi-Site Directory Mode](#multi-site-directory-mode) |
 
 `--max-age` and `--start`/`--end` are mutually exclusive. Custom template
 and asset directories must already exist; the parent of `--output` must
-exist.
+exist. `--feeds-dir` cannot be combined with `--feeds`.
 
-**Side effects:** Writes HTML, copies assets. Read-only on the database.
+**Side effects:** Writes HTML, copies assets. Read-only on the database. In
+directory mode, also writes the prune manifest (see
+[Multi-Site Directory Mode](#multi-site-directory-mode)).
+
+### build
+
+Fetch feeds and then render the site, in that order. A thin cron
+convenience that reuses the `fetch` and `render` implementations — it is not
+a third code path.
+
+**Usage:** `feedspool build [flags]`
+
+Works in both single-list and directory mode:
+
+- **Single list mode:** `feedspool build` — uses `feedlist.filename` /
+  `feedlist.format` from config, same as running `fetch` then `render` with
+  no flags.
+- **Directory mode:** `feedspool build --feeds-dir ./opml` — deduped union
+  fetch, then one site per feed list plus an index. See
+  [Multi-Site Directory Mode](#multi-site-directory-mode).
+
+**Flags:**
+
+| Flag | Default | Description |
+|---|---|---|
+| `--feeds-dir` | (config: `feedlist.dir`) | Directory of OPML/text feed lists |
+| `--output` | `./build` | Output directory |
+| `--clean` | false | Remove output directory before building |
+| `--with-unfurl` | false | Run unfurl operations in parallel with feed fetching |
+
+`build` deliberately exposes only these four flags. `fetch --max-age` means
+"skip feeds fetched recently" and `render --max-age` means "the display time
+window" — the same flag name with opposite meanings. Rather than invent
+`--fetch-max-age`/`--render-max-age`, `build` defers all other tuning to
+`feedspool.yaml` and leaves finer control to running `fetch` and `render`
+directly.
+
+**Side effects:** Same as `fetch` followed by `render`. If fetch reports a
+partial failure (some feed lists skipped), `build` logs a warning and still
+runs render, so a bad list never blocks the rest of the sites from
+publishing.
 
 ### serve
 
@@ -467,6 +512,193 @@ feedspool version v1.2.3
 ```json
 { "version": "v1.2.3", "commit": "abc1234", "date": "2026-05-09T12:00:00Z" }
 ```
+
+## Multi-Site Directory Mode
+
+Point `fetch`, `render`, or `build` at a *directory* of feed lists instead of
+a single file, and feedspool builds one site per feed list plus a top-level
+index page linking them all — one deduped fetch pass across every list, one
+render pass per site. Useful for topical collections ("newspapers" for tech,
+news, comics) or curated public pages published as a directory of
+independently-deployable sites.
+
+### Output layout
+
+```
+build/
+├── index.html               # site directory index
+├── site-index.css
+├── site-index.js
+├── css/                     # site-index.css's @imports
+│   ├── base.css
+│   ├── site-index.css
+│   └── variables.css
+├── js/                      # site-index.js's imports
+│   └── time-formatter.js
+├── .feedspool-sites.json    # prune manifest
+├── tech-blogs/
+│   ├── index.html
+│   ├── index.css
+│   ├── index.js
+│   └── feeds/…
+├── comics/
+│   └── …
+└── scratch/
+    └── …
+```
+
+Every site subdirectory is exactly what a single-list `render --output <dir>`
+would produce, including its own copy of the CSS/JS bundle. Assets are
+referenced with bare relative paths, so any one subdirectory can be deployed
+on its own without the rest.
+
+### Commands
+
+```bash
+feedspool fetch  --feeds-dir ./opml/    # discover -> union -> dedupe -> one fetch pass
+feedspool render --feeds-dir ./opml/    # render each site -> prune -> render index
+feedspool build  --feeds-dir ./opml/    # convenience: fetch then render
+```
+
+Config key: `feedlist.dir`. The flag is `--feeds-dir`, not `--dir`, because
+`serve --dir` already means "the directory to serve."
+
+`fetch --feeds-dir` prints the dedup win, unless `--json` is set (in which
+case the line is suppressed so stdout stays machine-parseable), e.g.:
+
+```
+Found 2 feed lists, 1 unique feed (2 references)
+```
+
+`render --feeds-dir` prints a per-site summary and a closing pointer at the
+index:
+
+```
+Generated 2 sites in ./build
+  comics     2 feeds, 4 items
+  tech-blogs 1 feed, 2 items
+Open build/index.html in your browser to view the site
+```
+
+If a stale site directory is pruned, an extra line appears before the
+closing pointer (`Pruned 1 stale site directory: comics`, or `Pruned N stale
+site directories: a, b, c` for more than one). If a site failed to render,
+it is listed with its error instead of counts, e.g. `comics failed to
+render: ...`.
+
+### What is scanned
+
+Discovery is **non-recursive**: `os.ReadDir` on the given directory. Only
+regular files with a `.opml` or `.txt` extension (case-insensitive) are
+picked up; everything else — other file types, `README.md`, subdirectories —
+is ignored silently.
+
+### Naming
+
+- **Slug** (the output subdirectory name): the filename base, lowercased,
+  with runs of non-alphanumeric characters collapsed to a single `-` and
+  leading/trailing `-` trimmed. `Tech Blogs.opml` -> `tech-blogs`.
+- **Site title**: an OPML's `<head><title>`, falling back to the filename base
+  if absent. Text lists carry no title, so they always use the filename base
+  (`scratch.txt` -> title `scratch`). This is both the label on the top-level
+  index and the `<title>` and `<h1>` of every page inside that site,
+  including its per-feed pages, whose tab titles read `Feed Name - Site
+  Title`.
+
+Single-list mode derives the same title the same way, so `render --feeds
+tech.opml` produces a site headed `Tech Blogs` rather than a generic one. A
+render straight from the database has no feed list to take a name from and
+falls back to `feedspool`. The top-level directory index is also headed
+`feedspool`, since it spans every list rather than belonging to one.
+
+**Limitation:** a filename whose base contains no ASCII letters or digits at
+all (for example, one written entirely in non-Latin script) slugifies to an
+empty string. This is a hard error naming the offending file rather than a
+graceful fallback — rename the file to include at least one ASCII
+alphanumeric character.
+
+### Why `build` has so few flags
+
+`build` exposes only `--feeds-dir`, `--output`, `--clean`, and
+`--with-unfurl`; everything else comes from `feedspool.yaml`. This is
+deliberate, not an oversight: `fetch --max-age` means "skip feeds fetched
+within this duration" and `render --max-age` means "the display time
+window" — the same flag name with opposite meanings. Rather than invent
+`--fetch-max-age`/`--render-max-age`, `build` stays a thin cron convenience
+and defers all tuning to config. Run `fetch` and `render` directly when you
+need finer control than `build` offers.
+
+`build` also works in single-list mode: with no `--feeds-dir` and no
+`feedlist.dir` configured, it is an ordinary fetch-then-render using
+`feedlist.filename`/`feedlist.format`.
+
+### Mutual exclusion
+
+- `--feeds-dir` together with `--filename`/`--format` (`fetch`) or `--feeds`
+  (`render`) is a hard error.
+- Config containing both `feedlist.dir` and `feedlist.filename` is an
+  ambiguous-config error at load time.
+- An explicit `--filename`/`--feeds` flag overrides a configured
+  `feedlist.dir` — single-file mode wins when asked for directly.
+- With neither `--feeds-dir` nor `feedlist.dir` set anywhere, every existing
+  single-list code path behaves exactly as it always has.
+
+### Pruning and the manifest
+
+After each directory-mode render, feedspool writes
+`<output>/.feedspool-sites.json`:
+
+```json
+{"version": 1, "slugs": ["comics", "news", "tech-blogs"]}
+```
+
+On the next render, any slug present in that manifest but no longer
+discovered on disk has its output subdirectory removed — this is how a
+deleted or renamed feed list's stale site directory disappears instead of
+lingering forever. Pruning is scoped tightly for safety: a candidate is only
+removed if it was named in the previous manifest, resolves to a direct child
+of the output root (never the root itself, no path traversal), and is
+actually a directory (symlinks are skipped). A missing, corrupt, or
+unknown-version manifest degrades to "prune nothing" rather than failing the
+run — the first run after `--clean` simply has nothing to prune.
+
+A site is linked from the index only if `<output>/<slug>/index.html` exists
+on disk after the render pass: a site that failed to render this run but
+built successfully before stays linked, serving slightly stale content
+rather than a dead link; a site that has never built successfully is
+omitted from the index entirely.
+
+`--clean` removes the entire output root once, up front — but only *after*
+the feed-list directory has been validated, so a mistyped `--feeds-dir` path
+can't wipe out a published site.
+
+### Failure policy
+
+One bad feed list must not sink a scheduled publish:
+
+| Failure | Behavior | Exit |
+|---|---|---|
+| `--feeds-dir` missing or is a file | Hard error before any work | non-zero |
+| No feed lists found in directory | Hard error naming the directory | non-zero |
+| Slug collision between two files | Hard error naming both files | non-zero |
+| One feed list fails to parse | Warn, skip that site, continue | non-zero |
+| Individual feed fetch fails | Existing per-feed handling; never aborts | zero |
+| One site fails to render | Warn, continue with remaining sites | non-zero |
+
+The non-zero exit on partial failure matters for cron and CI: the site still
+publishes, but the run is visibly not clean, so a monitoring job notices
+even though nothing looks broken from the browser.
+
+Feeds shared across feed lists are fetched exactly once — the fetch phase
+unions and dedupes URLs across every discovered list before fetching.
+`--remove-missing` in directory mode operates on that deduped union, not
+per-file, since removing per-file would have each list delete the other
+lists' feeds.
+
+### Docker
+
+The Docker image auto-detects a `feeds.d/` directory and configures this
+mode automatically — see [Docker Reference](#docker-reference).
 
 ## Data Model
 
@@ -737,10 +969,15 @@ Mount a host directory at `/data`. Inside it:
 
 | Path | Purpose |
 |---|---|
+| `feeds.d/` | Directory of feed lists (auto-detected); enables [Multi-Site Directory Mode](#multi-site-directory-mode) |
 | `feeds.txt` *or* `feeds.opml` | Subscription file (auto-detected) |
 | `feedspool.yaml` | Optional; auto-generated from a template if missing |
 | `feeds.db` | Created automatically |
 | `build/` | Rendered HTML, served by the container |
+
+`feeds.d/` takes precedence over `feeds.txt`/`feeds.opml` when more than one
+is present — the entrypoint checks for it first, and a generated config
+points `feedlist.dir` at it instead of `feedlist.filename`/`feedlist.format`.
 
 ### Environment variables
 

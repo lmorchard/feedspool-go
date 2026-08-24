@@ -57,7 +57,7 @@ func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time)
 	query += " ORDER BY published_date DESC"
 
 	if limit > 0 {
-		query += " LIMIT ?"
+		query += sqlLimitClause
 		args = append(args, limit)
 	}
 
@@ -73,7 +73,8 @@ func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time)
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
 			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
-			&item.ItemJSON)
+			&item.ItemJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
 		}
@@ -109,7 +110,8 @@ func (db *DB) MarkItemsArchived(feedURL string, activeGUIDs []string) error {
 	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(
 		"UPDATE items SET archived = 1 WHERE feed_url = ? AND guid NOT IN (%s)",
-		strings.Join(placeholders, ","))
+		strings.Join(placeholders, ","),
+	)
 
 	result, err := db.conn.Exec(query, args...)
 	if err != nil {
@@ -269,7 +271,8 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
 			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
-			&item.ItemJSON)
+			&item.ItemJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
 		}

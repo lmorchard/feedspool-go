@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +26,7 @@ var (
 	renderMinItemsPerFeed int
 	renderMaxItemsPerFeed int
 	renderFeedsPerPage    int
+	renderFeedsDir        string
 )
 
 var renderCmd = &cobra.Command{
@@ -74,30 +78,117 @@ func init() {
 	renderCmd.Flags().StringVar(&renderFeeds, "feeds", "", "Feed list file")
 	renderCmd.Flags().StringVar(&renderFormat, "format", defaultFormat, "Feed list format (opml or text)")
 	renderCmd.Flags().BoolVar(&renderClean, "clean", false, "Remove output directory before building")
+	renderCmd.Flags().StringVar(&renderFeedsDir, "feeds-dir", "",
+		"Directory of OPML/text feed lists; builds one site per list plus an index")
 
 	// Note: Config file values are loaded through the Config struct, not viper bindings
 
 	rootCmd.AddCommand(renderCmd)
 }
 
-func runRender(_ *cobra.Command, _ []string) error {
+func runRender(cmd *cobra.Command, _ []string) error {
 	cfg := GetConfig()
-
-	// Build configuration from flags and config file
-	config := buildRenderConfig(cfg)
-
-	// Validate configuration
-	if err := validateRenderConfig(config); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
-	// Execute the render operation
-	return renderer.ExecuteWorkflow(config)
+	// Build configuration from flags and config file.
+	renderConfig := buildRenderConfig(cmd, cfg)
+
+	// An explicit --feeds overrides a configured feedlist.dir; combining it
+	// with the --feeds-dir flag is a contradiction.
+	if renderFeedsDir != "" && renderFeeds != "" {
+		return errors.New("--feeds-dir cannot be combined with --feeds")
+	}
+
+	feedsDir := renderFeedsDir
+	if feedsDir == "" && renderFeeds == "" && cfg.HasFeedListDir() {
+		feedsDir = cfg.FeedList.Dir
+	}
+
+	// Validate configuration before anything destructive (e.g. --clean) runs,
+	// in either single-list or directory mode.
+	if err := validateRenderConfig(renderConfig); err != nil {
+		return err
+	}
+
+	if feedsDir != "" {
+		return runDirRender(feedsDir, renderConfig)
+	}
+
+	// Execute the render operation.
+	_, err := renderer.ExecuteWorkflow(renderConfig)
+	return err
 }
 
-func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
+func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
+	// The per-site FeedsFile is set by sitegroup; clear any inherited value.
+	renderConfig.FeedsFile = ""
+
+	summary, err := sitegroup.RenderAll(dir, renderConfig)
+	if err != nil {
+		return err
+	}
+
+	printDirRenderSummary(summary, renderConfig.OutputDir)
+
+	if summary.HasFailures() {
+		return sitegroup.ErrPartialFailure
+	}
+	return nil
+}
+
+// printDirRenderSummary prints the user-facing summary of a directory-mode
+// render: one line per site (or its failure), a pruned-directory line when
+// anything was actually pruned, and a closing pointer at the top-level
+// index. Per-site ExecuteWorkflow progress output is suppressed via
+// WorkflowConfig.Quiet, so this is the only confirmation the user sees.
+func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
+	fmt.Printf("Generated %d %s in %s\n", len(summary.Sites),
+		pluralize(len(summary.Sites), "site", "sites"), outputDir)
+
+	slugWidth := 0
+	for i := range summary.Sites {
+		if l := len(summary.Sites[i].Slug); l > slugWidth {
+			slugWidth = l
+		}
+	}
+
+	for i := range summary.Sites {
+		s := &summary.Sites[i]
+		if s.Err != nil {
+			fmt.Printf("  %-*s failed to render: %v\n", slugWidth, s.Slug, s.Err)
+			continue
+		}
+		fmt.Printf("  %-*s %d %s, %d %s\n", slugWidth, s.Slug,
+			s.FeedCount, pluralize(s.FeedCount, "feed", "feeds"),
+			s.ItemCount, pluralize(s.ItemCount, "item", "items"))
+	}
+
+	switch len(summary.Removed) {
+	case 0:
+		// Nothing pruned; no line to print.
+	case 1:
+		fmt.Printf("Pruned 1 stale site directory: %s\n", summary.Removed[0])
+	default:
+		fmt.Printf("Pruned %d stale site directories: %s\n",
+			len(summary.Removed), strings.Join(summary.Removed, ", "))
+	}
+
+	fmt.Printf("Open %s in your browser to view the site\n", filepath.Join(outputDir, "index.html"))
+}
+
+// pluralize returns singular when n is exactly 1, and plural otherwise.
+func pluralize(n int, singular, plural string) string {
+	if n == 1 {
+		return singular
+	}
+	return plural
+}
+
+func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.WorkflowConfig {
 	// Start with config file values
-	config := &renderer.WorkflowConfig{
+	renderConfig := &renderer.WorkflowConfig{
 		MaxAge:          cfg.Render.DefaultMaxAge,
 		Start:           "",
 		End:             "",
@@ -115,49 +206,49 @@ func buildRenderConfig(cfg *config.Config) *renderer.WorkflowConfig {
 
 	// Override with command line flags if provided
 	if renderMaxAge != "" {
-		config.MaxAge = renderMaxAge
+		renderConfig.MaxAge = renderMaxAge
 	}
 	if renderStart != "" {
-		config.Start = renderStart
+		renderConfig.Start = renderStart
 	}
 	if renderEnd != "" {
-		config.End = renderEnd
+		renderConfig.End = renderEnd
 	}
 	if renderMinItemsPerFeed >= 0 {
-		config.MinItemsPerFeed = renderMinItemsPerFeed
+		renderConfig.MinItemsPerFeed = renderMinItemsPerFeed
 	}
 	if renderMaxItemsPerFeed >= 0 {
-		config.MaxItemsPerFeed = renderMaxItemsPerFeed
+		renderConfig.MaxItemsPerFeed = renderMaxItemsPerFeed
 	}
 	if renderFeedsPerPage >= 0 {
-		config.FeedsPerPage = renderFeedsPerPage
+		renderConfig.FeedsPerPage = renderFeedsPerPage
 	}
-	if renderOutput != defaultOutputDir {
-		config.OutputDir = renderOutput
+	if cmd.Flags().Changed("output") {
+		renderConfig.OutputDir = renderOutput
 	}
 	if renderTemplates != "" {
-		config.TemplatesDir = renderTemplates
+		renderConfig.TemplatesDir = renderTemplates
 	}
 	if renderAssets != "" {
-		config.AssetsDir = renderAssets
+		renderConfig.AssetsDir = renderAssets
 	}
 	if renderFeeds != "" {
-		config.FeedsFile = renderFeeds
+		renderConfig.FeedsFile = renderFeeds
 	}
-	if renderFormat != defaultFormat {
-		config.Format = renderFormat
+	if cmd.Flags().Changed("format") {
+		renderConfig.Format = renderFormat
 	}
 	if renderClean {
-		config.Clean = renderClean
+		renderConfig.Clean = renderClean
 	}
 
-	return config
+	return renderConfig
 }
 
-func validateRenderConfig(config *renderer.WorkflowConfig) error {
-	return validateRenderParams(config.MaxAge, config.Start, config.End,
-		config.OutputDir, config.TemplatesDir, config.AssetsDir,
-		config.FeedsFile, config.Format)
+func validateRenderConfig(renderConfig *renderer.WorkflowConfig) error {
+	return validateRenderParams(renderConfig.MaxAge, renderConfig.Start, renderConfig.End,
+		renderConfig.OutputDir, renderConfig.TemplatesDir, renderConfig.AssetsDir,
+		renderConfig.FeedsFile, renderConfig.Format)
 }
 
 func validateRenderParams(maxAge, start, end, outputDir, templatesDir, assetsDir, feedsFile, format string) error {

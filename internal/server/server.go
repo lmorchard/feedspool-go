@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -104,6 +106,28 @@ func (s *Server) validateConfig() error {
 	return nil
 }
 
+// resolveIndexPath maps a directory request to its index.html inside the served
+// directory, or returns an empty string if the request would escape it.
+//
+// path.Clean on a rooted path collapses every ".." before the value reaches the
+// filesystem, and the prefix check is a second barrier in case Dir itself is
+// relative or contains symlink-like trickery.
+func (s *Server) resolveIndexPath(urlPath string) string {
+	root, err := filepath.Abs(s.config.Dir)
+	if err != nil {
+		return ""
+	}
+
+	cleaned := filepath.FromSlash(path.Clean("/" + urlPath))
+	indexPath := filepath.Join(root, cleaned, "index.html")
+
+	if !strings.HasPrefix(indexPath, root+string(os.PathSeparator)) {
+		return ""
+	}
+
+	return indexPath
+}
+
 func (s *Server) createHandler(fileServer http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log requests if verbose mode is enabled
@@ -118,11 +142,12 @@ func (s *Server) createHandler(fileServer http.Handler) http.Handler {
 
 		// Check if path is a directory and serve index.html if it exists
 		if r.URL.Path == "/" || (len(r.URL.Path) > 1 && r.URL.Path[len(r.URL.Path)-1] == '/') {
-			indexPath := filepath.Join(s.config.Dir, r.URL.Path, "index.html")
-			if _, err := os.Stat(indexPath); err == nil {
-				// Serve index.html directly instead of modifying URL path
-				http.ServeFile(w, r, indexPath)
-				return
+			if indexPath := s.resolveIndexPath(r.URL.Path); indexPath != "" {
+				if _, err := os.Stat(indexPath); err == nil {
+					// Serve index.html directly instead of modifying URL path
+					http.ServeFile(w, r, indexPath)
+					return
+				}
 			}
 		}
 

@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	testURL1 = "https://example.com/feed.xml"
+	testURL2 = "https://another.com/rss"
+	testURL3 = "https://third.com/atom.xml"
+)
+
 func TestParseTextList(t *testing.T) {
 	testContent := `# This is a comment
 https://example.com/feed.xml
@@ -22,9 +29,9 @@ https://third.com/atom.xml`
 	}
 
 	expectedURLs := []string{
-		"https://example.com/feed.xml",
-		"https://another.com/rss",
-		"https://third.com/atom.xml",
+		testURL1,
+		testURL2,
+		testURL3,
 	}
 
 	if len(urls) != len(expectedURLs) {
@@ -118,9 +125,9 @@ https://another.com/rss`
 
 func TestWriteTextList(t *testing.T) {
 	urls := []string{
-		"https://example.com/feed.xml",
-		"https://another.com/rss",
-		"https://third.com/atom.xml",
+		testURL1,
+		testURL2,
+		testURL3,
 	}
 
 	var buf bytes.Buffer
@@ -190,9 +197,9 @@ func TestWriteTextListEmpty(t *testing.T) {
 
 func TestRoundTrip(t *testing.T) {
 	originalURLs := []string{
-		"https://example.com/feed.xml",
-		"https://another.com/rss",
-		"https://third.com/atom.xml",
+		testURL1,
+		testURL2,
+		testURL3,
 	}
 
 	// Write to buffer

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>feedspool</title>
+    <link rel="stylesheet" href="site-index.css">
+    <script type="module" src="site-index.js"></script>
+</head>
+<body>
+    <header>
+        <h1>feedspool</h1>
+        <p class="site-index-meta">{{.TimeWindow}}</p>
+    </header>
+
+    <time-formatter>
+    <main>
+        {{if .Sites}}
+        <ul class="site-list">
+            {{range .Sites}}
+            <li class="site-entry{{if eq .ItemCount 0}} site-entry-quiet{{end}}">
+                <a class="site-link" href="{{.Slug}}/">{{.Title}}</a>
+                <p class="site-stats">
+                    <span class="site-stat">{{.FeedCount}} {{pluralize .FeedCount "feed" "feeds"}}</span>
+                    <span class="site-stat">{{.ItemCount}} new {{pluralize .ItemCount "item" "items"}}</span>
+                    {{if not .NewestItem.IsZero}}
+                    <span class="site-stat">newest
+                        <time datetime="{{.NewestItem.Format "2006-01-02T15:04:05Z07:00"}}">{{.NewestItem.Format "Jan 2, 2006 15:04 UTC"}}</time>
+                    </span>
+                    {{end}}
+                </p>
+            </li>
+            {{end}}
+        </ul>
+        {{else}}
+        <p class="site-list-empty">No feed lists found.</p>
+        {{end}}
+    </main>
+    </time-formatter>
+
+    <footer>
+        <p>Generated
+            <time datetime="{{.GeneratedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{.GeneratedAt.Format "Jan 2, 2006 15:04 UTC"}}</time>
+        </p>
+    </footer>
+</body>
+</html>

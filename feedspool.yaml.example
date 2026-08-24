@@ -19,6 +19,8 @@ json: false
 feedlist:
   format: ""    # Default format for feed lists (opml or text)
   filename: ""  # Default filename for feed lists
+  dir: ""       # Directory of OPML/text feed lists; builds one site per file
+                # plus a top-level index. Mutually exclusive with filename.
 
 # Fetch settings
 fetch:

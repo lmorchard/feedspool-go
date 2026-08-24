@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -30,15 +29,20 @@ Features:
 • Configurable defaults for streamlined workflows
 
 Use 'feedspool <command> --help' for detailed command information.`,
-	PersistentPreRun: func(_ *cobra.Command, _ []string) {
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 		initConfig()
 		setupLogging()
+		// Flag parsing has already succeeded by this point, so silencing usage
+		// here only affects RunE errors (business-logic failures), not
+		// genuine flag-parse errors, which Cobra reports before this hook runs.
+		cmd.SilenceUsage = true
 	},
 }
 
 func Execute() {
+	// Cobra already prints the error (with an "Error: " prefix) before
+	// returning it, so printing here too would duplicate every message.
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

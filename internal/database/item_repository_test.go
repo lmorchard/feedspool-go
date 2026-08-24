@@ -10,8 +10,8 @@ func TestUpsertAndGetItem(t *testing.T) {
 
 	// First insert a feed
 	feed := &Feed{
-		URL:      "https://example.com/feed.xml",
-		Title:    "Test Feed",
+		URL:      fixtureFeedURL,
+		Title:    fixtureFeedTitle,
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
 	err := db.UpsertFeed(feed)
@@ -20,13 +20,13 @@ func TestUpsertAndGetItem(t *testing.T) {
 	}
 
 	item := &Item{
-		FeedURL:       "https://example.com/feed.xml",
-		GUID:          "test-guid",
-		Title:         "Test Item",
-		Link:          "https://example.com/item",
+		FeedURL:       fixtureFeedURL,
+		GUID:          fixtureGUID,
+		Title:         testItemTitle,
+		Link:          fixtureItemLink,
 		PublishedDate: time.Now().UTC().Truncate(time.Second),
-		Content:       "Test content",
-		Summary:       "Test summary",
+		Content:       fixtureItemContent,
+		Summary:       fixtureItemSummary,
 		ItemJSON:      JSON(`{"title": "Test Item"}`),
 	}
 
@@ -63,8 +63,8 @@ func TestUpsertItemDateStability(t *testing.T) {
 
 	// Insert feed first
 	feed := &Feed{
-		URL:      "https://example.com/feed.xml",
-		Title:    "Test Feed",
+		URL:      fixtureFeedURL,
+		Title:    fixtureFeedTitle,
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
 	err := db.UpsertFeed(feed)
@@ -77,10 +77,10 @@ func TestUpsertItemDateStability(t *testing.T) {
 	item := &Item{
 		FeedURL:       feed.URL,
 		GUID:          "test-item-1",
-		Title:         "Test Item",
+		Title:         testItemTitle,
 		Link:          "https://example.com/item1",
 		PublishedDate: originalTime,
-		Content:       "Test content",
+		Content:       fixtureItemContent,
 		ItemJSON:      JSON(`{"title": "Test Item"}`),
 	}
 
@@ -137,14 +137,14 @@ func TestUpsertItemDateStability(t *testing.T) {
 }
 
 func TestGetItemsForFeedWithFilters(t *testing.T) {
-	const testItem3GUID = "item3"
+	const testItem3GUID = fixtureGUID3
 
 	db := setupTestDB(t)
 
 	// Insert feed
 	feed := &Feed{
-		URL:      "https://example.com/feed.xml",
-		Title:    "Test Feed",
+		URL:      fixtureFeedURL,
+		Title:    fixtureFeedTitle,
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
 	err := db.UpsertFeed(feed)
@@ -157,14 +157,14 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 	items := []*Item{
 		{
 			FeedURL:       feed.URL,
-			GUID:          "item1",
+			GUID:          fixtureGUID1,
 			Title:         "Item 1",
 			PublishedDate: now.Add(-2 * time.Hour),
 			ItemJSON:      JSON(`{"title": "Item 1"}`),
 		},
 		{
 			FeedURL:       feed.URL,
-			GUID:          "item2",
+			GUID:          fixtureGUID2,
 			Title:         "Item 2",
 			PublishedDate: now.Add(-1 * time.Hour),
 			ItemJSON:      JSON(`{"title": "Item 2"}`),
@@ -222,8 +222,8 @@ func TestMarkItemsArchived(t *testing.T) {
 
 	// Insert feed
 	feed := &Feed{
-		URL:      "https://example.com/feed.xml",
-		Title:    "Test Feed",
+		URL:      fixtureFeedURL,
+		Title:    fixtureFeedTitle,
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
 	err := db.UpsertFeed(feed)
@@ -232,7 +232,7 @@ func TestMarkItemsArchived(t *testing.T) {
 	}
 
 	// Insert items
-	items := []string{"item1", "item2", "item3"}
+	items := []string{fixtureGUID1, fixtureGUID2, fixtureGUID3}
 	for _, guid := range items {
 		item := &Item{
 			FeedURL:       feed.URL,
@@ -248,7 +248,7 @@ func TestMarkItemsArchived(t *testing.T) {
 	}
 
 	// Mark item2 and item3 as not archived (active), item1 should be archived
-	activeGUIDs := []string{"item2", "item3"}
+	activeGUIDs := []string{fixtureGUID2, fixtureGUID3}
 	err = db.MarkItemsArchived(feed.URL, activeGUIDs)
 	if err != nil {
 		t.Errorf("db.MarkItemsArchived() error = %v", err)
@@ -277,15 +277,15 @@ func TestMarkItemsArchived(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !results["item1"] {
+	if !results[fixtureGUID1] {
 		t.Errorf("item1 should be archived")
 	}
 
-	if results["item2"] {
+	if results[fixtureGUID2] {
 		t.Errorf("item2 should not be archived")
 	}
 
-	if results["item3"] {
+	if results[fixtureGUID3] {
 		t.Errorf("item3 should not be archived")
 	}
 }
@@ -295,8 +295,8 @@ func TestDeleteArchivedItems(t *testing.T) {
 
 	// Insert feed
 	feed := &Feed{
-		URL:      "https://example.com/feed.xml",
-		Title:    "Test Feed",
+		URL:      fixtureFeedURL,
+		Title:    fixtureFeedTitle,
 		FeedJSON: JSON(`{"title": "Test Feed"}`),
 	}
 	err := db.UpsertFeed(feed)

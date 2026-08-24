@@ -8,6 +8,14 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	testExistingURL       = "https://example.com/existing"
+	testNewURL1           = "https://example.com/new1"
+	testNewURL2           = "https://example.com/new2"
+	testExistingFeedTitle = "Existing Feed"
+)
+
 func TestFetcher_isValidURL(t *testing.T) {
 	// Create a test database and fetcher
 	db, err := database.New(":memory:")
@@ -64,7 +72,7 @@ func TestFetcher_filterURLsNeedingUnfurl(t *testing.T) {
 
 	// Add metadata for one URL
 	metadata := &database.URLMetadata{
-		URL:             "https://example.com/existing",
+		URL:             testExistingURL,
 		Title:           sql.NullString{String: "Existing", Valid: true},
 		LastFetchAt:     sql.NullTime{Time: time.Now(), Valid: true},
 		FetchStatusCode: sql.NullInt64{Int64: 200, Valid: true},
@@ -77,9 +85,9 @@ func TestFetcher_filterURLsNeedingUnfurl(t *testing.T) {
 	}
 
 	urls := []string{
-		"https://example.com/existing",
-		"https://example.com/new1",
-		"https://example.com/new2",
+		testExistingURL,
+		testNewURL1,
+		testNewURL2,
 	}
 
 	filtered, err := fetcher.filterURLsNeedingUnfurl(urls)
@@ -89,8 +97,8 @@ func TestFetcher_filterURLsNeedingUnfurl(t *testing.T) {
 
 	// Should only return the URLs that don't have existing metadata
 	expected := []string{
-		"https://example.com/new1",
-		"https://example.com/new2",
+		testNewURL1,
+		testNewURL2,
 	}
 
 	if len(filtered) != len(expected) {

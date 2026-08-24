@@ -12,6 +12,17 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	testAtomPath    = "/feed.atom"
+	testCustomTxt   = "custom.txt"
+	testDefaultOPML = "default.opml"
+	testDefaultTxt  = "default.txt"
+	testFormatText  = "text"
+	testFormatOPML  = "opml"
+	testRSSPath     = "/feed.rss"
+)
+
 const (
 	testURL1 = "https://example.com/feed.xml"
 	testURL2 = "https://another.com/rss"
@@ -44,34 +55,34 @@ func TestResolveFormatAndFilename(t *testing.T) {
 		{
 			name: "Both provided",
 			config: &config.Config{
-				FeedList: config.FeedListConfig{Format: "opml", Filename: "default.opml"},
+				FeedList: config.FeedListConfig{Format: testFormatOPML, Filename: testDefaultOPML},
 			},
-			inputFormat:    "text",
-			inputFilename:  "custom.txt",
-			expectedFormat: "text",
-			expectedFile:   "custom.txt",
+			inputFormat:    testFormatText,
+			inputFilename:  testCustomTxt,
+			expectedFormat: testFormatText,
+			expectedFile:   testCustomTxt,
 			shouldError:    false,
 		},
 		{
 			name: "Use defaults when empty",
 			config: &config.Config{
-				FeedList: config.FeedListConfig{Format: "opml", Filename: "default.opml"},
+				FeedList: config.FeedListConfig{Format: testFormatOPML, Filename: testDefaultOPML},
 			},
 			inputFormat:    "",
 			inputFilename:  "",
-			expectedFormat: "opml",
-			expectedFile:   "default.opml",
+			expectedFormat: testFormatOPML,
+			expectedFile:   testDefaultOPML,
 			shouldError:    false,
 		},
 		{
 			name: "Mix provided and default",
 			config: &config.Config{
-				FeedList: config.FeedListConfig{Format: "text", Filename: "default.txt"},
+				FeedList: config.FeedListConfig{Format: testFormatText, Filename: testDefaultTxt},
 			},
-			inputFormat:    "opml",
+			inputFormat:    testFormatOPML,
 			inputFilename:  "",
-			expectedFormat: "opml",
-			expectedFile:   "default.txt",
+			expectedFormat: testFormatOPML,
+			expectedFile:   testDefaultTxt,
 			shouldError:    false,
 		},
 		{
@@ -119,8 +130,8 @@ func TestValidateFormat(t *testing.T) {
 		expected    feedlist.Format
 		shouldError bool
 	}{
-		{"opml", feedlist.FormatOPML, false},
-		{"text", feedlist.FormatText, false},
+		{testFormatOPML, feedlist.FormatOPML, false},
+		{testFormatText, feedlist.FormatText, false},
 		{"invalid", "", true},
 		{"", "", true},
 		{"OPML", "", true}, // Case sensitive
@@ -208,7 +219,7 @@ func TestSubscribe(t *testing.T) {
 		filename := filepath.Join(tmpDir, "subscribe_new.txt")
 		urls := []string{testURL1, testURL2}
 
-		result, err := manager.Subscribe("text", filename, urls)
+		result, err := manager.Subscribe(testFormatText, filename, urls)
 		if err != nil {
 			t.Errorf("Subscribe() error = %v", err)
 			return
@@ -249,7 +260,7 @@ func TestSubscribe(t *testing.T) {
 		existingList.Save(filename)
 
 		urls := []string{testURL2, testURL3}
-		result, err := manager.Subscribe("text", filename, urls)
+		result, err := manager.Subscribe(testFormatText, filename, urls)
 		if err != nil {
 			t.Errorf("Subscribe() error = %v", err)
 			return
@@ -274,7 +285,7 @@ func TestSubscribe(t *testing.T) {
 
 		// Try to add the same URL plus a new one
 		urls := []string{testURL1, testURL2}
-		result, err := manager.Subscribe("text", filename, urls)
+		result, err := manager.Subscribe(testFormatText, filename, urls)
 		if err != nil {
 			t.Errorf("Subscribe() error = %v", err)
 			return
@@ -314,7 +325,7 @@ func TestUnsubscribe(t *testing.T) {
 		list.AddURL(testURL2)
 		list.Save(filename)
 
-		result, err := manager.Unsubscribe("text", filename, testURL1)
+		result, err := manager.Unsubscribe(testFormatText, filename, testURL1)
 		if err != nil {
 			t.Errorf("Unsubscribe() error = %v", err)
 			return
@@ -352,7 +363,7 @@ func TestUnsubscribe(t *testing.T) {
 		list.AddURL(testURL1)
 		list.Save(filename)
 
-		result, err := manager.Unsubscribe("text", filename, testURL2)
+		result, err := manager.Unsubscribe(testFormatText, filename, testURL2)
 		if err != nil {
 			t.Errorf("Unsubscribe() error = %v", err)
 			return
@@ -377,7 +388,7 @@ func TestUnsubscribe(t *testing.T) {
 	t.Run("Unsubscribe from non-existent file", func(t *testing.T) {
 		filename := filepath.Join(tmpDir, "non_existent.txt")
 
-		_, err := manager.Unsubscribe("text", filename, testURL1)
+		_, err := manager.Unsubscribe(testFormatText, filename, testURL1)
 
 		if err == nil {
 			t.Error("Expected error for non-existent feed list")
@@ -387,7 +398,7 @@ func TestUnsubscribe(t *testing.T) {
 	t.Run("Unsubscribe with invalid URL", func(t *testing.T) {
 		filename := filepath.Join(tmpDir, "invalid_url.txt")
 
-		_, err := manager.Unsubscribe("text", filename, "not-a-valid-url")
+		_, err := manager.Unsubscribe(testFormatText, filename, "not-a-valid-url")
 
 		if err == nil {
 			t.Error("Expected error for invalid URL")
@@ -440,8 +451,8 @@ func TestDiscoverFeeds(t *testing.T) {
 		}
 
 		expectedFeeds := []string{
-			server.URL + "/feed.rss",
-			server.URL + "/feed.atom",
+			server.URL + testRSSPath,
+			server.URL + testAtomPath,
 			"https://external.com/comments.rss",
 		}
 
@@ -493,13 +504,13 @@ func TestParseFeedLinks(t *testing.T) {
 			name: "RSS and Atom feeds",
 			html: `<link rel="alternate" type="application/rss+xml" href="/feed.rss">
 				   <link rel="alternate" type="application/atom+xml" href="/feed.atom">`,
-			expected: []string{"/feed.rss", "/feed.atom"},
+			expected: []string{testRSSPath, testAtomPath},
 		},
 		{
 			name: "Feeds with different attribute order",
 			html: `<link href="/feed.rss" rel="alternate" type="application/rss+xml">
 				   <link type="application/atom+xml" href="/feed.atom" rel="alternate">`,
-			expected: []string{"/feed.rss", "/feed.atom"},
+			expected: []string{testRSSPath, testAtomPath},
 		},
 		{
 			name: "No feeds",
@@ -511,13 +522,13 @@ func TestParseFeedLinks(t *testing.T) {
 			name: "Duplicate feeds",
 			html: `<link rel="alternate" type="application/rss+xml" href="/feed.rss">
 				   <link rel="alternate" type="application/rss+xml" href="/feed.rss">`,
-			expected: []string{"/feed.rss"},
+			expected: []string{testRSSPath},
 		},
 		{
 			name: "Mixed case and quotes",
 			html: `<link rel="alternate" type="application/RSS+xml" href='/feed.rss'>
 				   <link rel='alternate' type='application/ATOM+XML' href="/feed.atom">`,
-			expected: []string{"/feed.rss", "/feed.atom"},
+			expected: []string{testRSSPath, testAtomPath},
 		},
 	}
 

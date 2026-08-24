@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	configpkg "github.com/lmorchard/feedspool-go/internal/config"
@@ -25,72 +26,122 @@ type WorkflowConfig struct {
 	AssetsDir       string
 	FeedsFile       string
 	Format          string
-	Database        string
-	Clean           bool
+	// SiteTitle overrides the title shown as each page's <title> and <h1>.
+	// Empty means derive it from the feed list named by FeedsFile, falling
+	// back to DefaultSiteTitle when there is no feed list at all. Directory
+	// mode sets this from the title it already resolved for the index page,
+	// so both modes share one fallback chain instead of computing their own.
+	SiteTitle string
+	Database  string
+	Clean     bool
+	// Quiet suppresses per-site progress output (the "Rendering feeds
+	// from...", "Found N feeds...", "Open .../index.html..." lines).
+	// Directory-mode callers that print their own summary set this so a
+	// dozen sites don't each narrate their own render.
+	Quiet bool
+}
+
+// Result summarizes what a single ExecuteWorkflow call produced. It feeds the
+// multi-site index page.
+type Result struct {
+	FeedCount  int       // Feeds matching the time window and feed-list filter.
+	ItemCount  int       // Items rendered, after min/max per-feed limits.
+	NewestItem time.Time // Newest PublishedDate rendered; zero if no items.
+}
+
+// summarize computes a Result from the data about to be rendered.
+func summarize(feeds []database.Feed, items map[string][]database.Item) *Result {
+	result := &Result{FeedCount: len(feeds)}
+	for i := range feeds {
+		feedItems := items[feeds[i].URL]
+		result.ItemCount += len(feedItems)
+		for j := range feedItems {
+			if feedItems[j].PublishedDate.After(result.NewestItem) {
+				result.NewestItem = feedItems[j].PublishedDate
+			}
+		}
+	}
+	return result
 }
 
 // ExecuteWorkflow performs the complete render operation with the given configuration.
-func ExecuteWorkflow(config *WorkflowConfig) error {
+func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	// Clean output directory if requested (do this early to avoid dependency issues)
 	if config.Clean {
-		if err := cleanOutputDirectory(config.OutputDir); err != nil {
-			return err
+		if err := cleanOutputDirectory(config.OutputDir, config.Quiet); err != nil {
+			return nil, err
 		}
 	}
 
 	// Setup database
 	db, err := database.New(config.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
 
 	if err := db.IsInitialized(); err != nil {
-		return fmt.Errorf("database not initialized: %w", err)
+		return nil, fmt.Errorf("database not initialized: %w", err)
 	}
 
 	// Parse time window
 	startTime, endTime, err := database.ParseTimeWindow(config.MaxAge, config.Start, config.End)
 	if err != nil {
-		return fmt.Errorf("invalid time parameters: %w", err)
+		return nil, fmt.Errorf("invalid time parameters: %w", err)
 	}
 
 	// Load feed URLs if specified
-	feedURLs, err := loadFeedURLs(config.FeedsFile, config.Format)
+	feedURLs, listTitle, err := loadFeedURLs(config.FeedsFile, config.Format)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create output directory
 	if err := os.MkdirAll(config.OutputDir, configpkg.DefaultDirPerm); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Query data with minimum items per feed guarantee
-	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed)
+	feeds, items, err := queryData(db, startTime, endTime, feedURLs, config.MinItemsPerFeed, config.Quiet)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if len(feeds) == 0 {
+	if len(feeds) == 0 && !config.Quiet {
 		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
-		return nil
 	}
 
 	// Apply max items per feed limit if configured
 	if config.MaxItemsPerFeed > 0 {
 		items = limitItemsPerFeed(items, config.MaxItemsPerFeed)
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+		if !config.Quiet {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+		}
 	}
 
-	// Generate site
-	return generateSite(config, feeds, items, startTime, endTime)
+	// Generate site. FormatTimeWindow is called once here rather than three
+	// times inside generateSite, which is what the chrome struct buys.
+	chrome := SiteChrome{
+		SiteTitle:   resolveSiteTitle(config.SiteTitle, listTitle),
+		TimeWindow:  FormatTimeWindow(startTime, endTime, config.MaxAge),
+		GeneratedAt: endTime,
+	}
+	if err := generateSite(config, feeds, items, chrome); err != nil {
+		return nil, err
+	}
+
+	return summarize(feeds, items), nil
 }
 
-func loadFeedURLs(feedsFile, format string) ([]string, error) {
+// loadFeedURLs reads the feed list at feedsFile and returns its URLs together
+// with a display title for the site built from it: the list's own title, or
+// the filename base when the list carries none. A text list never carries a
+// title, and neither does an OPML with no <head><title>. Returns an empty
+// title when there is no feed list.
+func loadFeedURLs(feedsFile, format string) (urls []string, title string, err error) {
 	if feedsFile == "" {
-		return nil, nil
+		return nil, "", nil
 	}
 
 	var feedFormat feedlist.Format
@@ -100,28 +151,52 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 	case "text":
 		feedFormat = feedlist.FormatText
 	default:
-		return nil, fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
+		return nil, "", fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
 	}
 
 	feedList, err := feedlist.LoadFeedList(feedFormat, feedsFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load feed list: %w", err)
+		return nil, "", fmt.Errorf("failed to load feed list: %w", err)
 	}
 
-	return feedList.GetURLs(), nil
+	// OPMLFeedList.Title already trims surrounding whitespace, so a
+	// whitespace-only <title> arrives here as empty and takes the fallback.
+	title = feedList.Title()
+	if title == "" {
+		title = strings.TrimSuffix(filepath.Base(feedsFile), filepath.Ext(feedsFile))
+	}
+
+	return feedList.GetURLs(), title, nil
+}
+
+// resolveSiteTitle picks the title for the pages about to be rendered:
+// an explicit override from the caller, then the feed list's own title, then
+// the fixed default. Terminating the chain here rather than in the templates
+// means SiteTitle is never empty by render time, so no template needs a
+// conditional.
+func resolveSiteTitle(override, listTitle string) string {
+	if override != "" {
+		return override
+	}
+	if listTitle != "" {
+		return listTitle
+	}
+	return DefaultSiteTitle
 }
 
 func queryData(
-	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int,
+	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int, quiet bool,
 ) ([]database.Feed, map[string][]database.Item, error) {
-	//nolint:forbidigo // User-facing output
-	fmt.Printf("Rendering feeds from %s to %s...\n",
-		startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
-	if len(feedURLs) > 0 {
-		fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
-	}
-	if minItemsPerFeed > 0 {
-		fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+	if !quiet {
+		//nolint:forbidigo // User-facing output
+		fmt.Printf("Rendering feeds from %s to %s...\n",
+			startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
+		if len(feedURLs) > 0 {
+			fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
+		}
+		if minItemsPerFeed > 0 {
+			fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+		}
 	}
 
 	feeds, items, err := db.GetFeedsWithItemsMinimum(startTime, endTime, feedURLs, minItemsPerFeed)
@@ -129,7 +204,9 @@ func queryData(
 		return nil, nil, fmt.Errorf("failed to query feeds and items: %w", err)
 	}
 
-	fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
+	if !quiet {
+		fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
+	}
 	return feeds, items, nil
 }
 
@@ -151,7 +228,7 @@ func limitItemsPerFeed(items map[string][]database.Item, maxItems int) map[strin
 }
 
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
-	startTime, endTime time.Time,
+	chrome SiteChrome,
 ) error {
 	db, err := database.New(config.Database)
 	if err != nil {
@@ -165,7 +242,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
 
 	// Generate template context
-	context := createTemplateContext(feeds, items, metadata, feedFavicon, startTime, endTime, config.MaxAge)
+	context := createTemplateContext(feeds, items, metadata, feedFavicon, chrome)
 
 	// Calculate pagination info
 	feedsPerPage := config.FeedsPerPage
@@ -191,23 +268,23 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	// Render feed list page fragments (if pagination enabled)
 	if totalPages > 1 {
 		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
-			feedFavicon, endTime, getTimeWindow(startTime, endTime, config.MaxAge),
-			feedsPerPage); err != nil {
+			feedFavicon, chrome, feedsPerPage, config.Quiet); err != nil {
 			return err
 		}
 	}
 
 	// Render individual feed pages (only if feed.html template exists)
+	feedTemplateExists := hasFeedTemplate(config.TemplatesDir)
 	feedsGenerated := 0
-	if hasFeedTemplate(config.TemplatesDir) {
-		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata, feedFavicon, endTime,
-			getTimeWindow(startTime, endTime, config.MaxAge)); err != nil {
+	if feedTemplateExists {
+		if err := renderIndividualFeeds(r, feedsDir, feeds, items, metadata,
+			feedFavicon, chrome); err != nil {
 			return err
 		}
 		feedsGenerated = len(feeds)
 	}
 
-	printSuccessMessage(feedsGenerated, config.OutputDir, outputFile)
+	printSuccessMessage(feedsGenerated, feedTemplateExists, config.OutputDir, outputFile, config.Quiet)
 	return nil
 }
 
@@ -237,7 +314,7 @@ func fetchMetadataAndFavicons(db *database.DB, feeds []database.Feed,
 
 func createTemplateContext(feeds []database.Feed, items map[string][]database.Item,
 	metadata map[string]*database.URLMetadata, feedFavicon map[string]string,
-	startTime, endTime time.Time, maxAge string,
+	chrome SiteChrome,
 ) *TemplateContext {
 	feedsWithIDs := make([]FeedWithID, len(feeds))
 	for i := range feeds {
@@ -248,12 +325,11 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	}
 
 	return &TemplateContext{
+		SiteChrome:  chrome,
 		Feeds:       feedsWithIDs,
 		Items:       items,
 		Metadata:    metadata,
 		FeedFavicon: feedFavicon,
-		GeneratedAt: endTime,
-		TimeWindow:  getTimeWindow(startTime, endTime, maxAge),
 	}
 }
 
@@ -305,8 +381,8 @@ func splitFeedsIntoPages(feeds []FeedWithID, pageSize int) [][]FeedWithID {
 // renderFeedPages renders paginated feed list pages in feeds/page-N.html.
 func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
-	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
-	feedsPerPage int,
+	feedFavicon map[string]string, chrome SiteChrome,
+	feedsPerPage int, quiet bool,
 ) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create feeds directory: %w", err)
@@ -317,12 +393,11 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 
 	for pageNum, pageFeeds := range pages {
 		pageContext := &PageTemplateContext{
+			SiteChrome:  chrome,
 			Feeds:       pageFeeds,
 			Items:       items, // Full items map (feeds reference what they need)
 			Metadata:    metadata,
 			FeedFavicon: feedFavicon,
-			GeneratedAt: generatedAt,
-			TimeWindow:  timeWindow,
 			PageNumber:  pageNum + 1, // 1-indexed
 			TotalPages:  totalPages,
 		}
@@ -341,14 +416,16 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 		}
 	}
 
-	fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
+	if !quiet {
+		fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
+	}
 
 	return nil
 }
 
 func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 	items map[string][]database.Item, metadata map[string]*database.URLMetadata,
-	feedFavicon map[string]string, generatedAt time.Time, timeWindow string,
+	feedFavicon map[string]string, chrome SiteChrome,
 ) error {
 	if err := os.MkdirAll(feedsDir, configpkg.DefaultDirPerm); err != nil {
 		return fmt.Errorf("failed to create feeds directory: %w", err)
@@ -362,7 +439,7 @@ func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 		}
 
 		if err := renderSingleFeed(r, feedsDir, feed, feedItems, metadata,
-			feedFavicon[feed.URL], generatedAt, timeWindow); err != nil {
+			feedFavicon[feed.URL], chrome); err != nil {
 			return err
 		}
 	}
@@ -372,16 +449,15 @@ func renderIndividualFeeds(r *Renderer, feedsDir string, feeds []database.Feed,
 
 func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
 	feedItems []database.Item, metadata map[string]*database.URLMetadata,
-	favicon string, generatedAt time.Time, timeWindow string,
+	favicon string, chrome SiteChrome,
 ) error {
 	feedID := generateFeedID(feed.URL)
 	feedContext := &FeedTemplateContext{
+		SiteChrome:  chrome,
 		Feed:        *feed,
 		Items:       feedItems,
 		Metadata:    metadata,
 		FeedFavicon: favicon,
-		GeneratedAt: generatedAt,
-		TimeWindow:  timeWindow,
 		FeedID:      feedID,
 	}
 
@@ -399,7 +475,12 @@ func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
 	return nil
 }
 
-func getTimeWindow(startTime, endTime time.Time, maxAge string) string {
+// FormatTimeWindow describes the render window for display: the configured
+// max-age string when set, or the resolved start/end times otherwise.
+// Exported so other packages that render related pages (such as the
+// multi-site index) can describe the same window without duplicating this
+// formatting and risking disagreement with the per-site pages.
+func FormatTimeWindow(startTime, endTime time.Time, maxAge string) string {
 	if maxAge != "" {
 		return fmt.Sprintf("Last %s", maxAge)
 	}
@@ -419,7 +500,10 @@ func hasFeedTemplate(templatesDir string) bool {
 	return err == nil
 }
 
-func printSuccessMessage(feedCount int, outputDir, outputFile string) {
+func printSuccessMessage(feedCount int, feedTemplateExists bool, outputDir, outputFile string, quiet bool) {
+	if quiet {
+		return
+	}
 	if feedCount > 0 {
 		//nolint:forbidigo // User-facing output
 		fmt.Printf("Generated %d individual feed pages\n", feedCount)
@@ -428,8 +512,13 @@ func printSuccessMessage(feedCount int, outputDir, outputFile string) {
 	} else {
 		//nolint:forbidigo // User-facing output
 		fmt.Printf("Single-page site generated successfully in: %s\n", outputDir)
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+		if feedTemplateExists {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("(no feeds matched - no individual feed pages to generate)\n")
+		} else {
+			//nolint:forbidigo // User-facing output
+			fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+		}
 	}
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Open %s in your browser to view the site\n", outputFile)
@@ -442,14 +531,16 @@ func generateFeedID(feedURL string) string {
 	return fmt.Sprintf("%x", hash)[:8]
 }
 
-func cleanOutputDirectory(outputDir string) error {
+func cleanOutputDirectory(outputDir string, quiet bool) error {
 	// Check if directory exists
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		// Directory doesn't exist, nothing to clean
 		return nil
 	}
 
-	fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
+	if !quiet {
+		fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
+	}
 
 	// Remove the entire directory
 	if err := os.RemoveAll(outputDir); err != nil {

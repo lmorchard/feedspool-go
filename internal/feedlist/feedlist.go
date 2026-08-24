@@ -27,6 +27,7 @@ func (f Format) String() string {
 // FeedList interface provides unified access to different feed list formats.
 type FeedList interface {
 	GetURLs() []string
+	Title() string
 	AddURL(url string) error
 	RemoveURL(url string) error
 	Save(filename string) error
@@ -102,7 +103,9 @@ func DetectFormat(filename string) Format {
 func loadOPMLFeedList(reader io.Reader) (FeedList, error) {
 	opmlData, err := opml.ParseOPML(reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse OPML: %w", err)
+		// opml.ParseOPML already returns a "failed to parse OPML: ..." message;
+		// wrapping it again here would double it up.
+		return nil, err
 	}
 
 	urls := opml.ExtractFeedURLs(opmlData)
@@ -129,6 +132,11 @@ func loadTextFeedList(reader io.Reader) (FeedList, error) {
 // GetURLs returns all URLs in the OPML feed list.
 func (ofl *OPMLFeedList) GetURLs() []string {
 	return ofl.urls
+}
+
+// Title returns the OPML head title, or an empty string if it is unset.
+func (ofl *OPMLFeedList) Title() string {
+	return strings.TrimSpace(ofl.opml.Head.Title)
 }
 
 // AddURL adds a URL to the OPML feed list.
@@ -224,6 +232,11 @@ func (ofl *OPMLFeedList) Save(filename string) error {
 // GetURLs returns all URLs in the text feed list.
 func (tfl *TextFeedList) GetURLs() []string {
 	return tfl.urls
+}
+
+// Title returns an empty string; text feed lists carry no title.
+func (tfl *TextFeedList) Title() string {
+	return ""
 }
 
 // AddURL adds a URL to the text feed list.

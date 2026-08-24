@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +12,12 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/config"
+	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/fetcher"
+	"github.com/lmorchard/feedspool-go/internal/renderer"
+	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 )
 
 const integrationTestFeed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -380,4 +388,376 @@ func runCommand(binary string, args ...string) (string, error) {
 	cmd := exec.Command(binary, args...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
+}
+
+// buildBinaryViaMake builds the feedspool binary with `make build`, per this
+// project's CLAUDE.md rule that `go build` alone skips version metadata
+// injection. It is used instead of buildBinary by tests that exercise the
+// `build` command's own error-handling wrapper (cmd/build.go), since that
+// logic lives in cmd/ and isn't otherwise reachable from a package-main test
+// without invoking the real binary. Callers that only need any working
+// binary can keep using the faster, plain `go build` in buildBinary.
+//
+// The binary is built to a temp file via `make build BINARY=<path>` rather
+// than the repo-root `feedspool`, so this test never clobbers a developer's
+// existing build artifact.
+func buildBinaryViaMake(t *testing.T) string {
+	t.Helper()
+
+	binaryPath := filepath.Join(t.TempDir(), "feedspool")
+	// Registered up front so a failed `make build` can't leave a partial
+	// artifact behind.
+	t.Cleanup(func() { os.Remove(binaryPath) })
+
+	cmd := exec.Command("make", "build", "BINARY="+binaryPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make build failed: %v, output: %s", err, output)
+	}
+
+	return binaryPath
+}
+
+const integrationMaxAgeWindow = "168h"
+
+// integrationSharedItemTitle names the item served by the "shared" feed used in
+// TestMultiSiteDirectoryBuild. It is asserted to appear on both sites that
+// reference the shared feed, proving the deduped fetch's content actually
+// reaches every site that subscribes to it.
+const integrationSharedItemTitle = "Integration Item"
+
+// integrationSoloItemTitle names the item served only by the "solo" feed,
+// which only one site subscribes to. It must never appear on a site that
+// doesn't reference the solo feed, which is what makes the shared-item
+// assertion above falsifiable rather than incidentally true.
+const integrationSoloItemTitle = "Solo-Only Item"
+
+const integrationFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Integration Feed</title>
+        <description>Feed for integration tests</description>
+        <link>https://example.com</link>
+        <item>
+            <title>Integration Item</title>
+            <link>https://example.com/integration-item</link>
+            <description>An item</description>
+            <guid>integration-item-1</guid>
+        </item>
+    </channel>
+</rss>`
+
+// integrationSoloFeedXMLTemplate is formatted with integrationSoloItemTitle
+// rather than embedding the title literally, so the title constant stays the
+// single source of truth (and goconst has nothing to flag).
+const integrationSoloFeedXMLTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Solo Feed</title>
+        <description>A feed only one site subscribes to</description>
+        <link>https://example.com</link>
+        <item>
+            <title>%s</title>
+            <link>https://example.com/solo-only-item</link>
+            <description>An item only the solo feed serves</description>
+            <guid>solo-only-item-1</guid>
+        </item>
+    </channel>
+</rss>`
+
+func TestMultiSiteDirectoryBuild(t *testing.T) {
+	integrationSoloFeedXML := fmt.Sprintf(integrationSoloFeedXMLTemplate, integrationSoloItemTitle)
+
+	var sharedHits int32
+
+	shared := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		atomic.AddInt32(&sharedHits, 1)
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationFeedXML))
+	}))
+	defer shared.Close()
+
+	solo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationSoloFeedXML))
+	}))
+	defer solo.Close()
+
+	tmp := t.TempDir()
+	listDir := filepath.Join(tmp, "opml")
+	if err := os.MkdirAll(listDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	writeOPML := func(name, title string, urls ...string) {
+		doc := `<?xml version="1.0" encoding="UTF-8"?>` + "\n<opml version=\"2.0\">\n<head><title>" +
+			title + "</title></head>\n<body>\n"
+		for _, u := range urls {
+			doc += `<outline text="x" type="rss" xmlUrl="` + u + `" />` + "\n"
+		}
+		doc += "</body>\n</opml>\n"
+		if err := os.WriteFile(filepath.Join(listDir, name), []byte(doc), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	writeOPML("alpha.opml", "Alpha", shared.URL, solo.URL)
+	writeOPML("beta.opml", "Beta", shared.URL)
+
+	dbPath := filepath.Join(tmp, "feeds.db")
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	// Fetch phase: the shared feed must be requested exactly once.
+	plan, err := sitegroup.PlanFetch(listDir)
+	if err != nil {
+		t.Fatalf("PlanFetch() error = %v", err)
+	}
+	if len(plan.URLs) != 2 {
+		t.Fatalf("len(plan.URLs) = %d, want 2 (the shared feed must be deduped)", len(plan.URLs))
+	}
+
+	fetchDB, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orchestrator := fetcher.NewOrchestrator(fetchDB, config.GetDefault())
+	results := orchestrator.FetchFromURLs(context.Background(), plan.URLs, fetcher.FetchOptions{
+		Timeout:     config.DefaultTimeout,
+		MaxItems:    config.DefaultMaxItems,
+		Concurrency: 2,
+	})
+	fetchDB.Close()
+
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+	if got := atomic.LoadInt32(&sharedHits); got != 1 {
+		t.Errorf("shared feed was requested %d times, want exactly 1", got)
+	}
+
+	// Render phase.
+	outDir := filepath.Join(tmp, "build")
+	summary, err := sitegroup.RenderAll(listDir, &renderer.WorkflowConfig{
+		MaxAge:    integrationMaxAgeWindow,
+		OutputDir: outDir,
+		Database:  dbPath,
+		Quiet:     true,
+	})
+	if err != nil {
+		t.Fatalf("RenderAll() error = %v", err)
+	}
+	if summary.HasFailures() {
+		t.Fatalf("summary has failures: %+v", summary.Sites)
+	}
+
+	for _, path := range []string{
+		filepath.Join(outDir, "index.html"),
+		filepath.Join(outDir, "alpha", "index.html"),
+		filepath.Join(outDir, "alpha", "index.css"),
+		filepath.Join(outDir, "beta", "index.html"),
+		filepath.Join(outDir, "beta", "index.css"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("expected %s: %v", path, err)
+		}
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`href="alpha/"`, `href="beta/"`, "Alpha", "Beta", "2 feeds", "1 feed<"} {
+		if !strings.Contains(string(indexHTML), want) {
+			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+	if strings.Contains(string(indexHTML), "1 feeds") {
+		t.Error("index.html incorrectly pluralized a feed count of 1 as \"1 feeds\"")
+	}
+
+	// The dedup payoff: one fetch of the shared feed must serve both sites that
+	// reference it. Item content is rendered into per-feed fragment pages
+	// under <site>/feeds/, not inlined into <site>/index.html (which is a
+	// shell that lazy-loads those fragments), so search the whole site
+	// output tree rather than just the shell page. The solo item's content
+	// is checked as a control: alpha (which subscribes to both feeds) must
+	// have it, but beta (which only subscribes to the shared feed) must not,
+	// or the shared-item match above would be proving nothing (e.g. if it
+	// were satisfied by shared site chrome instead of actual item content).
+	if !siteTreeContains(t, outDir, "alpha", integrationSharedItemTitle) {
+		t.Errorf("alpha site output does not contain shared item title %q", integrationSharedItemTitle)
+	}
+	if !siteTreeContains(t, outDir, "beta", integrationSharedItemTitle) {
+		t.Errorf("beta site output does not contain shared item title %q; "+
+			"the deduped fetch did not reach both sites", integrationSharedItemTitle)
+	}
+	if !siteTreeContains(t, outDir, "alpha", integrationSoloItemTitle) {
+		t.Errorf("alpha site output does not contain solo item title %q", integrationSoloItemTitle)
+	}
+	if siteTreeContains(t, outDir, "beta", integrationSoloItemTitle) {
+		t.Errorf("beta site output unexpectedly contains solo item title %q; "+
+			"beta does not subscribe to the solo feed", integrationSoloItemTitle)
+	}
+
+	// Removing a list must prune its directory and drop it from the index.
+	if err := os.Remove(filepath.Join(listDir, "beta.opml")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sitegroup.RenderAll(listDir, &renderer.WorkflowConfig{
+		MaxAge:    integrationMaxAgeWindow,
+		OutputDir: outDir,
+		Database:  dbPath,
+		Quiet:     true,
+	}); err != nil {
+		t.Fatalf("second RenderAll() error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outDir, "beta")); !os.IsNotExist(err) {
+		t.Error("beta directory survived pruning after its OPML was deleted")
+	}
+	indexHTML, err = os.ReadFile(filepath.Join(outDir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(indexHTML), `href="beta/"`) {
+		t.Error("index.html still links the pruned beta site")
+	}
+}
+
+// siteTreeContains reports whether any regular file under outDir/slug
+// contains want. Item content is rendered into per-feed fragment pages
+// (outDir/slug/feeds/*.html) rather than the site's shell index.html, so
+// callers checking for rendered item content need to search the whole
+// site output tree.
+func siteTreeContains(t *testing.T, outDir, slug, want string) bool {
+	t.Helper()
+
+	found := false
+	root := filepath.Join(outDir, slug)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() {
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		if strings.Contains(string(data), want) {
+			found = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking %s: %v", root, err)
+	}
+
+	return found
+}
+
+// buildBadFeedListContent is deliberately unparseable: sitegroup.Discover
+// skips a file like this rather than treating it as a feed list, which is
+// what lets TestBuildCommandPartialFetchFailureStillRenders exercise a
+// partial fetch failure (as opposed to a fatal one) alongside a feed list
+// that fetches and renders normally.
+const buildBadFeedListContent = "<opml><head><title>unclosed"
+
+const (
+	buildGoodFeedListName = "good.opml"
+	buildBadFeedListName  = "malformed.opml"
+)
+
+// TestBuildCommandPartialFetchFailureStillRenders covers the one behavior
+// that belongs to the `build` command itself rather than to `fetch` or
+// `render` individually: cmd/build.go's runBuild deliberately swallows
+// sitegroup.ErrPartialFailure from the fetch phase (logging a warning
+// instead) and proceeds to render, rather than aborting the whole build
+// because one feed list in the directory was bad. That error-tolerance
+// decision lives in cmd/build.go, which this project deliberately leaves
+// untested at the unit level (see CLAUDE.md), and it isn't reachable by
+// composing the underlying sitegroup/fetcher/renderer library calls
+// directly the way TestMultiSiteDirectoryBuild does above: that would only
+// prove the library functions behave correctly in isolation, not that
+// cmd.runBuild actually chains them the way it claims to (ignore
+// ErrPartialFailure from fetch, still call render, still surface a non-zero
+// exit at the end). So this test drives the real compiled binary as a
+// subprocess instead, guarded by testing.Short() like the other
+// binary-driving integration tests in this file. It builds via `make build`
+// (not plain `go build`) per this project's CLAUDE.md.
+func TestBuildCommandPartialFetchFailureStillRenders(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	binaryPath := buildBinaryViaMake(t)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationFeedXML))
+	}))
+	defer server.Close()
+
+	tmp := t.TempDir()
+	listDir := filepath.Join(tmp, "opml")
+	if err := os.MkdirAll(listDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	goodOPML := `<?xml version="1.0" encoding="UTF-8"?>` + "\n<opml version=\"2.0\">\n<head><title>Good</title></head>\n<body>\n" +
+		`<outline text="x" type="rss" xmlUrl="` + server.URL + `" />` + "\n</body>\n</opml>\n"
+	if err := os.WriteFile(filepath.Join(listDir, buildGoodFeedListName), []byte(goodOPML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(listDir, buildBadFeedListName), []byte(buildBadFeedListContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	dbPath := filepath.Join(tmp, "feeds.db")
+	if output, err := runCommand(binaryPath, "--database", dbPath, "init"); err != nil {
+		t.Fatalf("init failed: %v, output: %s", err, output)
+	}
+
+	outDir := filepath.Join(tmp, "build")
+	output, err := runCommand(binaryPath, "--database", dbPath, "build", "--feeds-dir", listDir, "--output", outDir)
+
+	// The malformed feed list makes this a partial failure: build must still
+	// report a non-zero exit (so cron/CI notice), even though the good list
+	// published successfully. sitegroup.ErrPartialFailure is exactly what
+	// flows through runBuild to produce this.
+	if err == nil {
+		t.Errorf("build with a malformed feed list alongside a good one exited 0, want non-zero; output: %s", output)
+	}
+	if !strings.Contains(output, buildBadFeedListName) {
+		t.Errorf("build output does not name the skipped feed list %s; output: %s", buildBadFeedListName, output)
+	}
+
+	// The unique part: the good list's site must be fully rendered despite
+	// the other list's failure, not just left out or half-written.
+	for _, path := range []string{
+		filepath.Join(outDir, "index.html"),
+		filepath.Join(outDir, "good", "index.html"),
+		filepath.Join(outDir, "good", "index.css"),
+	} {
+		if _, statErr := os.Stat(path); statErr != nil {
+			t.Errorf("expected %s to exist after a partial-failure build: %v", path, statErr)
+		}
+	}
+	if !siteTreeContains(t, outDir, "good", integrationSharedItemTitle) {
+		t.Errorf("good site output does not contain the fetched item %q; "+
+			"the fetch phase did not reach the render phase", integrationSharedItemTitle)
+	}
+
+	// The malformed list must never have produced a site directory of its own.
+	if _, statErr := os.Stat(filepath.Join(outDir, "malformed")); !os.IsNotExist(statErr) {
+		t.Error("a site directory was created for the malformed feed list, which should have been skipped entirely")
+	}
 }

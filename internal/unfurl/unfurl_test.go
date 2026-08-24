@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+// Shared test fixtures, hoisted so goconst stays quiet.
+const (
+	testImageURL    = "https://example.com/image.jpg"
+	testPageURL     = "https://test.com/page"
+	testDescription = "Test Description"
+	testTitle       = "Test Title"
+)
+
 const testFaviconURL = "https://example.com/favicon.ico"
 
 func TestUnfurler_makeAbsoluteURL(t *testing.T) {
@@ -19,14 +27,14 @@ func TestUnfurler_makeAbsoluteURL(t *testing.T) {
 	}{
 		{
 			name:     "absolute URL stays absolute",
-			href:     "https://example.com/image.jpg",
-			baseURL:  "https://test.com/page",
-			expected: "https://example.com/image.jpg",
+			href:     testImageURL,
+			baseURL:  testPageURL,
+			expected: testImageURL,
 		},
 		{
 			name:     "relative URL becomes absolute",
 			href:     "/image.jpg",
-			baseURL:  "https://test.com/page",
+			baseURL:  testPageURL,
 			expected: "https://test.com/image.jpg",
 		},
 		{
@@ -81,9 +89,9 @@ func TestUnfurler_ToURLMetadata(t *testing.T) {
 	unfurler := NewUnfurler(nil)
 
 	result := &Result{
-		Title:       "Test Title",
-		Description: "Test Description",
-		ImageURL:    "https://example.com/image.jpg",
+		Title:       testTitle,
+		Description: testDescription,
+		ImageURL:    testImageURL,
 		FaviconURL:  testFaviconURL,
 		Metadata:    map[string]interface{}{"og:type": "article"},
 	}
@@ -93,15 +101,15 @@ func TestUnfurler_ToURLMetadata(t *testing.T) {
 		t.Fatalf("ToURLMetadata() error = %v", err)
 	}
 
-	if !metadata.Title.Valid || metadata.Title.String != "Test Title" {
+	if !metadata.Title.Valid || metadata.Title.String != testTitle {
 		t.Errorf("Title not set correctly")
 	}
 
-	if !metadata.Description.Valid || metadata.Description.String != "Test Description" {
+	if !metadata.Description.Valid || metadata.Description.String != testDescription {
 		t.Errorf("Description not set correctly")
 	}
 
-	if !metadata.ImageURL.Valid || metadata.ImageURL.String != "https://example.com/image.jpg" {
+	if !metadata.ImageURL.Valid || metadata.ImageURL.String != testImageURL {
 		t.Errorf("ImageURL not set correctly")
 	}
 

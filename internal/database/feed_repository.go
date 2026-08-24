@@ -53,7 +53,8 @@ func (db *DB) GetFeed(url string) (*Feed, error) {
 	err := db.conn.QueryRow(query, url).Scan(
 		&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 		&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-		&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON)
+		&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+	)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -85,7 +86,8 @@ func (db *DB) GetAllFeeds() ([]*Feed, error) {
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON)
+			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed: %w", err)
 		}
@@ -154,6 +156,9 @@ func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []stri
 			placeholders[i] = "?"
 			feedsArgs = append(feedsArgs, url)
 		}
+		// #nosec G202 - Only generated "?" placeholders are concatenated; every
+		// URL is bound as a query argument. SQL has no way to parameterize a
+		// variable-length IN list as a single value.
 		feedsQuery += " AND f.url IN (" + strings.Join(placeholders, ",") + ")"
 	}
 
@@ -179,7 +184,8 @@ func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []stri
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON)
+			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to scan feed: %w", err)
 		}
@@ -273,6 +279,9 @@ func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 			placeholders[i] = "?"
 			args = append(args, url)
 		}
+		// #nosec G202 - Only generated "?" placeholders are concatenated; every
+		// URL is bound as a query argument. SQL has no way to parameterize a
+		// variable-length IN list as a single value.
 		query += " WHERE url IN (" + strings.Join(placeholders, ",") + ")"
 	}
 
@@ -294,7 +303,8 @@ func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON)
+			&feed.ErrorCount, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed: %w", err)
 		}
@@ -334,7 +344,8 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
 			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
-			&item.ItemJSON)
+			&item.ItemJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan timespan item: %w", err)
 		}
@@ -380,7 +391,8 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 		err := rows2.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
 			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
-			&item.ItemJSON)
+			&item.ItemJSON,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan recent item: %w", err)
 		}

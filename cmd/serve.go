@@ -58,10 +58,10 @@ func runServe(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
 	// Build configuration from flags and config file
-	config := buildServeConfig(cfg)
+	serveConfig := buildServeConfig(cfg)
 
 	// Create and start server
-	srv := server.NewServer(config)
+	srv := server.NewServer(serveConfig)
 
 	// Start server in goroutine
 	go func() {
@@ -84,7 +84,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 
 func buildServeConfig(cfg *config.Config) *server.Config {
 	// Start with viper values (includes config file values)
-	config := &server.Config{
+	serveConfig := &server.Config{
 		Port:    viper.GetInt("serve.port"),
 		Dir:     viper.GetString("serve.dir"),
 		Verbose: cfg.Verbose,
@@ -93,17 +93,17 @@ func buildServeConfig(cfg *config.Config) *server.Config {
 	// Check for PORT environment variable (overrides config file)
 	if portEnv := os.Getenv("PORT"); portEnv != "" {
 		if port, err := strconv.Atoi(portEnv); err == nil {
-			config.Port = port
+			serveConfig.Port = port
 		}
 	}
 
 	// Command line flags have highest priority
 	if servePort != defaultPort {
-		config.Port = servePort
+		serveConfig.Port = servePort
 	}
 	if serveDir != defaultOutputDir {
-		config.Dir = serveDir
+		serveConfig.Dir = serveDir
 	}
 
-	return config
+	return serveConfig
 }

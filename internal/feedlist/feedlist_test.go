@@ -278,3 +278,45 @@ func TestLoadInvalidFormat(t *testing.T) {
 		t.Error("LoadFeedList() should return error for invalid format")
 	}
 }
+
+func TestOPMLFeedListTitle(t *testing.T) {
+	const withTitle = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+    <head><title>  Tech Blogs  </title></head>
+    <body><outline text="A" type="rss" xmlUrl="https://example.com/feed.xml" /></body>
+</opml>`
+
+	list, err := loadOPMLFeedList(strings.NewReader(withTitle))
+	if err != nil {
+		t.Fatalf("loadOPMLFeedList() error = %v", err)
+	}
+	if got := list.Title(); got != "Tech Blogs" {
+		t.Errorf("Title() = %q, want %q", got, "Tech Blogs")
+	}
+}
+
+func TestOPMLFeedListTitleAbsent(t *testing.T) {
+	const noTitle = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+    <head></head>
+    <body><outline text="A" type="rss" xmlUrl="https://example.com/feed.xml" /></body>
+</opml>`
+
+	list, err := loadOPMLFeedList(strings.NewReader(noTitle))
+	if err != nil {
+		t.Fatalf("loadOPMLFeedList() error = %v", err)
+	}
+	if got := list.Title(); got != "" {
+		t.Errorf("Title() = %q, want empty string", got)
+	}
+}
+
+func TestTextFeedListTitle(t *testing.T) {
+	list, err := loadTextFeedList(strings.NewReader(testURL1 + "\n"))
+	if err != nil {
+		t.Fatalf("loadTextFeedList() error = %v", err)
+	}
+	if got := list.Title(); got != "" {
+		t.Errorf("Title() = %q, want empty string", got)
+	}
+}

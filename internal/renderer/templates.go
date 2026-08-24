@@ -38,6 +38,14 @@ func GetEmbeddedAssets() fs.FS {
 	return assetsFS
 }
 
+// pluralize returns singular when n is exactly 1, and plural otherwise.
+func pluralize(n int, singular, plural string) string {
+	if n == 1 {
+		return singular
+	}
+	return plural
+}
+
 // LoadTemplateFromFS loads and parses a template from the given filesystem.
 func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	// Load the iframe template first (for use in the function)
@@ -109,6 +117,7 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 			}
 			return b
 		},
+		"pluralize": pluralize,
 		// Helper for feed range display in pagination
 		"feedRange": func(pageNum, feedsPerPage, totalFeeds int) map[string]int {
 			start := (pageNum-1)*feedsPerPage + 1
