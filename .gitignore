@@ -53,3 +53,6 @@ feedspool.yaml
 # Agent scratch space
 .claude/worktrees/
 .superpowers/
+
+# Pinned dev tools installed by the Makefile
+/bin/

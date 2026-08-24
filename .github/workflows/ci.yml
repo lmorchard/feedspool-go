@@ -37,11 +37,18 @@ jobs:
       if: steps.skip_check.outputs.skip != 'true'
       run: go mod download
 
+    # Read the pin from the Makefile so local `make lint` and CI cannot drift
+    # onto different versions and disagree about what counts as a finding.
+    - name: Determine golangci-lint version
+      id: lint_version
+      if: steps.skip_check.outputs.skip != 'true'
+      run: echo "version=$(make print-golangci-lint-version)" >> "$GITHUB_OUTPUT"
+
     - name: Run golangci-lint
       if: steps.skip_check.outputs.skip != 'true'
       uses: golangci/golangci-lint-action@v8
       with:
-        version: v2.13.1
+        version: ${{ steps.lint_version.outputs.version }}
         args: --timeout=5m
 
     - name: Run tests
