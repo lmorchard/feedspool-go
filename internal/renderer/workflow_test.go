@@ -21,6 +21,13 @@ const (
 	testAssetIndexJS  = "index.js"
 )
 
+// testFormatOPML and testTitleTechBlogs are shared across the site-title
+// tests below; goconst flags the repeated literals otherwise.
+const (
+	testFormatOPML     = "opml"
+	testTitleTechBlogs = "Tech Blogs"
+)
+
 // newTestWorkflow builds a database with one feed and two items, and returns a
 // WorkflowConfig pointing at it with a fresh output directory, along with the
 // published date of the newest of the two items it inserted (zero if
@@ -205,5 +212,177 @@ func TestExecuteWorkflowCustomTemplateResolvesChromeFields(t *testing.T) {
 	}
 	if !strings.Contains(got, "gen="+time.Now().UTC().Format("2006")) {
 		t.Errorf("custom template rendered an empty GeneratedAt; got:\n%s", got)
+	}
+}
+
+// writeOPML writes an OPML file containing one feed into dir and returns its
+// path. A blank title omits the <title> element entirely, which is the
+// "untitled OPML" case the filename fallback exists for.
+func writeOPML(t *testing.T, dir, name, title string) string {
+	t.Helper()
+
+	head := "<head></head>"
+	if title != "" {
+		head = "<head><title>" + title + "</title></head>"
+	}
+	doc := `<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
+		`<opml version="2.0">` + "\n" + head + "\n<body>\n" +
+		`<outline text="x" type="rss" xmlUrl="` + testFeedURL + `" />` + "\n" +
+		"</body>\n</opml>\n"
+
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(doc), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestLoadFeedURLsDerivesTitle(t *testing.T) {
+	dir := t.TempDir()
+
+	txtPath := filepath.Join(dir, "scratch.txt")
+	if err := os.WriteFile(txtPath, []byte(testFeedURL+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name      string
+		file      string
+		format    string
+		wantTitle string
+	}{
+		{
+			name:      "opml head title wins",
+			file:      writeOPML(t, dir, "tech.opml", testTitleTechBlogs),
+			format:    testFormatOPML,
+			wantTitle: testTitleTechBlogs,
+		},
+		{
+			name:      "untitled opml falls back to filename base",
+			file:      writeOPML(t, dir, "comics.opml", ""),
+			format:    testFormatOPML,
+			wantTitle: "comics",
+		},
+		{
+			name:      "whitespace-only opml title falls back to filename base",
+			file:      writeOPML(t, dir, "blank.opml", "   "),
+			format:    testFormatOPML,
+			wantTitle: "blank",
+		},
+		{
+			name:      "text list falls back to filename base",
+			file:      txtPath,
+			format:    "text",
+			wantTitle: "scratch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urls, title, err := loadFeedURLs(tt.file, tt.format)
+			if err != nil {
+				t.Fatalf("loadFeedURLs() error = %v", err)
+			}
+			if title != tt.wantTitle {
+				t.Errorf("title = %q, want %q", title, tt.wantTitle)
+			}
+			if len(urls) != 1 {
+				t.Errorf("len(urls) = %d, want 1", len(urls))
+			}
+		})
+	}
+}
+
+func TestLoadFeedURLsNoFileHasNoTitle(t *testing.T) {
+	urls, title, err := loadFeedURLs("", "")
+	if err != nil {
+		t.Fatalf("loadFeedURLs() error = %v", err)
+	}
+	if title != "" {
+		t.Errorf("title = %q, want empty for database mode", title)
+	}
+	if urls != nil {
+		t.Errorf("urls = %v, want nil", urls)
+	}
+}
+
+func TestExecuteWorkflowIndexUsesFeedListTitle(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+	cfg.FeedsFile = writeOPML(t, t.TempDir(), "tech.opml", testTitleTechBlogs)
+	cfg.Format = testFormatOPML
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read index.html: %v", err)
+	}
+	for _, want := range []string{"<title>Tech Blogs</title>", "<h1>Tech Blogs</h1>"} {
+		if !strings.Contains(string(indexHTML), want) {
+			t.Errorf("index.html does not contain %q", want)
+		}
+	}
+	if strings.Contains(string(indexHTML), ">"+DefaultSiteTitle+"<") {
+		t.Errorf("index.html still contains the default title %q", DefaultSiteTitle)
+	}
+}
+
+func TestExecuteWorkflowSiteTitleOverrideWins(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+	cfg.FeedsFile = writeOPML(t, t.TempDir(), "tech.opml", testTitleTechBlogs)
+	cfg.Format = testFormatOPML
+	cfg.SiteTitle = "Explicit Override"
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read index.html: %v", err)
+	}
+	if !strings.Contains(string(indexHTML), "<h1>Explicit Override</h1>") {
+		t.Errorf("index.html does not use the SiteTitle override")
+	}
+	if strings.Contains(string(indexHTML), testTitleTechBlogs) {
+		t.Errorf("index.html used the feed list title despite an explicit override")
+	}
+}
+
+func TestExecuteWorkflowDatabaseModeUsesDefaultTitle(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true) // No FeedsFile: database mode.
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read index.html: %v", err)
+	}
+	if !strings.Contains(string(indexHTML), "<h1>"+DefaultSiteTitle+"</h1>") {
+		t.Errorf("index.html does not fall back to %q with no feed list", DefaultSiteTitle)
+	}
+}
+
+func TestExecuteWorkflowEscapesTitleMetacharacters(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+	cfg.FeedsFile = writeOPML(t, t.TempDir(), "evil.opml", "A &amp; B &lt;script&gt;")
+	cfg.Format = testFormatOPML
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	indexHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read index.html: %v", err)
+	}
+	// The OPML parser decodes the entities to `A & B <script>`; html/template
+	// must re-escape them rather than emitting a live tag.
+	if strings.Contains(string(indexHTML), "<script>") {
+		t.Errorf("index.html contains an unescaped <script> from the feed list title")
 	}
 }

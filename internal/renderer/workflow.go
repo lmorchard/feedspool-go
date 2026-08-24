@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	configpkg "github.com/lmorchard/feedspool-go/internal/config"
@@ -25,8 +26,14 @@ type WorkflowConfig struct {
 	AssetsDir       string
 	FeedsFile       string
 	Format          string
-	Database        string
-	Clean           bool
+	// SiteTitle overrides the title shown as each page's <title> and <h1>.
+	// Empty means derive it from the feed list named by FeedsFile, falling
+	// back to DefaultSiteTitle when there is no feed list at all. Directory
+	// mode sets this from the title it already resolved for the index page,
+	// so both modes share one fallback chain instead of computing their own.
+	SiteTitle string
+	Database  string
+	Clean     bool
 	// Quiet suppresses per-site progress output (the "Rendering feeds
 	// from...", "Found N feeds...", "Open .../index.html..." lines).
 	// Directory-mode callers that print their own summary set this so a
@@ -84,7 +91,7 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	}
 
 	// Load feed URLs if specified
-	feedURLs, err := loadFeedURLs(config.FeedsFile, config.Format)
+	feedURLs, listTitle, err := loadFeedURLs(config.FeedsFile, config.Format)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +123,7 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	// Generate site. FormatTimeWindow is called once here rather than three
 	// times inside generateSite, which is what the chrome struct buys.
 	chrome := SiteChrome{
+		SiteTitle:   resolveSiteTitle(config.SiteTitle, listTitle),
 		TimeWindow:  FormatTimeWindow(startTime, endTime, config.MaxAge),
 		GeneratedAt: endTime,
 	}
@@ -126,9 +134,14 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	return summarize(feeds, items), nil
 }
 
-func loadFeedURLs(feedsFile, format string) ([]string, error) {
+// loadFeedURLs reads the feed list at feedsFile and returns its URLs together
+// with a display title for the site built from it: the list's own title, or
+// the filename base when the list carries none. A text list never carries a
+// title, and neither does an OPML with no <head><title>. Returns an empty
+// title when there is no feed list.
+func loadFeedURLs(feedsFile, format string) (urls []string, title string, err error) {
 	if feedsFile == "" {
-		return nil, nil
+		return nil, "", nil
 	}
 
 	var feedFormat feedlist.Format
@@ -138,15 +151,37 @@ func loadFeedURLs(feedsFile, format string) ([]string, error) {
 	case "text":
 		feedFormat = feedlist.FormatText
 	default:
-		return nil, fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
+		return nil, "", fmt.Errorf("unsupported feed format: %s (must be 'opml' or 'text')", format)
 	}
 
 	feedList, err := feedlist.LoadFeedList(feedFormat, feedsFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load feed list: %w", err)
+		return nil, "", fmt.Errorf("failed to load feed list: %w", err)
 	}
 
-	return feedList.GetURLs(), nil
+	// OPMLFeedList.Title already trims surrounding whitespace, so a
+	// whitespace-only <title> arrives here as empty and takes the fallback.
+	title = feedList.Title()
+	if title == "" {
+		title = strings.TrimSuffix(filepath.Base(feedsFile), filepath.Ext(feedsFile))
+	}
+
+	return feedList.GetURLs(), title, nil
+}
+
+// resolveSiteTitle picks the title for the pages about to be rendered:
+// an explicit override from the caller, then the feed list's own title, then
+// the fixed default. Terminating the chain here rather than in the templates
+// means SiteTitle is never empty by render time, so no template needs a
+// conditional.
+func resolveSiteTitle(override, listTitle string) string {
+	if override != "" {
+		return override
+	}
+	if listTitle != "" {
+		return listTitle
+	}
+	return DefaultSiteTitle
 }
 
 func queryData(
