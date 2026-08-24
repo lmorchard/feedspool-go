@@ -139,10 +139,15 @@ func TestRenderAllBuildsSitesAndIndex(t *testing.T) {
 	}
 }
 
-// TestRenderAllTitlesEachSiteFromItsOwnList guards against renderOneSite
-// leaking one site's title into another. It copies a shared WorkflowConfig
-// per site, so a title assigned to the shared struct rather than the copy
-// would make the last site's name win everywhere.
+// TestRenderAllTitlesEachSiteFromItsOwnList is an end-to-end check that each
+// directory-mode site is titled from its own feed list: no cross-site
+// leakage, no fallback to the default title.
+//
+// Note what this does and does not pin. Assigning the title to the shared
+// config (base.SiteTitle) instead of the per-site copy makes this fail.
+// Deleting renderOneSite's cfg.SiteTitle assignment outright does not:
+// ExecuteWorkflow re-derives the identical title from cfg.FeedsFile through
+// the same fallback logic, so the override's effect is invisible here.
 func TestRenderAllTitlesEachSiteFromItsOwnList(t *testing.T) {
 	dir := writeDir(t, map[string]string{
 		techOPML:   opmlWith(techTitle, feedA),
