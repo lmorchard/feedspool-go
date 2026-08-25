@@ -91,6 +91,36 @@ jobs:
           exit 1
         fi
 
+    # buildx names the binary it copies by TARGETARCH, so stage one per target.
+    - name: Stage per-arch binaries for the multi-arch image
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      run: |
+        set -euo pipefail
+        # This job already built linux/amd64 for the release archive.
+        cp feedspool feedspool-linux-amd64
+        # Cross-compiling costs nothing now that cgo is disabled.
+        GOOS=linux GOARCH=arm64 make build BINARY=feedspool-linux-arm64
+
+        # Assert each binary really is the architecture its filename claims.
+        # This has to happen here rather than inside the image: a RUN step
+        # cannot tell, because binfmt/qemu will transparently execute a
+        # foreign-arch binary and report success.
+        assert_arch() {
+          actual=$(file -b "$1")
+          case "$actual" in
+            *"$2"*) echo "ok: $1 is $2" ;;
+            *) echo "::error::$1 should be $2 but is: $actual"; exit 1 ;;
+          esac
+        }
+        assert_arch feedspool-linux-amd64 x86-64
+        assert_arch feedspool-linux-arm64 aarch64
+
+    # Needed to run the arm64 image's RUN layers (apk, the binary smoke test)
+    # on an amd64 runner.
+    - name: Set up QEMU
+      if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+      uses: docker/setup-qemu-action@v3
+
     - name: Set up Docker Buildx
       if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
       uses: docker/setup-buildx-action@v3
@@ -122,12 +152,12 @@ jobs:
       with:
         context: .
         file: Dockerfile.prebuilt
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        platforms: linux/amd64
 
     - name: Create archive (Unix)
       if: matrix.goos != 'windows'

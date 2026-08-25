@@ -30,6 +30,8 @@ _testmain.go
 
 feedspool-go
 feedspool
+# Per-arch binaries staged for the multi-arch Docker image
+feedspool-linux-*
 data
 
 # SQLite database files
