@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
-	_ "github.com/mattn/go-sqlite3" // sqlite3 driver
 	"github.com/sirupsen/logrus"
+	_ "modernc.org/sqlite" // pure-Go sqlite driver, no CGO
 )
 
 //go:embed schema.sql
@@ -29,7 +29,7 @@ func New(dbPath string) (*DB, error) {
 		}
 	}
 
-	conn, err := sql.Open("sqlite3", dbPath)
+	conn, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

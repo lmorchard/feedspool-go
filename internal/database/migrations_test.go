@@ -17,7 +17,7 @@ func setupTestDBForMigrations(t *testing.T) (db *DB, tempDir string) {
 	dbPath := filepath.Join(tmpDir, "feedspool_migration_test.db")
 
 	// Open database connection directly without initializing schema
-	sqlDB, err := sql.Open("sqlite3", dbPath)
+	sqlDB, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatal(err)
 	}

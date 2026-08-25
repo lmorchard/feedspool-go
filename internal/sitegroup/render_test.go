@@ -309,18 +309,11 @@ func TestRenderAllRejectsEmptyOutputDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(cwd); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(oldwd) }()
+	t.Chdir(cwd)
 
 	feedsDir := writeDir(t, map[string]string{aOPML: opmlWith("A", feedA)})
 
-	_, err = RenderAll(feedsDir, &renderer.WorkflowConfig{OutputDir: "", Database: newTestDB(t)})
+	_, err := RenderAll(feedsDir, &renderer.WorkflowConfig{OutputDir: "", Database: newTestDB(t)})
 	if err == nil {
 		t.Fatal("RenderAll() error = nil, want an error for an empty OutputDir")
 	}
