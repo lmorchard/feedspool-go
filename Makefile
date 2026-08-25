@@ -1,8 +1,18 @@
 .PHONY: build test clean run lint format fmt setup print-golangci-lint-version
 
-VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.0.1")
-COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+# Assigned with ?= so the release workflows can pass the authoritative values
+# in the environment. They already do, deriving VERSION from the pushed tag;
+# with := those exports were silently ignored, because a Makefile assignment
+# beats the environment.
+#
+# --match keeps the fallback away from the rolling "latest" tag. That tag sits
+# on the same commit as a release tag, and actions/checkout rewrites the fetched
+# release tag to point straight at the commit, so in CI both are lightweight and
+# describe is free to pick either one. Restricting the pattern removes the
+# coin flip.
+VERSION ?= $(shell git describe --tags --always --dirty --match 'v[0-9]*' 2>/dev/null || echo "v0.0.1")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -X github.com/lmorchard/feedspool-go/cmd.Version=$(VERSION) -X github.com/lmorchard/feedspool-go/cmd.Commit=$(COMMIT) -X github.com/lmorchard/feedspool-go/cmd.Date=$(DATE)
 
 # Output path for `build`. Override to build somewhere other than the repo
