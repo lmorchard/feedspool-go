@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"encoding/json"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ const (
 	fixtureFeedURL1     = "https://example1.com/feed.xml"
 	fixtureItemLink     = "https://example.com/item"
 	fixtureFeedTitle    = "Test Feed"
+	fixtureLastModified = "Mon, 01 Jan 2024 00:00:00 GMT"
 	fixtureItemContent  = "Test content"
 	fixtureItemSummary  = "Test summary"
 	fixtureGUID         = "test-guid"
@@ -387,6 +389,39 @@ func TestItemFromGofeedNoGUID(t *testing.T) {
 	item2, _ := ItemFromGofeed(gofeedItem, fixtureFeedURL)
 	if item.GUID != item2.GUID {
 		t.Errorf("Generated GUID should be consistent: %v != %v", item.GUID, item2.GUID)
+	}
+}
+
+func TestItemFromScrapeLeavesPublicationDateUnset(t *testing.T) {
+	item, err := ItemFromScrape("Scraped article", fixtureItemLink, fixtureFeedURL)
+	if err != nil {
+		t.Fatalf("ItemFromScrape() error = %v", err)
+	}
+	if item.FeedURL != fixtureFeedURL || item.Title != "Scraped article" || item.Link != fixtureItemLink {
+		t.Errorf("ItemFromScrape() = %#v", item)
+	}
+	if item.GUID != fixtureItemLink {
+		t.Errorf("GUID = %q, want stable link %q", item.GUID, fixtureItemLink)
+	}
+	if !item.PublishedDate.IsZero() {
+		t.Errorf("PublishedDate = %v, want zero time", item.PublishedDate)
+	}
+	if len(item.ItemJSON) == 0 {
+		t.Error("ItemJSON is empty")
+	}
+}
+
+func TestItemEffectiveDateFallsBackToFirstSeen(t *testing.T) {
+	firstSeen := time.Now().In(time.FixedZone("test offset", -7*60*60)).Truncate(time.Second)
+	item := Item{FirstSeen: sql.NullTime{Time: firstSeen, Valid: true}}
+	if got := item.EffectiveDate(); !got.Equal(firstSeen) || got.Location() != time.UTC {
+		t.Errorf("EffectiveDate() = %v, want first_seen instant in UTC", got)
+	}
+
+	published := firstSeen.Add(-time.Hour)
+	item.PublishedDate = published
+	if got := item.EffectiveDate(); !got.Equal(published) || got.Location() != time.UTC {
+		t.Errorf("EffectiveDate() = %v, want published_date instant in UTC", got)
 	}
 }
 

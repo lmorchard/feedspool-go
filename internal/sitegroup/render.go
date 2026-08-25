@@ -26,7 +26,10 @@ type FetchPlan struct {
 	Skipped     []Skipped
 	URLs        []string        // Deduped union across every site.
 	FeedConfigs []feedlist.Feed // Deduped configuration from OPML lists.
-	References  int             // Total URL references before dedup.
+	// ParserConfigs covers every URL. OPML configuration wins when the same
+	// URL also appears in a URL-only text list.
+	ParserConfigs []feedlist.Feed
+	References    int // Total URL references before dedup.
 }
 
 // PlanFetch discovers the feed lists in dir and unions their URLs so a feed
@@ -49,13 +52,33 @@ func PlanFetch(dir string) (*FetchPlan, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid directory feed configuration: %w", err)
 	}
+	parserConfigs := append([]feedlist.Feed(nil), feedConfigs...)
+	opmlURLs := make(map[string]struct{}, len(feedConfigs))
+	for _, feed := range feedConfigs {
+		opmlURLs[feed.URL] = struct{}{}
+	}
+	for i := range sites {
+		if sites[i].Format != feedlist.FormatText {
+			continue
+		}
+		for _, feed := range sites[i].Feeds {
+			if _, configuredByOPML := opmlURLs[feed.URL]; !configuredByOPML {
+				parserConfigs = append(parserConfigs, feed)
+			}
+		}
+	}
+	parserConfigs, err = feedlist.DeduplicateFeeds(parserConfigs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid directory feed parser configuration: %w", err)
+	}
 
 	return &FetchPlan{
-		Sites:       sites,
-		Skipped:     skipped,
-		URLs:        UnionURLs(sites),
-		FeedConfigs: feedConfigs,
-		References:  references,
+		Sites:         sites,
+		Skipped:       skipped,
+		URLs:          UnionURLs(sites),
+		FeedConfigs:   feedConfigs,
+		ParserConfigs: parserConfigs,
+		References:    references,
 	}, nil
 }
 

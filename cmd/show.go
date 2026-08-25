@@ -177,7 +177,7 @@ func outputTable(items []*database.Item) error {
 	fmt.Fprintln(w, "----\t-----\t----")
 
 	for _, item := range items {
-		date := item.PublishedDate.Format("2006-01-02 15:04")
+		date := item.EffectiveDate().Format("2006-01-02 15:04")
 		title := item.Title
 		if len(title) > 60 {
 			title = title[:57] + "..."
@@ -207,7 +207,7 @@ func outputCSV(items []*database.Item) error {
 
 	for _, item := range items {
 		record := []string{
-			item.PublishedDate.Format(time.RFC3339),
+			item.EffectiveDate().Format(time.RFC3339),
 			item.Title,
 			item.Link,
 			item.Summary,

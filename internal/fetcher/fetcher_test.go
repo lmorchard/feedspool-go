@@ -35,6 +35,13 @@ const testFeedXML = `<?xml version="1.0" encoding="UTF-8"?>
     </channel>
 </rss>`
 
+const testScrapeHTML = `<html><body>
+<article class="post"><a href="/one">First scraped item</a></article>
+<article class="post"><a href="/two">Second scraped item</a></article>
+</body></html>`
+
+const testScrapeSelector = ".post"
+
 func setupTestDatabase(t *testing.T) *database.DB {
 	t.Helper()
 
@@ -130,6 +137,150 @@ func TestFetchFeedSuccess(t *testing.T) {
 
 	if result.Feed.ETag != testETag {
 		t.Errorf("FetchFeed() Feed.ETag = %v, want %q", result.Feed.ETag, testETag)
+	}
+}
+
+func TestFetchFeedScrape(t *testing.T) {
+	db := setupTestDatabase(t)
+	const userAgent = "Scrape Reader/1.0"
+
+	requests := make(chan *http.Request, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests <- r.Clone(r.Context())
+		w.Header().Set("ETag", "scrape-etag")
+		_, _ = w.Write([]byte(testScrapeHTML))
+	}))
+	defer server.Close()
+
+	if err := db.SetFeedConfig(server.URL, database.FeedTypeScrape, testScrapeSelector, userAgent); err != nil {
+		t.Fatal(err)
+	}
+	fetcher := NewFetcher(db, 30*time.Second, 1, false)
+	result := fetcher.FetchFeed(server.URL)
+	if result.Error != nil {
+		t.Fatalf("FetchFeed() error = %v", result.Error)
+	}
+	if result.ItemCount != 1 {
+		t.Errorf("ItemCount = %d, want max-items-limited count 1", result.ItemCount)
+	}
+	if got := (<-requests).Header.Get("User-Agent"); got != userAgent {
+		t.Errorf("User-Agent = %q, want %q", got, userAgent)
+	}
+	if result.Feed == nil || result.Feed.Type != database.FeedTypeScrape ||
+		result.Feed.ScrapeSelector != testScrapeSelector {
+		t.Fatalf("result.Feed = %#v, want preserved scrape config", result.Feed)
+	}
+	if result.Feed.ETag != "scrape-etag" {
+		t.Errorf("ETag = %q, want scrape-etag", result.Feed.ETag)
+	}
+
+	items, err := db.GetItemsForFeed(server.URL, 0, time.Time{}, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(GetItemsForFeed()) = %d, want 1", len(items))
+	}
+	if items[0].Link != server.URL+"/one" || items[0].Title != "First scraped item" {
+		t.Errorf("scraped item = %#v", items[0])
+	}
+	if !items[0].PublishedDate.IsZero() {
+		t.Errorf("PublishedDate = %v, want zero", items[0].PublishedDate)
+	}
+	var publishedDateIsNull bool
+	if err := db.GetConnection().QueryRow(
+		"SELECT published_date IS NULL FROM items WHERE feed_url = ?", server.URL,
+	).Scan(&publishedDateIsNull); err != nil {
+		t.Fatal(err)
+	}
+	if !publishedDateIsNull {
+		t.Error("published_date is not SQL NULL")
+	}
+	if !items[0].FirstSeen.Valid {
+		t.Error("FirstSeen is unset")
+	}
+	filteredItems, err := db.GetItemsForFeed(
+		server.URL, 0, items[0].FirstSeen.Time.Add(-time.Minute), items[0].FirstSeen.Time.Add(time.Minute),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(filteredItems) != 1 {
+		t.Errorf("time-filtered scraped items = %d, want 1 using first_seen fallback", len(filteredItems))
+	}
+}
+
+func TestFetchFeedScrapeRequiresSelector(t *testing.T) {
+	db := setupTestDatabase(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(testScrapeHTML))
+	}))
+	defer server.Close()
+
+	if err := db.SetFeedConfig(server.URL, database.FeedTypeScrape, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	result := NewFetcher(db, 30*time.Second, 10, false).FetchFeed(server.URL)
+	if result.Error == nil || !strings.Contains(result.Error.Error(), "selector") {
+		t.Fatalf("FetchFeed() error = %v, want missing-selector error", result.Error)
+	}
+}
+
+func TestFetchFeedScrapeUsesFinalRedirectURLAsBase(t *testing.T) {
+	db := setupTestDatabase(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/archive" {
+			http.Redirect(w, r, "/archive/", http.StatusMovedPermanently)
+			return
+		}
+		_, _ = w.Write([]byte(`<article class="post"><a href="entry">Entry</a></article>`))
+	}))
+	defer server.Close()
+
+	feedURL := server.URL + "/archive"
+	if err := db.SetFeedConfig(feedURL, database.FeedTypeScrape, testScrapeSelector, ""); err != nil {
+		t.Fatal(err)
+	}
+	result := NewFetcher(db, 30*time.Second, 10, false).FetchFeed(feedURL)
+	if result.Error != nil {
+		t.Fatalf("FetchFeed() error = %v", result.Error)
+	}
+	items, err := db.GetItemsForFeed(feedURL, 0, time.Time{}, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Link != server.URL+"/archive/entry" {
+		t.Errorf("items = %#v, want redirect-relative link", items)
+	}
+}
+
+func TestFetchFeedParserChangeDoesNotUseStaleValidator(t *testing.T) {
+	db := setupTestDatabase(t)
+	const staleETag = "stale-parser-etag"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("If-None-Match") == staleETag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		_, _ = w.Write([]byte(testScrapeHTML))
+	}))
+	defer server.Close()
+
+	if err := db.UpsertFeed(&database.Feed{
+		URL:            server.URL,
+		Type:           database.FeedTypeScrape,
+		ScrapeSelector: ".old",
+		ETag:           staleETag,
+		LastFetchTime:  time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetFeedConfig(server.URL, database.FeedTypeScrape, testScrapeSelector, ""); err != nil {
+		t.Fatal(err)
+	}
+	result := NewFetcher(db, 30*time.Second, 10, false).FetchFeed(server.URL)
+	if result.Error != nil || result.Cached || result.ItemCount != 2 {
+		t.Errorf("FetchFeed() = %#v, want fresh scrape after parser change", result)
 	}
 }
 

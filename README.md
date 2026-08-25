@@ -1,6 +1,6 @@
 # feedspool
 
-A CLI tool for managing RSS/Atom feeds with SQLite storage and static website generation.
+A CLI tool for managing RSS/Atom and HTML-scraped feeds with SQLite storage and static website generation.
 
 ## Features
 
@@ -26,6 +26,7 @@ Further feature highlights:
 - Static HTML site generation with responsive design, dark mode, and rich metadata
 - Multi-site builds from a directory of feed lists, with a shared deduped fetch
 - RSS/Atom feed autodiscovery from HTML pages
+- Explicit HTML scrape feeds driven by OPML CSS selectors
 - Export database feeds to OPML or text formats
 - SQLite database storage with feed history
 - Multiple output formats (table, JSON, CSV)

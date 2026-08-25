@@ -15,8 +15,27 @@ const discoveryTimeExpression = `julianday(CASE
 	ELSE first_seen
 END)`
 
+const effectiveDateExpression = `julianday(COALESCE(published_date, first_seen))`
+
+const aliasedEffectiveDateExpression = `julianday(COALESCE(i.published_date, i.first_seen))`
+
+const (
+	effectiveDateSinceClause = " AND " + effectiveDateExpression +
+		" IS NOT NULL AND " + effectiveDateExpression + " >= julianday(?)"
+	effectiveDateUntilClause = " AND " + effectiveDateExpression +
+		" IS NOT NULL AND " + effectiveDateExpression + " <= julianday(?)"
+)
+
 // UpsertItem inserts or updates an item record in the database.
 func (db *DB) UpsertItem(item *Item) error {
+	var publishedDate interface{}
+	if !item.PublishedDate.IsZero() {
+		publishedDate = formatDatabaseTime(item.PublishedDate)
+	}
+	var firstSeen interface{}
+	if item.FirstSeen.Valid {
+		firstSeen = formatDatabaseTime(item.FirstSeen.Time)
+	}
 	query := `
 		INSERT INTO items (feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json)
@@ -31,7 +50,7 @@ func (db *DB) UpsertItem(item *Item) error {
 	`
 
 	_, err := db.conn.Exec(query,
-		item.FeedURL, item.GUID, item.Title, item.Link, item.PublishedDate, item.FirstSeen,
+		item.FeedURL, item.GUID, item.Title, item.Link, publishedDate, firstSeen,
 		item.Content, item.Summary, item.Archived, item.ItemJSON)
 	if err != nil {
 		return fmt.Errorf("failed to upsert item: %w", err)
@@ -39,6 +58,59 @@ func (db *DB) UpsertItem(item *Item) error {
 
 	logrus.Debugf("Upserted item: %s - %s", item.FeedURL, item.GUID)
 	return nil
+}
+
+// GetItemsByLink retrieves every item with the exact link in deterministic order.
+func (db *DB) GetItemsByLink(link string) ([]*Item, error) {
+	return db.queryItems(`
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
+			content, summary, archived, item_json
+		FROM items
+		WHERE link = ?
+		ORDER BY feed_url, guid
+	`, link)
+}
+
+// GetItem retrieves an item by its feed URL and GUID, or nil if it does not exist.
+func (db *DB) GetItem(feedURL, guid string) (*Item, error) {
+	items, err := db.queryItems(`
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
+			content, summary, archived, item_json
+		FROM items
+		WHERE feed_url = ? AND guid = ?
+	`, feedURL, guid)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+	return items[0], nil
+}
+
+func (db *DB) queryItems(query string, args ...any) ([]*Item, error) {
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []*Item
+	for rows.Next() {
+		item := &Item{}
+		if err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen, &item.Content, &item.Summary,
+			&item.Archived, &item.ItemJSON,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate items: %w", err)
+	}
+	return items, nil
 }
 
 // GetItemsForFeed retrieves items for a specific feed with optional filtering by time range and limit.
@@ -52,16 +124,16 @@ func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time)
 	args := []interface{}{feedURL}
 
 	if !since.IsZero() {
-		query += " AND published_date >= ?"
-		args = append(args, since)
+		query += effectiveDateSinceClause
+		args = append(args, formatDatabaseTime(since))
 	}
 
 	if !until.IsZero() {
-		query += " AND published_date <= ?"
-		args = append(args, until)
+		query += effectiveDateUntilClause
+		args = append(args, formatDatabaseTime(until))
 	}
 
-	query += " ORDER BY published_date DESC"
+	query += " ORDER BY " + effectiveDateExpression + " DESC"
 
 	if limit > 0 {
 		query += sqlLimitClause
@@ -79,7 +151,7 @@ func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time)
 		item := &Item{}
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON,
 		)
 		if err != nil {
@@ -135,8 +207,9 @@ func (db *DB) MarkItemsArchived(feedURL string, activeGUIDs []string) error {
 
 // DeleteArchivedItems deletes archived items older than the specified time.
 func (db *DB) DeleteArchivedItems(olderThan time.Time) (int64, error) {
-	query := "DELETE FROM items WHERE archived = 1 AND published_date < ?"
-	result, err := db.conn.Exec(query, olderThan)
+	query := "DELETE FROM items WHERE archived = 1 AND " + effectiveDateExpression +
+		" IS NOT NULL AND " + effectiveDateExpression + " < julianday(?)"
+	result, err := db.conn.Exec(query, formatDatabaseTime(olderThan))
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete archived items: %w", err)
 	}
@@ -182,7 +255,7 @@ func (db *DB) deleteArchivedItemsForFeed(feedURL string, olderThan time.Time, mi
 	protectedQuery := `
 		SELECT id FROM items
 		WHERE feed_url = ?
-		ORDER BY published_date DESC
+		ORDER BY ` + effectiveDateExpression + ` DESC
 		LIMIT ?
 	`
 	rows, err := db.conn.Query(protectedQuery, feedURL, minItems)
@@ -211,7 +284,7 @@ func (db *DB) deleteArchivedItemsForFeed(feedURL string, olderThan time.Time, mi
 
 	// Build DELETE query excluding protected items
 	placeholders := make([]string, len(protectedIDs))
-	args := []interface{}{feedURL, olderThan}
+	args := []interface{}{feedURL, formatDatabaseTime(olderThan)}
 	for i, id := range protectedIDs {
 		placeholders[i] = "?"
 		args = append(args, id)
@@ -222,9 +295,10 @@ func (db *DB) deleteArchivedItemsForFeed(feedURL string, olderThan time.Time, mi
 		DELETE FROM items
 		WHERE feed_url = ?
 		  AND archived = 1
-		  AND published_date < ?
-		  AND id NOT IN (%s)
-	`, strings.Join(placeholders, ","))
+		  AND %[1]s IS NOT NULL
+		  AND %[1]s < julianday(?)
+		  AND id NOT IN (%[2]s)
+	`, effectiveDateExpression, strings.Join(placeholders, ","))
 
 	result, err := db.conn.Exec(deleteQuery, args...)
 	if err != nil {
@@ -254,7 +328,7 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 		placeholders[i] = "?"
 		args = append(args, url)
 	}
-	args = append(args, start, end)
+	args = append(args, formatDatabaseTime(start), formatDatabaseTime(end))
 
 	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(`
@@ -262,9 +336,11 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 			content, summary, archived, item_json
 		FROM items
 		WHERE feed_url IN (%s)
-			AND published_date >= ? AND published_date <= ?
-		ORDER BY feed_url, published_date DESC
-	`, strings.Join(placeholders, ","))
+			AND %[2]s IS NOT NULL
+			AND %[2]s >= julianday(?)
+			AND %[2]s <= julianday(?)
+		ORDER BY feed_url, %[2]s DESC
+	`, strings.Join(placeholders, ","), effectiveDateExpression)
 
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
@@ -277,7 +353,7 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 		item := Item{}
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen, &item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON,
 		)
 		if err != nil {
@@ -318,7 +394,7 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 		var item Item
 		if err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen, &item.Content, &item.Summary,
 			&item.Archived, &item.ItemJSON,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
@@ -335,7 +411,7 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 
 	if filterTimesInGo {
 		sort.SliceStable(items, func(i, j int) bool {
-			return items[i].PublishedDate.After(items[j].PublishedDate)
+			return items[i].EffectiveDate().After(items[j].EffectiveDate())
 		})
 		if filter.Limit > 0 && len(items) > filter.Limit {
 			items = items[:filter.Limit]
@@ -347,11 +423,14 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 
 func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, filterTimesInGo bool) {
 	filterTimesInGo = !filter.Since.IsZero() || !filter.Until.IsZero()
+	fromClause := "FROM items i"
+	if filterTimesInGo {
+		fromClause += " INDEXED BY idx_items_discovery_time"
+	}
 	query = `
 		SELECT i.id, i.feed_url, i.guid, i.title, i.link, i.published_date, i.first_seen,
 			i.content, i.summary, i.archived, i.item_json
-		FROM items i
-	`
+		` + fromClause + "\n"
 	var conditions []string
 
 	if filter.Unseen {
@@ -396,8 +475,8 @@ func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, filt
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
+	query += " ORDER BY " + aliasedEffectiveDateExpression + " DESC"
 	if !filterTimesInGo {
-		query += " ORDER BY i.published_date DESC"
 		if filter.Limit > 0 {
 			query += sqlLimitClause
 			args = append(args, filter.Limit)

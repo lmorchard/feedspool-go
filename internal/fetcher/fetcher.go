@@ -12,6 +12,7 @@ import (
 
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
+	"github.com/lmorchard/feedspool-go/internal/scraper"
 	"github.com/lmorchard/feedspool-go/internal/unfurl"
 	"github.com/mmcdole/gofeed"
 	"github.com/sirupsen/logrus"
@@ -64,6 +65,15 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 		result.Error = fmt.Errorf("failed to check existing feed: %w", err)
 		return result
 	}
+	feedType := database.FeedTypeRSS
+	if existingFeed != nil && existingFeed.Type == database.FeedTypeScrape {
+		feedType = database.FeedTypeScrape
+		if existingFeed.ScrapeSelector == "" {
+			result.Error = fmt.Errorf("scrape feed %s requires a selector", feedURL)
+			f.updateFeedError(existingFeed, result.Error.Error())
+			return result
+		}
+	}
 
 	headers := make(map[string]string)
 
@@ -106,25 +116,50 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 		f.updateFeedError(existingFeed, result.Error.Error())
 		return result
 	}
+	return f.parseResponse(result, existingFeed, feedType, resp)
+}
+
+func (f *Fetcher) parseResponse(
+	result *FetchResult, existingFeed *database.Feed,
+	feedType string, resp *httpclient.Response,
+) *FetchResult {
+	if feedType == database.FeedTypeScrape {
+		baseURL := result.URL
+		if resp.Request != nil && resp.Request.URL != nil {
+			baseURL = resp.Request.URL.String()
+		}
+		scrapedItems, scrapeErr := scraper.Parse(resp.BodyReader, baseURL, existingFeed.ScrapeSelector)
+		if scrapeErr != nil {
+			result.Error = fmt.Errorf("failed to parse scrape feed: %w", scrapeErr)
+			f.updateFeedError(existingFeed, result.Error.Error())
+			return result
+		}
+		return f.processScrapedFeed(result, scrapedItems, existingFeed, resp)
+	}
 
 	parser := gofeed.NewParser()
-	gofeedData, err := parser.Parse(resp.BodyReader)
-	if err != nil {
-		result.Error = fmt.Errorf("failed to parse: %w", err)
+	gofeedData, parseErr := parser.Parse(resp.BodyReader)
+	if parseErr != nil {
+		result.Error = fmt.Errorf("failed to parse: %w", parseErr)
 		f.updateFeedError(existingFeed, result.Error.Error())
 		return result
 	}
 
-	return f.processParsedFeed(result, gofeedData, feedURL, resp)
+	return f.processParsedFeed(result, gofeedData, result.URL, existingFeed, resp)
 }
 
 func (f *Fetcher) processParsedFeed(
-	result *FetchResult, gofeedData *gofeed.Feed, feedURL string, resp *httpclient.Response,
+	result *FetchResult, gofeedData *gofeed.Feed, feedURL string,
+	existingFeed *database.Feed, resp *httpclient.Response,
 ) *FetchResult {
 	feed, err := database.FeedFromGofeed(gofeedData, feedURL)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to convert: %w", err)
 		return result
+	}
+	feed.Type = database.FeedTypeRSS
+	if existingFeed != nil {
+		feed.UserAgent = existingFeed.UserAgent
 	}
 
 	feed.ETag = resp.Header.Get("ETag")
@@ -152,6 +187,56 @@ func (f *Fetcher) processParsedFeed(
 	}
 	// Note: If no items with valid dates, we preserve the existing latest_item_date in the database
 
+	result.ItemCount = itemCount
+	result.Feed = feed
+	return result
+}
+
+func (f *Fetcher) processScrapedFeed(
+	result *FetchResult, scrapedItems []scraper.ScrapedItem,
+	existingFeed *database.Feed, resp *httpclient.Response,
+) *FetchResult {
+	feed := existingFeed
+	if feed == nil {
+		feed = &database.Feed{URL: result.URL}
+	}
+	if feed.Title == "" {
+		feed.Title = result.URL
+	}
+	feed.Type = database.FeedTypeScrape
+	feed.ETag = resp.Header.Get("ETag")
+	feed.LastModified = resp.Header.Get("Last-Modified")
+	feed.LastFetchTime = time.Now()
+	feed.LastSuccessfulFetch = time.Now()
+	feed.ErrorCount = 0
+	feed.LastError = ""
+
+	if err := f.db.UpsertFeed(feed); err != nil {
+		result.Error = fmt.Errorf("failed to save feed: %w", err)
+		return result
+	}
+
+	items := make([]*database.Item, 0, len(scrapedItems))
+	maxItems := f.maxItems
+	if maxItems <= 0 || maxItems > len(scrapedItems) {
+		maxItems = len(scrapedItems)
+	}
+	for _, scrapedItem := range scrapedItems[:maxItems] {
+		item, err := database.ItemFromScrape(scrapedItem.Title, scrapedItem.Link, result.URL)
+		if err != nil {
+			logrus.Warnf("Failed to convert scraped item: %v", err)
+			continue
+		}
+		items = append(items, item)
+	}
+
+	itemCount, latestItemDate := f.processItems(items, result.URL)
+	if !latestItemDate.IsZero() {
+		feed.LatestItemDate = sql.NullTime{Time: latestItemDate, Valid: true}
+		if err := f.db.UpsertFeed(feed); err != nil {
+			logrus.Warnf("Failed to update feed with latest item date: %v", err)
+		}
+	}
 	result.ItemCount = itemCount
 	result.Feed = feed
 	return result
@@ -192,29 +277,31 @@ func clampItemDate(itemDate time.Time, firstSeen sql.NullTime) time.Time {
 	return itemDate
 }
 
-//nolint:cyclop // Complex feed processing logic requires multiple conditions
 func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int, time.Time) {
-	activeGUIDs := []string{}
-	itemCount := 0
-	var latestItemDate time.Time
-	var newItemURLs []string
-
+	items := make([]*database.Item, 0, len(gofeedData.Items))
 	maxItems := f.maxItems
-	if maxItems <= 0 {
+	if maxItems <= 0 || maxItems > len(gofeedData.Items) {
 		maxItems = len(gofeedData.Items)
 	}
-
-	for i, gofeedItem := range gofeedData.Items {
-		if i >= maxItems {
-			break
-		}
-
+	for _, gofeedItem := range gofeedData.Items[:maxItems] {
 		item, err := database.ItemFromGofeed(gofeedItem, feedURL)
 		if err != nil {
 			logrus.Warnf("Failed to convert item: %v", err)
 			continue
 		}
+		items = append(items, item)
+	}
+	return f.processItems(items, feedURL)
+}
 
+//nolint:cyclop // Item lifecycle handling has independent date, archive, and unfurl paths.
+func (f *Fetcher) processItems(items []*database.Item, feedURL string) (int, time.Time) {
+	activeGUIDs := []string{}
+	itemCount := 0
+	var latestItemDate time.Time
+	var newItemURLs []string
+
+	for _, item := range items {
 		// Check if this is a new item (before upserting)
 		isNewItem := f.isNewItem(feedURL, item.GUID)
 

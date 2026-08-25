@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lmorchard/feedspool-go/internal/subscription"
 	"github.com/spf13/cobra"
@@ -12,6 +13,8 @@ var (
 	subscribeFilename  string
 	subscribeDiscover  bool
 	subscribeUserAgent string
+	subscribeFeedType  string
+	subscribeSelector  string
 )
 
 var subscribeCmd = &cobra.Command{
@@ -25,6 +28,8 @@ Examples:
   feedspool subscribe https://example.com/feed.xml
   feedspool subscribe --user-agent "Custom Reader/1.0" https://example.com/feed.xml
   feedspool subscribe --user-agent= https://example.com/feed.xml
+  feedspool subscribe --type scrape --selector "article.card" https://example.com/archive
+  feedspool subscribe --type rss https://example.com/feed.xml
   feedspool subscribe --discover https://example.com/blog
   feedspool subscribe --format text --filename feeds.txt https://example.com/feed.xml`,
 	Args: cobra.ExactArgs(1),
@@ -41,6 +46,8 @@ func init() {
 		"",
 		"Per-feed User-Agent override for OPML lists (use --user-agent= to clear)",
 	)
+	subscribeCmd.Flags().StringVar(&subscribeFeedType, "type", "", "Feed parser type for OPML lists (rss or scrape)")
+	subscribeCmd.Flags().StringVar(&subscribeSelector, "selector", "", "CSS selector for a scrape feed")
 	rootCmd.AddCommand(subscribeCmd)
 }
 
@@ -55,19 +62,19 @@ func runSubscribe(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	urlsToAdd, err := getURLsToAdd(manager, targetURL, subscribeDiscover)
+	options, err := buildSubscribeOptions(cmd)
 	if err != nil {
 		return err
 	}
 
+	urlsToAdd, err := getURLsToAdd(manager, targetURL, subscribeDiscover)
+	if err != nil {
+		return err
+	}
 	if len(urlsToAdd) == 0 {
 		return nil
 	}
 
-	options := subscription.SubscribeOptions{}
-	if cmd.Flags().Changed("user-agent") {
-		options.UserAgent = &subscribeUserAgent
-	}
 	result, err := manager.SubscribeWithOptions(format, filename, urlsToAdd, options)
 	if err != nil {
 		return err
@@ -98,6 +105,24 @@ func runSubscribe(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func buildSubscribeOptions(cmd *cobra.Command) (subscription.SubscribeOptions, error) {
+	options := subscription.SubscribeOptions{}
+	if cmd.Flags().Changed("user-agent") {
+		options.UserAgent = &subscribeUserAgent
+	}
+	if cmd.Flags().Changed("type") {
+		options.FeedType = &subscribeFeedType
+	}
+	if cmd.Flags().Changed("selector") {
+		options.ScrapeSelector = &subscribeSelector
+	}
+	if subscribeDiscover && options.FeedType != nil &&
+		strings.EqualFold(strings.TrimSpace(*options.FeedType), "scrape") {
+		return options, fmt.Errorf("--discover cannot be combined with --type scrape")
+	}
+	return options, nil
 }
 
 func getURLsToAdd(manager *subscription.Manager, targetURL string, discover bool) ([]string, error) {

@@ -9,12 +9,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func normalizeFeedParserConfig(feedType, scrapeSelector string) (normalizedType, normalizedSelector string) {
+	if strings.EqualFold(strings.TrimSpace(feedType), FeedTypeScrape) {
+		return FeedTypeScrape, strings.TrimSpace(scrapeSelector)
+	}
+	return FeedTypeRSS, ""
+}
+
 // UpsertFeed inserts or updates a feed record in the database.
 func (db *DB) UpsertFeed(feed *Feed) error {
+	feedType, scrapeSelector := normalizeFeedParserConfig(feed.Type, feed.ScrapeSelector)
 	query := `
 		INSERT INTO feeds (url, title, description, last_updated, etag, last_modified,
-			last_fetch_time, last_successful_fetch, error_count, user_agent, last_error, latest_item_date, feed_json)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			last_fetch_time, last_successful_fetch, error_count, user_agent, type, scrape_selector,
+			last_error, latest_item_date, feed_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(url) DO UPDATE SET
 			title = excluded.title,
 			description = excluded.description,
@@ -25,6 +34,8 @@ func (db *DB) UpsertFeed(feed *Feed) error {
 			last_successful_fetch = excluded.last_successful_fetch,
 			error_count = excluded.error_count,
 			user_agent = COALESCE(NULLIF(excluded.user_agent, ''), feeds.user_agent),
+			type = excluded.type,
+			scrape_selector = excluded.scrape_selector,
 			last_error = excluded.last_error,
 			latest_item_date = COALESCE(excluded.latest_item_date, feeds.latest_item_date),
 			feed_json = excluded.feed_json
@@ -33,12 +44,66 @@ func (db *DB) UpsertFeed(feed *Feed) error {
 	_, err := db.conn.Exec(query,
 		feed.URL, feed.Title, feed.Description, feed.LastUpdated, feed.ETag,
 		feed.LastModified, feed.LastFetchTime, feed.LastSuccessfulFetch,
-		feed.ErrorCount, feed.UserAgent, feed.LastError, feed.LatestItemDate, feed.FeedJSON)
+		feed.ErrorCount, feed.UserAgent, feedType, scrapeSelector,
+		feed.LastError, feed.LatestItemDate, feed.FeedJSON)
 	if err != nil {
 		return fmt.Errorf("failed to upsert feed: %w", err)
 	}
 
 	logrus.Debugf("Upserted feed: %s", feed.URL)
+	return nil
+}
+
+// SetFeedConfig inserts or exactly updates authoritative list-backed configuration.
+func (db *DB) SetFeedConfig(url, feedType, scrapeSelector, userAgent string) error {
+	feedType, scrapeSelector = normalizeFeedParserConfig(feedType, scrapeSelector)
+	_, err := db.conn.Exec(`
+		INSERT INTO feeds (
+			url, user_agent, type, scrape_selector, last_updated, last_fetch_time, last_successful_fetch
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(url) DO UPDATE SET
+			user_agent = excluded.user_agent,
+			type = excluded.type,
+			scrape_selector = excluded.scrape_selector,
+			etag = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN '' ELSE feeds.etag END,
+			last_modified = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN '' ELSE feeds.last_modified END,
+			last_fetch_time = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN excluded.last_fetch_time ELSE feeds.last_fetch_time END,
+			last_successful_fetch = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN excluded.last_successful_fetch ELSE feeds.last_successful_fetch END
+	`, url, userAgent, feedType, scrapeSelector, time.Time{}, time.Time{}, time.Time{})
+	if err != nil {
+		return fmt.Errorf("failed to set configuration for feed %s: %w", url, err)
+	}
+	return nil
+}
+
+// SetFeedParserConfig updates parser configuration while preserving User-Agent.
+// Changing parser semantics invalidates validators and freshness timestamps so
+// the next fetch must parse a complete response with the new configuration.
+func (db *DB) SetFeedParserConfig(url, feedType, scrapeSelector string) error {
+	feedType, scrapeSelector = normalizeFeedParserConfig(feedType, scrapeSelector)
+	_, err := db.conn.Exec(`
+		INSERT INTO feeds (
+			url, type, scrape_selector, last_updated, last_fetch_time, last_successful_fetch
+		) VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(url) DO UPDATE SET
+			type = excluded.type,
+			scrape_selector = excluded.scrape_selector,
+			etag = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN '' ELSE feeds.etag END,
+			last_modified = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN '' ELSE feeds.last_modified END,
+			last_fetch_time = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN excluded.last_fetch_time ELSE feeds.last_fetch_time END,
+			last_successful_fetch = CASE WHEN feeds.type != excluded.type OR feeds.scrape_selector != excluded.scrape_selector
+				THEN excluded.last_successful_fetch ELSE feeds.last_successful_fetch END
+	`, url, feedType, scrapeSelector, time.Time{}, time.Time{}, time.Time{})
+	if err != nil {
+		return fmt.Errorf("failed to set parser configuration for feed %s: %w", url, err)
+	}
 	return nil
 }
 
@@ -60,7 +125,8 @@ func (db *DB) SetFeedUserAgent(url, userAgent string) error {
 func (db *DB) GetFeed(url string) (*Feed, error) {
 	query := `
 		SELECT url, title, description, last_updated, etag, last_modified,
-			last_fetch_time, last_successful_fetch, error_count, user_agent, last_error, latest_item_date, feed_json
+			last_fetch_time, last_successful_fetch, error_count, user_agent, type, scrape_selector,
+			last_error, latest_item_date, feed_json
 		FROM feeds WHERE url = ?
 	`
 
@@ -68,7 +134,8 @@ func (db *DB) GetFeed(url string) (*Feed, error) {
 	err := db.conn.QueryRow(query, url).Scan(
 		&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 		&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-		&feed.ErrorCount, &feed.UserAgent, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+		&feed.ErrorCount, &feed.UserAgent, &feed.Type, &feed.ScrapeSelector,
+		&feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
 	)
 
 	if err == sql.ErrNoRows {
@@ -85,7 +152,8 @@ func (db *DB) GetFeed(url string) (*Feed, error) {
 func (db *DB) GetAllFeeds() ([]*Feed, error) {
 	query := `
 		SELECT url, title, description, last_updated, etag, last_modified,
-			last_fetch_time, last_successful_fetch, error_count, user_agent, last_error, latest_item_date, feed_json
+			last_fetch_time, last_successful_fetch, error_count, user_agent, type, scrape_selector,
+			last_error, latest_item_date, feed_json
 		FROM feeds ORDER BY url
 	`
 
@@ -101,7 +169,8 @@ func (db *DB) GetAllFeeds() ([]*Feed, error) {
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.UserAgent, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+			&feed.ErrorCount, &feed.UserAgent, &feed.Type, &feed.ScrapeSelector,
+			&feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed: %w", err)
@@ -274,12 +343,15 @@ func (db *DB) GetFeedURLs() ([]string, error) {
 
 // GetFeedsWithItemsByTimeRange gets feeds and their items within a specific time range.
 func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []string) ([]Feed, map[string][]Item, error) {
+	start = start.UTC()
+	end = end.UTC()
+
 	// Build feeds query
 	// Use latest_item_date to determine if feed has recent items, falling back to last_updated
 	feedsQuery := `
 		SELECT f.url, f.title, f.description, f.last_updated, f.etag, f.last_modified,
-			f.last_fetch_time, f.last_successful_fetch, f.error_count, f.user_agent, 
-			f.last_error, f.latest_item_date, f.feed_json
+			f.last_fetch_time, f.last_successful_fetch, f.error_count, f.user_agent,
+			f.type, f.scrape_selector, f.last_error, f.latest_item_date, f.feed_json
 		FROM feeds f
 		WHERE COALESCE(f.latest_item_date, f.last_updated) >= ?
 			AND COALESCE(f.latest_item_date, f.last_updated) <= ?
@@ -321,7 +393,8 @@ func (db *DB) GetFeedsWithItemsByTimeRange(start, end time.Time, feedURLs []stri
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.UserAgent, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+			&feed.ErrorCount, &feed.UserAgent, &feed.Type, &feed.ScrapeSelector,
+			&feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to scan feed: %w", err)
@@ -405,7 +478,8 @@ func (db *DB) GetFeedsWithItemsMinimum(
 func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 	query := `
 		SELECT url, title, description, last_updated, etag, last_modified,
-			last_fetch_time, last_successful_fetch, error_count, user_agent, last_error, latest_item_date, feed_json
+			last_fetch_time, last_successful_fetch, error_count, user_agent, type, scrape_selector,
+			last_error, latest_item_date, feed_json
 		FROM feeds
 	`
 	args := []interface{}{}
@@ -440,7 +514,8 @@ func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 		err := rows.Scan(
 			&feed.URL, &feed.Title, &feed.Description, &feed.LastUpdated, &feed.ETag,
 			&feed.LastModified, &feed.LastFetchTime, &feed.LastSuccessfulFetch,
-			&feed.ErrorCount, &feed.UserAgent, &feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
+			&feed.ErrorCount, &feed.UserAgent, &feed.Type, &feed.ScrapeSelector,
+			&feed.LastError, &feed.LatestItemDate, &feed.FeedJSON,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed: %w", err)
@@ -460,16 +535,18 @@ func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 // This ensures active feeds show all new items, while quiet feeds still show recent history.
 func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, minItems int) ([]Item, error) {
 	// First, get items within the timespan
-	timespanQuery := `
-		SELECT id, feed_url, guid, title, link, published_date,
+	timespanQuery := fmt.Sprintf(`
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json
 		FROM items
 		WHERE feed_url = ?
-			AND published_date >= ? AND published_date <= ?
-		ORDER BY published_date DESC
-	`
+			AND %[1]s IS NOT NULL
+			AND %[1]s >= julianday(?)
+			AND %[1]s <= julianday(?)
+		ORDER BY %[1]s DESC
+	`, effectiveDateExpression)
 
-	rows, err := db.conn.Query(timespanQuery, feedURL, start, end)
+	rows, err := db.conn.Query(timespanQuery, feedURL, formatDatabaseTime(start), formatDatabaseTime(end))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query timespan items: %w", err)
 	}
@@ -480,7 +557,8 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 		item := Item{}
 		err := rows.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen,
+			&item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON,
 		)
 		if err != nil {
@@ -501,11 +579,11 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 	// Otherwise, get additional recent items to reach minItems
 	// Query for recent items that we might not have already
 	recentQuery := `
-		SELECT id, feed_url, guid, title, link, published_date,
+		SELECT id, feed_url, guid, title, link, published_date, first_seen,
 			content, summary, archived, item_json
 		FROM items
 		WHERE feed_url = ?
-		ORDER BY published_date DESC
+		ORDER BY ` + effectiveDateExpression + ` DESC
 		LIMIT ?
 	`
 
@@ -527,7 +605,8 @@ func (db *DB) getItemsForFeedWithMinimum(feedURL string, start, end time.Time, m
 		item := Item{}
 		err := rows2.Scan(
 			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.Content, &item.Summary, &item.Archived,
+			scanNullableTime(&item.PublishedDate), &item.FirstSeen,
+			&item.Content, &item.Summary, &item.Archived,
 			&item.ItemJSON,
 		)
 		if err != nil {

@@ -94,6 +94,8 @@ func (o *Orchestrator) FetchFromFile(
 		if err := o.SynchronizeFeedConfigs(feeds); err != nil {
 			return nil, err
 		}
+	} else if err := o.SynchronizeFeedParserConfigs(feeds); err != nil {
+		return nil, err
 	}
 
 	feedURLs := make([]string, 0, len(feeds))
@@ -114,6 +116,20 @@ func (o *Orchestrator) FetchFromFile(
 	return o.FetchFromURLs(ctx, feedURLs, opts), nil
 }
 
+// SynchronizeFeedParserConfigs writes parser settings without changing User-Agent.
+func (o *Orchestrator) SynchronizeFeedParserConfigs(feeds []feedlist.Feed) error {
+	feeds, err := feedlist.DeduplicateFeeds(feeds)
+	if err != nil {
+		return fmt.Errorf("invalid feed parser configuration: %w", err)
+	}
+	for _, feed := range feeds {
+		if err := o.db.SetFeedParserConfig(feed.URL, feed.Type, feed.ScrapeSelector); err != nil {
+			return fmt.Errorf("failed to synchronize feed parser configuration for %s: %w", feed.URL, err)
+		}
+	}
+	return nil
+}
+
 // SynchronizeFeedConfigs writes authoritative OPML configuration to the database.
 func (o *Orchestrator) SynchronizeFeedConfigs(feeds []feedlist.Feed) error {
 	feeds, err := feedlist.DeduplicateFeeds(feeds)
@@ -121,7 +137,7 @@ func (o *Orchestrator) SynchronizeFeedConfigs(feeds []feedlist.Feed) error {
 		return fmt.Errorf("invalid feed configuration: %w", err)
 	}
 	for _, feed := range feeds {
-		if err := o.db.SetFeedUserAgent(feed.URL, feed.UserAgent); err != nil {
+		if err := o.db.SetFeedConfig(feed.URL, feed.Type, feed.ScrapeSelector, feed.UserAgent); err != nil {
 			return fmt.Errorf("failed to synchronize feed configuration for %s: %w", feed.URL, err)
 		}
 	}

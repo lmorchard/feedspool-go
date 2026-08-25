@@ -34,6 +34,7 @@ type Outline struct {
 	XMLURL        string       `xml:"xmlUrl,attr,omitempty"`
 	HTMLURL       string       `xml:"htmlUrl,attr,omitempty"`
 	UserAgent     string       `xml:"userAgent,attr,omitempty"`
+	Selector      string       `xml:"selector,attr,omitempty"`
 	OtherAttrs    []xml.Attr   `xml:",any,attr"`
 	Outlines      []Outline    `xml:"outline"`
 	OtherElements []RawElement `xml:",any"`

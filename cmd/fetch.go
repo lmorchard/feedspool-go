@@ -256,6 +256,9 @@ func runDirFetch(
 	if err := orchestrator.SynchronizeFeedConfigs(plan.FeedConfigs); err != nil {
 		return err
 	}
+	if err := orchestrator.SynchronizeFeedParserConfigs(plan.ParserConfigs); err != nil {
+		return err
+	}
 
 	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)
 

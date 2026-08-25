@@ -109,6 +109,62 @@ func TestExecuteWorkflowResult(t *testing.T) {
 	}
 }
 
+func TestExecuteWorkflowUsesFirstSeenForScrapedItemDates(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "scrape.db")
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	firstSeen := time.Date(2026, time.August, 25, 20, 30, 0, 0, time.UTC)
+	const scrapedItemURL = "https://example.com/scraped"
+	if err := db.UpsertFeed(&database.Feed{
+		URL:            testFeedURL,
+		Title:          "Scraped Feed",
+		Type:           database.FeedTypeScrape,
+		ScrapeSelector: ".post",
+		LatestItemDate: sql.NullTime{Time: firstSeen, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertItem(&database.Item{
+		FeedURL:   testFeedURL,
+		GUID:      scrapedItemURL,
+		Title:     "Scraped item",
+		Link:      scrapedItemURL,
+		FirstSeen: sql.NullTime{Time: firstSeen, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &WorkflowConfig{
+		Start:     firstSeen.Add(-time.Minute).Format(time.RFC3339),
+		End:       firstSeen.Add(time.Minute).Format(time.RFC3339),
+		OutputDir: filepath.Join(tmpDir, "build"),
+		Database:  dbPath,
+	}
+	result, err := ExecuteWorkflow(cfg)
+	if err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+	if !result.NewestItem.Equal(firstSeen) {
+		t.Errorf("NewestItem = %v, want first_seen %v", result.NewestItem, firstSeen)
+	}
+	page, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(page), firstSeen.Format("Jan 2, 2006 15:04 UTC")) {
+		t.Errorf("rendered page does not contain first_seen date: %s", page)
+	}
+}
+
 func TestExecuteWorkflowWritesIndexWhenEmpty(t *testing.T) {
 	cfg, _ := newTestWorkflow(t, false)
 

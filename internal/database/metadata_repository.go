@@ -96,7 +96,7 @@ func (db *DB) GetURLsNeedingFetch(limit int, retryAfter time.Duration) ([]string
 				AND um.last_fetch_at < ?  -- And enough time has passed
 			)
 		)
-		ORDER BY i.published_date DESC
+		ORDER BY ` + aliasedEffectiveDateExpression + ` DESC
 	`
 
 	args := []interface{}{retryTime}

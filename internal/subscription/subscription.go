@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -88,6 +89,10 @@ type SubscribeOptions struct {
 	// UserAgent is nil when the option was not supplied. A non-nil empty
 	// string explicitly clears an existing override.
 	UserAgent *string
+	// FeedType is nil when parser configuration was not supplied.
+	FeedType *string
+	// ScrapeSelector accompanies a scrape FeedType.
+	ScrapeSelector *string
 }
 
 // Subscribe adds one or more URLs to a feed list.
@@ -105,6 +110,10 @@ func (m *Manager) SubscribeWithOptions(
 	}
 	if options.UserAgent != nil && feedFormat != feedlist.FormatOPML {
 		return nil, fmt.Errorf("per-feed User-Agent is supported only for OPML feed lists")
+	}
+	options, err = normalizeParserOptions(feedFormat, options)
+	if err != nil {
+		return nil, err
 	}
 
 	list, createdNew, err := m.LoadOrCreateFeedList(feedFormat, filename)
@@ -243,24 +252,28 @@ func (m *Manager) addFeedsToList(
 
 	for _, feedURL := range urlsToAdd {
 		matches, exists := existingFeeds[feedURL]
-		if exists && (options.UserAgent == nil || allFeedsUseUserAgent(matches, *options.UserAgent)) {
-			warnings = append(warnings, fmt.Sprintf("Feed URL already exists in list: %s", feedURL))
-			continue
-		}
 		if exists {
-			if list.SetUserAgent(feedURL, *options.UserAgent) {
+			if allFeedsMatchOptions(matches, options) {
+				warnings = append(warnings, fmt.Sprintf("Feed URL already exists in list: %s", feedURL))
+				continue
+			}
+			matches, updated := updateExistingFeed(list, feedURL, matches, options)
+			if updated {
 				updatedCount++
-				for i := range matches {
-					matches[i].UserAgent = *options.UserAgent
-				}
 				existingFeeds[feedURL] = matches
 			}
 			continue
 		}
 
-		feed := feedlist.Feed{URL: feedURL}
+		feed := feedlist.Feed{URL: feedURL, Type: feedlist.FeedTypeRSS}
 		if options.UserAgent != nil {
 			feed.UserAgent = *options.UserAgent
+		}
+		if options.FeedType != nil {
+			feed.Type = *options.FeedType
+		}
+		if options.ScrapeSelector != nil {
+			feed.ScrapeSelector = *options.ScrapeSelector
 		}
 		if err := list.AddFeed(feed); err != nil {
 			warnings = append(warnings, fmt.Sprintf("Failed to add URL %s: %v", feedURL, err))
@@ -273,10 +286,94 @@ func (m *Manager) addFeedsToList(
 	return addedCount, updatedCount, warnings
 }
 
-func allFeedsUseUserAgent(feeds []feedlist.Feed, userAgent string) bool {
+func updateExistingFeed(
+	list feedlist.FeedList, feedURL string, matches []feedlist.Feed, options SubscribeOptions,
+) ([]feedlist.Feed, bool) {
+	userAgentUpdated := updateExistingUserAgent(list, feedURL, matches, options.UserAgent)
+	parserUpdated := updateExistingParser(list, feedURL, matches, options)
+	return matches, userAgentUpdated || parserUpdated
+}
+
+func updateExistingUserAgent(
+	list feedlist.FeedList, feedURL string, matches []feedlist.Feed, userAgent *string,
+) bool {
+	if userAgent == nil || !list.SetUserAgent(feedURL, *userAgent) {
+		return false
+	}
+	for i := range matches {
+		matches[i].UserAgent = *userAgent
+	}
+	return true
+}
+
+func updateExistingParser(
+	list feedlist.FeedList, feedURL string, matches []feedlist.Feed, options SubscribeOptions,
+) bool {
+	if options.FeedType == nil {
+		return false
+	}
+	selector := ""
+	if options.ScrapeSelector != nil {
+		selector = *options.ScrapeSelector
+	}
+	if !list.SetFeedType(feedURL, *options.FeedType, selector) {
+		return false
+	}
+	for i := range matches {
+		matches[i].Type = *options.FeedType
+		matches[i].ScrapeSelector = selector
+	}
+	return true
+}
+
+func normalizeParserOptions(format feedlist.Format, options SubscribeOptions) (SubscribeOptions, error) {
+	if options.FeedType == nil && options.ScrapeSelector == nil {
+		return options, nil
+	}
+	if format != feedlist.FormatOPML {
+		return options, fmt.Errorf("per-feed parser configuration is supported only for OPML feed lists")
+	}
+	if options.FeedType == nil {
+		return options, fmt.Errorf("--selector requires --type scrape")
+	}
+
+	feedType := strings.ToLower(strings.TrimSpace(*options.FeedType))
+	switch feedType {
+	case feedlist.FeedTypeRSS:
+		if options.ScrapeSelector != nil && strings.TrimSpace(*options.ScrapeSelector) != "" {
+			return options, fmt.Errorf("--selector can be used only with --type scrape")
+		}
+	case feedlist.FeedTypeScrape:
+		if options.ScrapeSelector == nil || strings.TrimSpace(*options.ScrapeSelector) == "" {
+			return options, fmt.Errorf("--type scrape requires a non-empty --selector")
+		}
+	default:
+		return options, fmt.Errorf("unsupported feed type %q (must be 'rss' or 'scrape')", *options.FeedType)
+	}
+	options.FeedType = &feedType
+	if options.ScrapeSelector != nil {
+		selector := strings.TrimSpace(*options.ScrapeSelector)
+		options.ScrapeSelector = &selector
+	}
+	return options, nil
+}
+
+func allFeedsMatchOptions(feeds []feedlist.Feed, options SubscribeOptions) bool {
 	for _, feed := range feeds {
-		if feed.UserAgent != userAgent {
+		if options.UserAgent != nil && feed.UserAgent != *options.UserAgent {
 			return false
+		}
+		if options.FeedType != nil {
+			if feed.Type != *options.FeedType {
+				return false
+			}
+			selector := ""
+			if options.ScrapeSelector != nil {
+				selector = *options.ScrapeSelector
+			}
+			if feed.ScrapeSelector != selector {
+				return false
+			}
 		}
 	}
 	return true

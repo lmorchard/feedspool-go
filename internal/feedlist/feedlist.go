@@ -18,19 +18,25 @@ type Format string
 const (
 	FormatOPML Format = "opml"
 	FormatText Format = "text"
+
+	FeedTypeRSS    = "rss"
+	FeedTypeScrape = "scrape"
 )
 
 // Feed describes a feed and the configuration carried by its list entry.
 type Feed struct {
-	URL       string
-	UserAgent string
+	URL            string
+	UserAgent      string
+	Type           string
+	ScrapeSelector string
 }
 
 // DeduplicateFeeds preserves first-seen order and rejects conflicting configuration.
 func DeduplicateFeeds(feeds []Feed) ([]Feed, error) {
 	seen := make(map[string]Feed, len(feeds))
 	unique := make([]Feed, 0, len(feeds))
-	for _, feed := range feeds {
+	for _, rawFeed := range feeds {
+		feed := normalizeFeed(rawFeed)
 		existing, found := seen[feed.URL]
 		if !found {
 			seen[feed.URL] = feed
@@ -39,6 +45,9 @@ func DeduplicateFeeds(feeds []Feed) ([]Feed, error) {
 		}
 		if existing.UserAgent != feed.UserAgent {
 			return nil, fmt.Errorf("conflicting User-Agent values for feed %s", feed.URL)
+		}
+		if existing.Type != feed.Type || existing.ScrapeSelector != feed.ScrapeSelector {
+			return nil, fmt.Errorf("conflicting parser configuration for feed %s", feed.URL)
 		}
 	}
 	return unique, nil
@@ -55,6 +64,7 @@ type FeedList interface {
 	GetURLs() []string
 	AddFeed(feed Feed) error
 	SetUserAgent(url, userAgent string) bool
+	SetFeedType(url, feedType, scrapeSelector string) bool
 	Title() string
 	AddURL(url string) error
 	RemoveURL(url string) error
@@ -183,6 +193,7 @@ func (ofl *OPMLFeedList) AddURL(url string) error {
 
 // AddFeed adds a configured feed to the OPML feed list.
 func (ofl *OPMLFeedList) AddFeed(feed Feed) error {
+	feed = normalizeFeed(feed)
 	// Check if URL already exists
 	for _, existingFeed := range ofl.GetFeeds() {
 		if existingFeed.URL == feed.URL {
@@ -194,9 +205,10 @@ func (ofl *OPMLFeedList) AddFeed(feed Feed) error {
 	outline := opml.Outline{
 		Text:      feed.URL,
 		Title:     feed.URL,
-		Type:      "rss",
+		Type:      feed.Type,
 		XMLURL:    feed.URL,
 		UserAgent: feed.UserAgent,
+		Selector:  feed.ScrapeSelector,
 	}
 	ofl.opml.Body.Outlines = append(ofl.opml.Body.Outlines, outline)
 
@@ -206,6 +218,12 @@ func (ofl *OPMLFeedList) AddFeed(feed Feed) error {
 // SetUserAgent updates the User-Agent for an existing OPML feed entry.
 func (ofl *OPMLFeedList) SetUserAgent(url, userAgent string) bool {
 	return setOPMLUserAgent(ofl.opml.Body.Outlines, url, userAgent)
+}
+
+// SetFeedType updates parser configuration for an existing OPML feed entry.
+func (ofl *OPMLFeedList) SetFeedType(url, feedType, scrapeSelector string) bool {
+	feed := normalizeFeed(Feed{Type: feedType, ScrapeSelector: scrapeSelector})
+	return setOPMLFeedType(ofl.opml.Body.Outlines, url, feed.Type, feed.ScrapeSelector)
 }
 
 // RemoveURL removes a URL from the OPML feed list.
@@ -246,7 +264,7 @@ func (ofl *OPMLFeedList) Save(filename string) error {
 func (tfl *TextFeedList) GetFeeds() []Feed {
 	feeds := make([]Feed, 0, len(tfl.urls))
 	for _, url := range tfl.urls {
-		feeds = append(feeds, Feed{URL: url})
+		feeds = append(feeds, Feed{URL: url, Type: FeedTypeRSS})
 	}
 	return feeds
 }
@@ -284,14 +302,50 @@ func (tfl *TextFeedList) SetUserAgent(_, _ string) bool {
 	return false
 }
 
+// SetFeedType reports false because text feed lists carry URLs only.
+func (tfl *TextFeedList) SetFeedType(_, _, _ string) bool {
+	return false
+}
+
 func extractOPMLFeeds(outlines []opml.Outline, feeds *[]Feed) {
 	for i := range outlines {
 		outline := &outlines[i]
 		if outline.XMLURL != "" {
-			*feeds = append(*feeds, Feed{URL: outline.XMLURL, UserAgent: outline.UserAgent})
+			*feeds = append(*feeds, normalizeFeed(Feed{
+				URL:            outline.XMLURL,
+				UserAgent:      outline.UserAgent,
+				Type:           outline.Type,
+				ScrapeSelector: outline.Selector,
+			}))
 		}
 		extractOPMLFeeds(outline.Outlines, feeds)
 	}
+}
+
+func setOPMLFeedType(outlines []opml.Outline, url, feedType, scrapeSelector string) bool {
+	found := false
+	for i := range outlines {
+		if outlines[i].XMLURL == url {
+			outlines[i].Type = feedType
+			outlines[i].Selector = scrapeSelector
+			found = true
+		}
+		if setOPMLFeedType(outlines[i].Outlines, url, feedType, scrapeSelector) {
+			found = true
+		}
+	}
+	return found
+}
+
+func normalizeFeed(feed Feed) Feed {
+	if strings.EqualFold(strings.TrimSpace(feed.Type), FeedTypeScrape) {
+		feed.Type = FeedTypeScrape
+		feed.ScrapeSelector = strings.TrimSpace(feed.ScrapeSelector)
+		return feed
+	}
+	feed.Type = FeedTypeRSS
+	feed.ScrapeSelector = ""
+	return feed
 }
 
 func setOPMLUserAgent(outlines []opml.Outline, url, userAgent string) bool {
