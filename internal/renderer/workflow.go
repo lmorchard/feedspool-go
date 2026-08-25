@@ -66,12 +66,15 @@ func summarize(feeds []database.Feed, items map[string][]database.Item) *Result 
 
 // ExecuteWorkflow performs the complete render operation with the given configuration.
 func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
-	// Clean output directory if requested (do this early to avoid dependency issues)
-	if config.Clean {
-		if err := cleanOutputDirectory(config.OutputDir, config.Quiet); err != nil {
-			return nil, err
-		}
+	originalOutputDir := config.OutputDir
+
+	renderDir, cleanup, err := SetupStagingDir(config.Clean, originalOutputDir)
+	if err != nil {
+		return nil, err
 	}
+	defer cleanup()
+	config.OutputDir = renderDir
+	defer func() { config.OutputDir = originalOutputDir }()
 
 	// Setup database
 	db, err := database.New(config.Database)
@@ -131,7 +134,15 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 		return nil, err
 	}
 
-	return summarize(feeds, items), nil
+	result := summarize(feeds, items)
+
+	if config.Clean {
+		if err := AtomicSwap(renderDir, originalOutputDir); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
 
 // loadFeedURLs reads the feed list at feedsFile and returns its URLs together
@@ -529,23 +540,4 @@ func printSuccessMessage(feedCount int, feedTemplateExists bool, outputDir, outp
 func generateFeedID(feedURL string) string {
 	hash := sha256.Sum256([]byte(feedURL))
 	return fmt.Sprintf("%x", hash)[:8]
-}
-
-func cleanOutputDirectory(outputDir string, quiet bool) error {
-	// Check if directory exists
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		// Directory doesn't exist, nothing to clean
-		return nil
-	}
-
-	if !quiet {
-		fmt.Printf("Cleaning output directory: %s\n", outputDir) //nolint:forbidigo // User-facing output
-	}
-
-	// Remove the entire directory
-	if err := os.RemoveAll(outputDir); err != nil {
-		return fmt.Errorf("failed to remove output directory: %w", err)
-	}
-
-	return nil
 }

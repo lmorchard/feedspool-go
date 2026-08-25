@@ -109,11 +109,14 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 		logrus.Warnf("Skipping feed list %s: %v", s.Path, s.Err)
 	}
 
-	if base.Clean {
-		if err := os.RemoveAll(base.OutputDir); err != nil {
-			return nil, fmt.Errorf("failed to clean output directory %s: %w", base.OutputDir, err)
-		}
+	originalOutputDir := base.OutputDir
+	renderDir, cleanup, err := renderer.SetupStagingDir(base.Clean, originalOutputDir)
+	if err != nil {
+		return nil, err
 	}
+	defer cleanup()
+	base.OutputDir = renderDir
+	defer func() { base.OutputDir = originalOutputDir }()
 
 	summary := &RenderSummary{
 		Sites:   make([]SiteResult, 0, len(sites)),
@@ -139,6 +142,12 @@ func RenderAll(dir string, base *renderer.WorkflowConfig) (*RenderSummary, error
 
 	if err := renderIndex(base, summary, startTime, endTime); err != nil {
 		return nil, err
+	}
+
+	if base.Clean {
+		if err := renderer.AtomicSwap(renderDir, originalOutputDir); err != nil {
+			return nil, err
+		}
 	}
 
 	logrus.Infof("Generated %d site(s) in %s", len(summary.Sites), base.OutputDir)
