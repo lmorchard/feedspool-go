@@ -42,3 +42,15 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 -- Insert initial migration version
 INSERT OR IGNORE INTO schema_migrations (version) VALUES (1);
+CREATE TABLE IF NOT EXISTS item_annotations (
+    feed_url   TEXT NOT NULL,
+    item_guid  TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    value      TEXT,
+    actor      TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (feed_url, item_guid) REFERENCES items(feed_url, guid) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_item_annotations_lookup ON item_annotations(feed_url, item_guid, kind);
+CREATE INDEX IF NOT EXISTS idx_item_annotations_kind   ON item_annotations(kind, created_at);

@@ -13,7 +13,8 @@ const (
 	migrationVersion3   = 3 // Add url_metadata table
 	migrationVersion4   = 4 // Add first_seen column to items
 	migrationVersion5   = 5 // Add user_agent column to feeds
-	maxMigrationVersion = migrationVersion5
+	migrationVersion6   = 6 // Add item_annotations table
+	maxMigrationVersion = migrationVersion6
 )
 
 // getMigrations returns the database migration scripts.
@@ -42,6 +43,17 @@ func getMigrations() map[int]string {
 		END;`,
 		migrationVersion4: `ALTER TABLE items ADD COLUMN first_seen DATETIME;`,
 		migrationVersion5: `ALTER TABLE feeds ADD COLUMN user_agent TEXT NOT NULL DEFAULT '';`,
+		migrationVersion6: `CREATE TABLE IF NOT EXISTS item_annotations (
+			feed_url   TEXT NOT NULL,
+			item_guid  TEXT NOT NULL,
+			kind       TEXT NOT NULL,
+			value      TEXT,
+			actor      TEXT,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (feed_url, item_guid) REFERENCES items(feed_url, guid) ON DELETE CASCADE
+		);
+		CREATE INDEX IF NOT EXISTS idx_item_annotations_lookup ON item_annotations(feed_url, item_guid, kind);
+		CREATE INDEX IF NOT EXISTS idx_item_annotations_kind   ON item_annotations(kind, created_at);`,
 	}
 }
 
@@ -119,6 +131,8 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration4()
 	case migrationVersion5:
 		return db.applyMigration5()
+	case migrationVersion6:
+		return db.applyMigration6()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -283,4 +297,20 @@ func (db *DB) applyMigration5() error {
 		return fmt.Errorf("failed to record migration %d: %w", migrationVersion5, err)
 	}
 	return nil
+}
+
+// applyMigration6 adds the item_annotations table.
+func (db *DB) applyMigration6() error {
+	// Check if item_annotations table already exists
+	var tableCount int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM sqlite_master
+		WHERE type='table' AND name='item_annotations'
+	`).Scan(&tableCount)
+	if err != nil {
+		return fmt.Errorf("failed to check table existence: %w", err)
+	}
+
+	migrations := getMigrations()
+	return db.ApplyMigration(migrationVersion6, migrations[migrationVersion6])
 }

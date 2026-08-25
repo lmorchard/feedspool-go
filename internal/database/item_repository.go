@@ -285,3 +285,87 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 
 	return items, nil
 }
+
+type ItemFilter struct {
+	FeedURL string
+	Limit   int
+	Since   time.Time
+	Until   time.Time
+	Unseen  bool
+	Seen    bool
+}
+
+// GetItems retrieves items with filtering options.
+func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
+	query := `
+		SELECT i.id, i.feed_url, i.guid, i.title, i.link, i.published_date, i.first_seen,
+			i.content, i.summary, i.archived, i.item_json
+		FROM items i
+	`
+	var args []interface{}
+	var conditions []string
+
+	if filter.Unseen {
+		conditions = append(conditions,
+			`NOT EXISTS (
+					SELECT 1 FROM item_annotations a 
+					WHERE a.feed_url = i.feed_url AND a.item_guid = i.guid AND a.kind = 'seen'
+				)`)
+	}
+	if filter.Seen {
+		conditions = append(conditions,
+			`EXISTS (
+					SELECT 1 FROM item_annotations a 
+					WHERE a.feed_url = i.feed_url AND a.item_guid = i.guid AND a.kind = 'seen'
+				)`)
+	}
+	if filter.FeedURL != "" {
+		conditions = append(conditions, "i.feed_url = ?")
+		args = append(args, filter.FeedURL)
+	}
+	if !filter.Since.IsZero() {
+		conditions = append(conditions, "i.published_date >= ?")
+		args = append(args, filter.Since)
+	}
+	if !filter.Until.IsZero() {
+		conditions = append(conditions, "i.published_date <= ?")
+		args = append(args, filter.Until)
+	}
+
+	if len(conditions) > 0 {
+		//nolint:gosec // conditions are safely constructed internally
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query += " ORDER BY i.published_date DESC"
+
+	if filter.Limit > 0 {
+		query += sqlLimitClause
+		args = append(args, filter.Limit)
+	}
+
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []*Item
+	for rows.Next() {
+		var item Item
+		if err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary,
+			&item.Archived, &item.ItemJSON,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		items = append(items, &item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over items: %w", err)
+	}
+
+	return items, nil
+}
