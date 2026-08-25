@@ -963,6 +963,10 @@ processes against the same DB).
 The `lmorchard/feedspool` image bundles feedspool with cron and a
 generated config that fetches every 30 minutes and serves on port 8889.
 
+Published as a multi-arch manifest for `linux/amd64` and `linux/arm64`, so
+Docker pulls the right image for the host without a `--platform` flag. That
+covers Apple Silicon, Raspberry Pi 4/5, and ARM cloud instances natively.
+
 ### Volume layout
 
 Mount a host directory at `/data`. Inside it:

@@ -1,6 +1,12 @@
-# Docker image for pre-built binary
-# This dockerfile expects the feedspool binary to already exist in the build context
+# Docker image for pre-built binaries.
+#
+# Expects one binary per target architecture in the build context, named
+# feedspool-linux-<arch> (e.g. feedspool-linux-amd64, feedspool-linux-arm64).
+# TARGETARCH is supplied by buildx, so a single invocation can build a
+# multi-arch manifest and each image picks up its matching binary.
 FROM docker.io/alpine:latest
+
+ARG TARGETARCH
 
 # Install cronie for cron support
 RUN apk add --no-cache cronie
@@ -8,13 +14,16 @@ RUN apk add --no-cache cronie
 # Create data directory for volume mount
 RUN mkdir -p /data
 
-# Copy pre-built binary (should exist in build context)
-COPY feedspool /usr/local/bin/feedspool
+# Copy the pre-built binary matching this image's architecture
+COPY feedspool-linux-${TARGETARCH} /usr/local/bin/feedspool
 RUN chmod +x /usr/local/bin/feedspool
 
-# Verify the binary was copied and works (basic test)
-RUN ls -la /usr/local/bin/feedspool
-RUN /usr/local/bin/feedspool version || echo "Binary test in Docker failed"
+# Smoke-test the binary, failing the build rather than warning if it is missing
+# or broken. This deliberately does NOT prove the binary matches TARGETARCH: a
+# host with binfmt/qemu handlers registered will happily execute a foreign-arch
+# binary right here. The architecture assertion lives in the workflow, where
+# file(1) can read the ELF header directly.
+RUN /usr/local/bin/feedspool version
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
