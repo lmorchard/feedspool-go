@@ -398,3 +398,36 @@ func TestFetchConcurrentWithMaxAge(t *testing.T) {
 		t.Errorf("FetchConcurrent() should skip recently fetched feed (cached=true)")
 	}
 }
+
+func TestFetchFeedUserAgentOverride(t *testing.T) {
+	db := setupTestDatabase(t)
+	const customUA = "MyCustomUserAgent/1.0"
+
+	// Create test server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("User-Agent") != customUA {
+			t.Errorf("Expected User-Agent %q, got %q", customUA, r.Header.Get("User-Agent"))
+		}
+		w.Header().Set("Content-Type", "application/rss+xml")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(testFeedXML))
+	}))
+	defer server.Close()
+
+	// Pre-populate feed with custom User-Agent
+	err := db.UpsertFeed(&database.Feed{
+		URL:       server.URL,
+		Title:     "Custom UA Feed",
+		UserAgent: customUA,
+	})
+	if err != nil {
+		t.Fatalf("Failed to pre-populate feed: %v", err)
+	}
+
+	fetcher := NewFetcher(db, 30*time.Second, 100, false)
+	result := fetcher.FetchFeed(server.URL)
+
+	if result.Error != nil {
+		t.Errorf("Expected no error, got %v", result.Error)
+	}
+}
