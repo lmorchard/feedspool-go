@@ -178,10 +178,14 @@ from a webpage.
 | `--format` | (config) | `opml` or `text` |
 | `--filename` | (config) | Path to subscription file |
 | `--discover` | false | Treat URL as a webpage; parse its HTML for `<link>` feed references |
+| `--user-agent` | (unset) | Set the feed's User-Agent override in an OPML list; use `--user-agent=` to clear it |
 
-**Side effects:** Creates the subscription file if it does not exist; appends
-the URL. Network request only when `--discover` is set. Does not touch the
-database.
+`--user-agent` works only with OPML lists. Re-subscribing to an existing URL
+updates its `userAgent` outline attribute instead of adding a duplicate.
+
+**Side effects:** Creates the subscription file if it does not exist; adds or
+updates the URL. Makes a network request only when `--discover` is set. Does
+not touch the database.
 
 **Examples:**
 
@@ -189,6 +193,7 @@ database.
 feedspool subscribe https://example.com/feed.xml
 feedspool subscribe --discover https://example.com/blog
 feedspool subscribe --format opml --filename feeds.opml https://example.com/feed.xml
+feedspool subscribe --format opml --filename feeds.opml --user-agent "Custom Reader/1.0" https://example.com/feed.xml
 ```
 
 ### unsubscribe
@@ -235,7 +240,9 @@ Fetch feed content. Has three modes depending on arguments.
 **Side effects:** Writes feeds and items to the database. Marks items no
 longer in the live feed as archived. May delete feed rows when
 `--remove-missing` is used. If `--with-unfurl` is set, also writes
-`url_metadata`.
+`url_metadata`. Before fetching OPML lists, including directory mode, copies
+each outline's `userAgent` value into the feed row; a missing attribute clears
+the override. Conflicting values for one URL stop the fetch.
 
 **JSON output (`--json`):**
 
@@ -490,6 +497,9 @@ subscription list are deleted. ON DELETE CASCADE removes their items.
 Write all feeds currently in the database to a subscription file.
 
 **Usage:** `feedspool export <filename> --format <opml|text>`
+
+OPML exports include each feed's `userAgent` override. Text lists contain URLs
+only.
 
 **Side effects:** Overwrites the target file.
 
@@ -915,6 +925,12 @@ content changed but its server lies about it.
 touch the database. The database accumulates whatever you fetch. To bring
 the DB back in line with the subscription list, run `purge --format <fmt>
 --filename <file>` (or `fetch --remove-missing`).
+
+OPML outlines may carry a per-feed `userAgent` attribute. An OPML-backed fetch
+synchronizes that attribute before making requests. Directory mode does the
+same across all OPML files and rejects conflicting values for one URL. Removing
+the attribute restores feedspool's default User-Agent on the next fetch. Text
+lists cannot store per-feed User-Agent overrides.
 
 ### What `purge` actually deletes
 

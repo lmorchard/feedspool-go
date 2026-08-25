@@ -15,6 +15,7 @@ import (
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/lmorchard/feedspool-go/internal/fetcher"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/lmorchard/feedspool-go/internal/sitegroup"
@@ -42,6 +43,126 @@ const integrationTestFeed = `<?xml version="1.0" encoding="UTF-8"?>
         </item>
     </channel>
 </rss>`
+
+func TestSubscribeUserAgentCLI(t *testing.T) {
+	binaryPath := buildBinaryViaMake(t)
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	const userAgent = "Integration Reader/1.0"
+
+	output, err := runCommand(
+		binaryPath,
+		"subscribe", "--format", "opml", "--filename", filename,
+		"--user-agent", userAgent, "https://example.com/feed.xml",
+	)
+	if err != nil {
+		t.Fatalf("subscribe --user-agent failed: %v, output: %s", err, output)
+	}
+
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	feeds := list.GetFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("len(GetFeeds()) = %d, want 1", len(feeds))
+	}
+	if got := feeds[0].UserAgent; got != userAgent {
+		t.Errorf("subscribed UserAgent = %q, want %q", got, userAgent)
+	}
+}
+
+func TestExportPreservesUserAgent(t *testing.T) {
+	tmpDir := t.TempDir()
+	databasePath := filepath.Join(tmpDir, "feeds.db")
+	exportPath := filepath.Join(tmpDir, "feeds.opml")
+	const userAgent = "Exported Reader/1.0"
+
+	db, err := database.New(databasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertFeed(&database.Feed{
+		URL:       "https://example.com/feed.xml",
+		Title:     "Example Feed",
+		UserAgent: userAgent,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	binaryPath := buildBinaryViaMake(t)
+	output, err := runCommand(
+		binaryPath,
+		"--database", databasePath,
+		"export", "--format", "opml", exportPath,
+	)
+	if err != nil {
+		t.Fatalf("export failed: %v, output: %s", err, output)
+	}
+
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, exportPath)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	feeds := list.GetFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("len(GetFeeds()) = %d, want 1", len(feeds))
+	}
+	if got := feeds[0].UserAgent; got != userAgent {
+		t.Errorf("exported UserAgent = %q, want %q", got, userAgent)
+	}
+}
+
+func TestDirectoryFetchUsesOPMLUserAgent(t *testing.T) {
+	const userAgent = "Directory Reader/1.0"
+	requests := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests <- r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(integrationTestFeed))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	listDir := filepath.Join(tmpDir, "feeds.d")
+	if err := os.Mkdir(listDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	opml := `<opml version="2.0"><body><outline xmlUrl="` + server.URL + `" userAgent="` + userAgent + `" /></body></opml>`
+	if err := os.WriteFile(filepath.Join(listDir, "protected.opml"), []byte(opml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	databasePath := filepath.Join(tmpDir, "feeds.db")
+	db, err := database.New(databasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	binaryPath := buildBinaryViaMake(t)
+	output, err := runCommand(
+		binaryPath,
+		"--database", databasePath,
+		"fetch", "--feeds-dir", listDir, "--concurrency", "1",
+	)
+	if err != nil {
+		t.Fatalf("directory fetch failed: %v, output: %s", err, output)
+	}
+	if got := <-requests; got != userAgent {
+		t.Errorf("directory request User-Agent = %q, want %q", got, userAgent)
+	}
+}
 
 func TestIntegrationEndToEnd(t *testing.T) {
 	if testing.Short() {

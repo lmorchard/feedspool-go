@@ -1,10 +1,12 @@
 package subscription
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"time"
 
@@ -55,44 +57,71 @@ func (m *Manager) ValidateFormat(format string) (feedlist.Format, error) {
 	}
 }
 
-// LoadOrCreateFeedList loads an existing feed list or creates a new one if it doesn't exist.
-func (m *Manager) LoadOrCreateFeedList(feedFormat feedlist.Format, filename string) (feedlist.FeedList, bool) {
+// LoadOrCreateFeedList loads an existing feed list or creates one when the file is absent.
+func (m *Manager) LoadOrCreateFeedList(
+	feedFormat feedlist.Format, filename string,
+) (feedlist.FeedList, bool, error) {
 	list, err := feedlist.LoadFeedList(feedFormat, filename)
 	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, false, err
+		}
 		list = feedlist.NewFeedList(feedFormat)
 		logrus.Debugf("Creating new feed list: %s", filename)
-		return list, true // true = newly created
+		return list, true, nil
 	}
 	logrus.Debugf("Loaded existing feed list: %s", filename)
-	return list, false // false = loaded existing
+	return list, false, nil
 }
 
 // SubscribeResult contains the results of a subscription operation.
 type SubscribeResult struct {
-	CreatedNew bool
-	AddedCount int
-	TotalURLs  int
-	Warnings   []string
+	CreatedNew   bool
+	AddedCount   int
+	UpdatedCount int
+	TotalURLs    int
+	Warnings     []string
+}
+
+// SubscribeOptions controls metadata applied to subscribed feeds.
+type SubscribeOptions struct {
+	// UserAgent is nil when the option was not supplied. A non-nil empty
+	// string explicitly clears an existing override.
+	UserAgent *string
 }
 
 // Subscribe adds one or more URLs to a feed list.
 func (m *Manager) Subscribe(format, filename string, urls []string) (*SubscribeResult, error) {
+	return m.SubscribeWithOptions(format, filename, urls, SubscribeOptions{})
+}
+
+// SubscribeWithOptions adds or updates feeds and their list-backed configuration.
+func (m *Manager) SubscribeWithOptions(
+	format, filename string, urls []string, options SubscribeOptions,
+) (*SubscribeResult, error) {
 	feedFormat, err := m.ValidateFormat(format)
 	if err != nil {
 		return nil, err
 	}
-
-	list, createdNew := m.LoadOrCreateFeedList(feedFormat, filename)
-	addedCount, warnings := m.addURLsToList(list, urls)
-
-	result := &SubscribeResult{
-		CreatedNew: createdNew,
-		AddedCount: addedCount,
-		TotalURLs:  len(urls),
-		Warnings:   warnings,
+	if options.UserAgent != nil && feedFormat != feedlist.FormatOPML {
+		return nil, fmt.Errorf("per-feed User-Agent is supported only for OPML feed lists")
 	}
 
-	if addedCount > 0 {
+	list, createdNew, err := m.LoadOrCreateFeedList(feedFormat, filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load feed list %s: %w", filename, err)
+	}
+	addedCount, updatedCount, warnings := m.addFeedsToList(list, urls, options)
+
+	result := &SubscribeResult{
+		CreatedNew:   createdNew,
+		AddedCount:   addedCount,
+		UpdatedCount: updatedCount,
+		TotalURLs:    len(urls),
+		Warnings:     warnings,
+	}
+
+	if addedCount > 0 || updatedCount > 0 {
 		if err := list.Save(filename); err != nil {
 			return result, fmt.Errorf("failed to save feed list: %w", err)
 		}
@@ -200,25 +229,57 @@ func (m *Manager) DiscoverFeeds(htmlURL string) ([]string, error) {
 }
 
 func (m *Manager) addURLsToList(list feedlist.FeedList, urlsToAdd []string) (addedCount int, warnings []string) {
-	existingURLs := list.GetURLs()
-	existingSet := make(map[string]bool)
-	for _, url := range existingURLs {
-		existingSet[url] = true
+	addedCount, _, warnings = m.addFeedsToList(list, urlsToAdd, SubscribeOptions{})
+	return addedCount, warnings
+}
+
+func (m *Manager) addFeedsToList(
+	list feedlist.FeedList, urlsToAdd []string, options SubscribeOptions,
+) (addedCount, updatedCount int, warnings []string) {
+	existingFeeds := make(map[string][]feedlist.Feed)
+	for _, feed := range list.GetFeeds() {
+		existingFeeds[feed.URL] = append(existingFeeds[feed.URL], feed)
 	}
 
 	for _, feedURL := range urlsToAdd {
-		if existingSet[feedURL] {
+		matches, exists := existingFeeds[feedURL]
+		if exists && (options.UserAgent == nil || allFeedsUseUserAgent(matches, *options.UserAgent)) {
 			warnings = append(warnings, fmt.Sprintf("Feed URL already exists in list: %s", feedURL))
-		} else {
-			if err := list.AddURL(feedURL); err != nil {
-				warnings = append(warnings, fmt.Sprintf("Failed to add URL %s: %v", feedURL, err))
-			} else {
-				logrus.Debugf("Added feed: %s", feedURL)
-				addedCount++
+			continue
+		}
+		if exists {
+			if list.SetUserAgent(feedURL, *options.UserAgent) {
+				updatedCount++
+				for i := range matches {
+					matches[i].UserAgent = *options.UserAgent
+				}
+				existingFeeds[feedURL] = matches
 			}
+			continue
+		}
+
+		feed := feedlist.Feed{URL: feedURL}
+		if options.UserAgent != nil {
+			feed.UserAgent = *options.UserAgent
+		}
+		if err := list.AddFeed(feed); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to add URL %s: %v", feedURL, err))
+			continue
+		}
+		logrus.Debugf("Added feed: %s", feedURL)
+		addedCount++
+		existingFeeds[feedURL] = []feedlist.Feed{feed}
+	}
+	return addedCount, updatedCount, warnings
+}
+
+func allFeedsUseUserAgent(feeds []feedlist.Feed, userAgent string) bool {
+	for _, feed := range feeds {
+		if feed.UserAgent != userAgent {
+			return false
 		}
 	}
-	return addedCount, warnings
+	return true
 }
 
 // parseFeedLinks extracts RSS/Atom feed URLs from HTML <link> tags.

@@ -74,15 +74,15 @@ func runExport(_ *cobra.Command, args []string) error {
 	// Create new feed list of specified format
 	list := feedlist.NewFeedList(feedFormat)
 
-	// Add all feed URLs to the list
+	// Add all feeds and any metadata supported by the target format.
 	for _, feed := range feeds {
-		if err := list.AddURL(feed.URL); err != nil {
+		if err := list.AddFeed(feedlist.Feed{
+			URL:       feed.URL,
+			UserAgent: feed.UserAgent,
+		}); err != nil {
 			return fmt.Errorf("failed to add URL %s to feed list: %w", feed.URL, err)
 		}
 	}
-
-	// For OPML format, we could enhance with feed metadata in the future
-	// For now, both formats just export URLs
 
 	// Save to specified filename
 	if err := list.Save(exportFilename); err != nil {

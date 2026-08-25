@@ -19,6 +19,7 @@ type Site struct {
 	Title  string          // OPML head title, or the filename base if unset.
 	Path   string          // Full path to the feed list file.
 	Format feedlist.Format // Inferred from the file extension.
+	Feeds  []feedlist.Feed // Feed entries and any list-backed configuration.
 	URLs   []string        // Feed URLs in the list.
 }
 
@@ -121,12 +122,18 @@ func Discover(dir string) (sites []Site, skipped []Skipped, err error) {
 			title = base
 		}
 
+		feeds := list.GetFeeds()
+		urls := make([]string, 0, len(feeds))
+		for _, feed := range feeds {
+			urls = append(urls, feed.URL)
+		}
 		sites = append(sites, Site{
 			Slug:   slug,
 			Title:  title,
 			Path:   path,
 			Format: format,
-			URLs:   list.GetURLs(),
+			Feeds:  feeds,
+			URLs:   urls,
 		})
 	}
 
