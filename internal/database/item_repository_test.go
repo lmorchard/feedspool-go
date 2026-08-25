@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	"strings"
 	"testing"
 	"time"
 )
@@ -373,5 +375,101 @@ func TestDeleteArchivedItems(t *testing.T) {
 
 	if totalCount != 2 { // not-archived + recent-archived
 		t.Errorf("Total items in DB = %d, want 2", totalCount)
+	}
+}
+
+func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
+	db := setupTestDB(t)
+	discoveredAt := time.Date(2026, 8, 25, 14, 0, 0, 0, time.FixedZone("PDT", -7*60*60))
+	feeds := []string{
+		testAlphaFeedURL,
+		testBetaFeedURL,
+	}
+	for _, feedURL := range feeds {
+		if err := db.UpsertFeed(&Feed{URL: feedURL}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	items := []*Item{
+		{
+			FeedURL: feeds[0], GUID: testAlphaGUID, Title: "Practical Go Patterns",
+			PublishedDate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+			FirstSeen:     sql.NullTime{Time: discoveredAt, Valid: true},
+		},
+		{FeedURL: feeds[0], GUID: "alpha-rust", Title: "Rust Notes"},
+		{FeedURL: feeds[1], GUID: "beta-go", Title: "Go Release"},
+	}
+	for _, item := range items {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := db.GetItems(&ItemFilter{FeedQuery: "ALPHA.EXAMPLE", Search: "go"})
+	if err != nil {
+		t.Fatalf("GetItems() error = %v", err)
+	}
+	if len(got) != 1 || got[0].GUID != testAlphaGUID {
+		t.Errorf("GetItems() = %#v, want alpha-go", got)
+	}
+
+	newlyDiscovered, err := db.GetItems(&ItemFilter{
+		Since: discoveredAt.UTC().Add(-time.Minute),
+		Until: discoveredAt.UTC(),
+	})
+	if err != nil {
+		t.Fatalf("discovery-time GetItems() error = %v", err)
+	}
+	if len(newlyDiscovered) != 1 || newlyDiscovered[0].GUID != testAlphaGUID {
+		t.Errorf("discovery-time GetItems() = %#v, want back-dated alpha-go", newlyDiscovered)
+	}
+	atCursor, err := db.GetItems(&ItemFilter{Since: discoveredAt.UTC()})
+	if err != nil {
+		t.Fatalf("boundary GetItems() error = %v", err)
+	}
+	if len(atCursor) != 0 {
+		t.Errorf("boundary GetItems() returned %d items, want half-open cursor window", len(atCursor))
+	}
+
+	literal, err := db.GetItems(&ItemFilter{Search: "%"})
+	if err != nil {
+		t.Fatalf("literal GetItems() error = %v", err)
+	}
+	if len(literal) != 0 {
+		t.Errorf("literal GetItems() returned %d wildcard matches, want 0", len(literal))
+	}
+}
+
+func TestGetItemsDiscoveryWindowUsesIndex(t *testing.T) {
+	db := setupTestDB(t)
+	query, args, filterTimesInGo := buildItemsQuery(&ItemFilter{
+		Since: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC),
+		Until: time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC),
+	})
+	if !filterTimesInGo {
+		t.Fatal("discovery window must retain the exact Go time comparison")
+	}
+
+	rows, err := db.conn.Query("EXPLAIN QUERY PLAN "+query, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var id, parent, unused int
+		var detail string
+		if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		plan.WriteString(detail)
+		plan.WriteByte('\n')
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(plan.String(), "idx_items_discovery_time") {
+		t.Fatalf("discovery query plan does not use discovery index:\n%s", plan.String())
 	}
 }

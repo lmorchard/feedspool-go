@@ -20,29 +20,47 @@ var (
 	itemsUnseen   bool
 	itemsSeen     bool
 	itemsMarkSeen bool
+	itemsFeed     string
+	itemsSearch   string
+	itemsCompact  bool
 )
 
 var itemsCmd = &cobra.Command{
 	Use:   "items [URL]",
 	Short: "List items across feeds or for a specific feed",
-	Long:  `Lists items. If a feed URL is provided, lists items for that feed. Otherwise lists items across all feeds.`,
-	Args:  cobra.MaximumNArgs(1),
-	RunE:  runItems,
+	Long: `List items across all feeds. Pass an exact feed URL as the optional
+	argument for compatibility, or use --feed to match a URL substring.
+--since and --until filter by discovery time (first_seen) using RFC3339
+timestamps. Invalid flags and conflicting filters exit non-zero.`,
+	Example: `  feedspool items --since 2026-08-25T12:00:00Z --format json
+  feedspool --json items --feed example.com
+  feedspool --json items --compact --since 2026-08-25T12:00:00Z
+  feedspool items --search "release notes" --limit 20
+  feedspool items https://example.com/feed.xml`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runItems,
 }
 
 func init() {
 	itemsCmd.Flags().StringVar(&itemsFormat, "format", formatTable, "Output format (table|json|csv)")
 	itemsCmd.Flags().StringVar(&itemsSort, "sort", "newest", "Sort order (newest|oldest)")
 	itemsCmd.Flags().IntVar(&itemsLimit, "limit", 0, "Maximum items to return (0 for all)")
-	itemsCmd.Flags().StringVar(&itemsSince, "since", "", "Filter items since date (RFC3339)")
-	itemsCmd.Flags().StringVar(&itemsUntil, "until", "", "Filter items until date (RFC3339)")
+	itemsCmd.Flags().StringVar(&itemsSince, "since", "", "Filter items discovered after time (RFC3339)")
+	itemsCmd.Flags().StringVar(&itemsUntil, "until", "", "Filter items discovered until time (RFC3339)")
 	itemsCmd.Flags().BoolVar(&itemsUnseen, "unseen", false, "Filter to items with no seen annotation")
 	itemsCmd.Flags().BoolVar(&itemsSeen, "seen", false, "Filter to items with a seen annotation")
 	itemsCmd.Flags().BoolVar(&itemsMarkSeen, "mark-seen", false, "Mark all returned items as seen")
+	itemsCmd.Flags().StringVar(&itemsFeed, "feed", "", "Filter by feed URL substring")
+	itemsCmd.Flags().StringVar(&itemsSearch, "search", "", "Filter by item title substring")
+	itemsCmd.Flags().BoolVar(&itemsCompact, "compact", false, "Emit a compact JSON manifest")
 	rootCmd.AddCommand(itemsCmd)
 }
 
 func runItems(_ *cobra.Command, args []string) error {
+	if err := validateItemsOptions(args); err != nil {
+		return err
+	}
+
 	feedURL := ""
 	if len(args) > 0 {
 		feedURL = args[0]
@@ -65,12 +83,14 @@ func runItems(_ *cobra.Command, args []string) error {
 	}
 
 	filter := database.ItemFilter{
-		FeedURL: feedURL,
-		Limit:   itemsLimit,
-		Since:   since,
-		Until:   until,
-		Unseen:  itemsUnseen,
-		Seen:    itemsSeen,
+		FeedURL:   feedURL,
+		FeedQuery: itemsFeed,
+		Search:    itemsSearch,
+		Limit:     itemsLimit,
+		Since:     since,
+		Until:     until,
+		Unseen:    itemsUnseen,
+		Seen:      itemsSeen,
 	}
 
 	items, err := db.GetItems(&filter)
@@ -83,10 +103,8 @@ func runItems(_ *cobra.Command, args []string) error {
 	}
 
 	if itemsMarkSeen {
-		for _, item := range items {
-			if err := db.AddAnnotation(item.FeedURL, item.GUID, "seen", sql.NullString{}, sql.NullString{}); err != nil {
-				return fmt.Errorf("failed to mark seen: %w", err)
-			}
+		if err := markItemsSeen(db, items); err != nil {
+			return err
 		}
 	}
 
@@ -94,8 +112,33 @@ func runItems(_ *cobra.Command, args []string) error {
 	if format == formatTable && cfg.JSON {
 		format = formatJSON
 	}
+	if itemsCompact && format != formatJSON {
+		return fmt.Errorf("--compact requires JSON output")
+	}
 
-	return outputItemsInFormat(format, items)
+	return outputItemsInFormat(format, items, itemsCompact)
+}
+
+func validateItemsOptions(args []string) error {
+	if len(args) > 0 && itemsFeed != "" {
+		return fmt.Errorf("feed URL argument cannot be combined with --feed")
+	}
+	if itemsSeen && itemsUnseen {
+		return fmt.Errorf("--seen cannot be combined with --unseen")
+	}
+	if itemsSort != sortNewest && itemsSort != sortOldest {
+		return fmt.Errorf("unknown sort order: %s", itemsSort)
+	}
+	return nil
+}
+
+func markItemsSeen(db *database.DB, items []*database.Item) error {
+	for _, item := range items {
+		if err := db.AddAnnotation(item.FeedURL, item.GUID, "seen", sql.NullString{}, sql.NullString{}); err != nil {
+			return fmt.Errorf("failed to mark seen: %w", err)
+		}
+	}
+	return nil
 }
 
 func parseDateFiltersForItems() (since, until time.Time, err error) {
@@ -123,11 +166,34 @@ func reverseItemsList(items []*database.Item) {
 	}
 }
 
-func outputItemsInFormat(format string, items []*database.Item) error {
+type compactItemOutput struct {
+	FeedURL       string    `json:"feed_url"`
+	GUID          string    `json:"guid"`
+	Title         string    `json:"title"`
+	Link          string    `json:"link"`
+	PublishedDate time.Time `json:"published_date"`
+	DiscoveredAt  time.Time `json:"discovered_at"`
+}
+
+func outputItemsInFormat(format string, items []*database.Item, compact bool) error {
 	switch format {
 	case formatJSON:
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
+		if compact {
+			outputs := make([]compactItemOutput, 0, len(items))
+			for _, item := range items {
+				discoveredAt := item.PublishedDate
+				if item.FirstSeen.Valid && !item.FirstSeen.Time.IsZero() {
+					discoveredAt = item.FirstSeen.Time
+				}
+				outputs = append(outputs, compactItemOutput{
+					FeedURL: item.FeedURL, GUID: item.GUID, Title: item.Title, Link: item.Link,
+					PublishedDate: item.PublishedDate, DiscoveredAt: discoveredAt,
+				})
+			}
+			return encoder.Encode(outputs)
+		}
 		return encoder.Encode(items)
 	case formatCSV:
 		return outputCSV(items) // Reuse existing outputCSV

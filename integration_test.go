@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -325,6 +327,276 @@ func TestIntegrationEndToEnd(t *testing.T) {
 
 		if !strings.Contains(output, "feedspool") {
 			t.Errorf("Version output should contain program name, got: %s", output)
+		}
+	})
+}
+
+func TestAgentFriendlyReadCLI(t *testing.T) {
+	const (
+		alphaGUID       = "alpha-go"
+		alphaTitle      = "Practical Go Agents"
+		ambiguousMarker = "ambiguous"
+		betaCopyGUID    = "beta-copy"
+		feedFlag        = "--feed"
+		fullItemBody    = "Full item body"
+		guidFlag        = "--guid"
+	)
+
+	binaryPath := buildBinary(t)
+	dbPath := filepath.Join(t.TempDir(), "feeds.db")
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+
+	latestFetch := time.Date(2026, 8, 25, 13, 0, 0, 0, time.UTC)
+	alphaURL := "https://alpha.example/feed.xml"
+	betaURL := "https://beta.example/feed.xml"
+	for _, feed := range []*database.Feed{
+		{URL: alphaURL, Title: "Alpha Feed", LastFetchTime: latestFetch, LastSuccessfulFetch: latestFetch},
+		{URL: betaURL, Title: "Beta Feed", ErrorCount: 2, LastError: "timeout"},
+	} {
+		if err := db.UpsertFeed(feed); err != nil {
+			t.Fatal(err)
+		}
+	}
+	itemLink := "https://alpha.example/posts/go-agents"
+	for _, item := range []*database.Item{
+		{
+			FeedURL: alphaURL, GUID: alphaGUID, Title: alphaTitle, Link: itemLink,
+			PublishedDate: latestFetch.Add(-time.Hour), Summary: "Agent patterns", Content: fullItemBody,
+		},
+		{
+			FeedURL: betaURL, GUID: "beta-rust", Title: "Rust Notes",
+			Link: "https://beta.example/posts/rust", PublishedDate: latestFetch.Add(-2 * time.Hour),
+		},
+	} {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.UpsertMetadata(&database.URLMetadata{
+		URL:         itemLink,
+		Title:       sql.NullString{String: "Unfurled title", Valid: true},
+		Description: sql.NullString{String: "Unfurled description", Valid: true},
+		ImageURL:    sql.NullString{String: "https://alpha.example/image.png", Valid: true},
+		FaviconURL:  sql.NullString{String: "https://alpha.example/favicon.ico", Valid: true},
+		Metadata:    database.JSON(`{"og:type":"article"}`),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("feeds JSON", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "--json", "feeds")
+		if err != nil {
+			t.Fatalf("feeds failed: %v\n%s", err, output)
+		}
+		var feeds []struct {
+			URL           string  `json:"url"`
+			LastFetchTime *string `json:"last_fetch_time"`
+			ItemCount     int     `json:"item_count"`
+		}
+		if err := json.Unmarshal([]byte(output), &feeds); err != nil {
+			t.Fatalf("feeds returned invalid JSON: %v\n%s", err, output)
+		}
+		if len(feeds) != 2 || feeds[0].URL != alphaURL || feeds[0].ItemCount != 1 ||
+			feeds[0].LastFetchTime == nil || feeds[1].LastFetchTime != nil {
+			t.Errorf("feeds output = %#v", feeds)
+		}
+	})
+
+	t.Run("feeds with errors JSON", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "--json", "feeds", "--errors")
+		if err != nil {
+			t.Fatalf("feeds --errors failed: %v\n%s", err, output)
+		}
+		var feeds []struct {
+			URL        string `json:"url"`
+			ErrorCount int    `json:"error_count"`
+		}
+		if err := json.Unmarshal([]byte(output), &feeds); err != nil {
+			t.Fatalf("feeds --errors returned invalid JSON: %v\n%s", err, output)
+		}
+		if len(feeds) != 1 || feeds[0].URL != betaURL || feeds[0].ErrorCount != 2 {
+			t.Errorf("feeds --errors output = %#v", feeds)
+		}
+	})
+
+	t.Run("status JSON", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "--json", "status")
+		if err != nil {
+			t.Fatalf("status failed: %v\n%s", err, output)
+		}
+		var status struct {
+			FeedCount             int     `json:"feed_count"`
+			ItemCount             int     `json:"item_count"`
+			LastFetchTime         *string `json:"last_fetch_time"`
+			FailingFeedCount      int     `json:"failing_feed_count"`
+			ConsecutiveErrorCount int     `json:"consecutive_error_count"`
+		}
+		if err := json.Unmarshal([]byte(output), &status); err != nil {
+			t.Fatalf("status returned invalid JSON: %v\n%s", err, output)
+		}
+		if status.FeedCount != 2 || status.ItemCount != 2 || status.FailingFeedCount != 1 ||
+			status.ConsecutiveErrorCount != 2 || status.LastFetchTime == nil {
+			t.Errorf("status output = %#v", status)
+		}
+	})
+
+	t.Run("item filters", func(t *testing.T) {
+		output, err := runCommand(
+			binaryPath, "--database", dbPath, "--json", "items", "--feed", "ALPHA.EXAMPLE", "--search", "go",
+		)
+		if err != nil {
+			t.Fatalf("items failed: %v\n%s", err, output)
+		}
+		var items []database.Item
+		if err := json.Unmarshal([]byte(output), &items); err != nil {
+			t.Fatalf("items returned invalid JSON: %v\n%s", err, output)
+		}
+		if len(items) != 1 || items[0].GUID != alphaGUID {
+			t.Errorf("items output = %#v", items)
+		}
+	})
+
+	t.Run("compact item manifest", func(t *testing.T) {
+		output, err := runCommand(
+			binaryPath, "--database", dbPath, "--json", "items", "--compact", "--feed", "alpha.example",
+		)
+		if err != nil {
+			t.Fatalf("compact items failed: %v\n%s", err, output)
+		}
+		var items []struct {
+			FeedURL       string `json:"feed_url"`
+			GUID          string `json:"guid"`
+			Title         string `json:"title"`
+			Link          string `json:"link"`
+			PublishedDate string `json:"published_date"`
+			DiscoveredAt  string `json:"discovered_at"`
+		}
+		if err := json.Unmarshal([]byte(output), &items); err != nil {
+			t.Fatalf("compact items returned invalid JSON: %v\n%s", err, output)
+		}
+		if len(items) != 1 || items[0].FeedURL != alphaURL || items[0].GUID != alphaGUID ||
+			items[0].Title != alphaTitle || items[0].Link != itemLink ||
+			items[0].PublishedDate == "" || items[0].DiscoveredAt == "" {
+			t.Errorf("compact items output = %#v", items)
+		}
+		if strings.Contains(output, `"Content"`) || strings.Contains(output, `"ItemJSON"`) {
+			t.Errorf("compact items included full item fields: %s", output)
+		}
+	})
+
+	t.Run("fuzzy show", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "show", "alpha.example")
+		if err != nil {
+			t.Fatalf("fuzzy show failed: %v\n%s", err, output)
+		}
+		if !strings.Contains(output, alphaTitle) {
+			t.Errorf("fuzzy show output = %s", output)
+		}
+
+		output, err = runCommand(binaryPath, "--database", dbPath, "show", "example")
+		if err == nil {
+			t.Fatalf("ambiguous show succeeded: %s", output)
+		}
+		for _, want := range []string{ambiguousMarker, alphaURL, betaURL} {
+			if !strings.Contains(output, want) {
+				t.Errorf("ambiguous show output missing %q: %s", want, output)
+			}
+		}
+	})
+
+	t.Run("item metadata JSON", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "--database", dbPath, "--json", "item", itemLink)
+		if err != nil {
+			t.Fatalf("item failed: %v\n%s", err, output)
+		}
+		var item struct {
+			Metadata *database.URLMetadata `json:"Metadata"`
+			Content  string
+		}
+		if err := json.Unmarshal([]byte(output), &item); err != nil {
+			t.Fatalf("item returned invalid JSON: %v\n%s", err, output)
+		}
+		if item.Metadata == nil || !item.Metadata.ImageURL.Valid || item.Content != fullItemBody {
+			t.Errorf("item metadata output = %#v\n%s", item.Metadata, output)
+		}
+	})
+
+	t.Run("ambiguous item link", func(t *testing.T) {
+		db, err := database.New(dbPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpsertItem(&database.Item{
+			FeedURL: betaURL,
+			GUID:    betaCopyGUID,
+			Title:   "Syndicated copy",
+			Link:    itemLink,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := runCommand(binaryPath, "--database", dbPath, "--json", "item", itemLink)
+		if err == nil {
+			t.Fatalf("ambiguous item lookup succeeded: %s", output)
+		}
+		for _, want := range []string{
+			ambiguousMarker, alphaURL, alphaGUID, betaURL, betaCopyGUID, feedFlag, guidFlag,
+		} {
+			if !strings.Contains(output, want) {
+				t.Errorf("ambiguous item output missing %q: %s", want, output)
+			}
+		}
+	})
+
+	t.Run("item identity selector", func(t *testing.T) {
+		output, err := runCommand(
+			binaryPath, "--database", dbPath, "--json", "item", feedFlag, alphaURL, guidFlag, alphaGUID,
+		)
+		if err != nil {
+			t.Fatalf("item identity lookup failed: %v\n%s", err, output)
+		}
+		var item struct {
+			FeedURL string `json:"FeedURL"`
+			GUID    string `json:"GUID"`
+			Content string `json:"Content"`
+		}
+		if err := json.Unmarshal([]byte(output), &item); err != nil {
+			t.Fatalf("item identity lookup returned invalid JSON: %v\n%s", err, output)
+		}
+		if item.FeedURL != alphaURL || item.GUID != alphaGUID || item.Content != fullItemBody {
+			t.Errorf("item identity output = %#v", item)
+		}
+	})
+
+	t.Run("help discovery", func(t *testing.T) {
+		output, err := runCommand(binaryPath, "items", "--help")
+		if err != nil {
+			t.Fatalf("items help failed: %v\n%s", err, output)
+		}
+		for _, want := range []string{"Examples:", "--feed", "--search", "RFC3339"} {
+			if !strings.Contains(output, want) {
+				t.Errorf("items help missing %q: %s", want, output)
+			}
+		}
+
+		output, err = runCommand(binaryPath, "item", "--help")
+		if err != nil {
+			t.Fatalf("item help failed: %v\n%s", err, output)
+		}
+		if !strings.Contains(output, ambiguousMarker) || !strings.Contains(output, "non-zero") {
+			t.Errorf("item help omits ambiguity exit behavior: %s", output)
 		}
 	})
 }

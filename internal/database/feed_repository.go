@@ -116,6 +116,127 @@ func (db *DB) GetAllFeeds() ([]*Feed, error) {
 	return feeds, nil
 }
 
+// GetFeedSummaries retrieves tracked feeds with item and fetch statistics.
+func (db *DB) GetFeedSummaries() ([]FeedSummary, error) {
+	query := `
+		SELECT f.url, f.title, f.last_fetch_time, COUNT(i.id), f.error_count
+		FROM feeds f
+		LEFT JOIN items i ON i.feed_url = f.url
+		GROUP BY f.url
+		ORDER BY f.url
+	`
+	rows, err := db.conn.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feed summaries: %w", err)
+	}
+	defer rows.Close()
+
+	summaries := []FeedSummary{}
+	for rows.Next() {
+		var summary FeedSummary
+		if err := rows.Scan(
+			&summary.URL,
+			&summary.Title,
+			&summary.LastFetchTime,
+			&summary.ItemCount,
+			&summary.ErrorCount,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan feed summary: %w", err)
+		}
+		if summary.LastFetchTime.Valid && summary.LastFetchTime.Time.IsZero() {
+			summary.LastFetchTime = sql.NullTime{}
+		}
+		summaries = append(summaries, summary)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating feed summaries: %w", err)
+	}
+	return summaries, nil
+}
+
+// GetSpoolStatus retrieves aggregate feed, item, and fetch health counts.
+func (db *DB) GetSpoolStatus() (*SpoolStatus, error) {
+	query := `
+		SELECT
+			(SELECT COUNT(*) FROM feeds),
+			(SELECT COUNT(*) FROM items),
+			(SELECT COUNT(*) FROM feeds WHERE error_count > 0),
+			(SELECT COALESCE(SUM(error_count), 0) FROM feeds)
+	`
+	var status SpoolStatus
+	if err := db.conn.QueryRow(query).Scan(
+		&status.FeedCount,
+		&status.ItemCount,
+		&status.FailingFeedCount,
+		&status.ConsecutiveErrorCount,
+	); err != nil {
+		return nil, fmt.Errorf("failed to get spool status: %w", err)
+	}
+	rows, err := db.conn.Query("SELECT last_fetch_time FROM feeds WHERE last_fetch_time IS NOT NULL")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get fetch times: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var candidate sql.NullTime
+		if err := rows.Scan(&candidate); err != nil {
+			return nil, fmt.Errorf("failed to scan fetch time: %w", err)
+		}
+		if candidate.Valid && !candidate.Time.IsZero() &&
+			(!status.LastFetchTime.Valid || candidate.Time.After(status.LastFetchTime.Time)) {
+			status.LastFetchTime = candidate
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate fetch times: %w", err)
+	}
+	return &status, nil
+}
+
+// FindFeedsByURLSubstring retrieves feeds whose URLs contain query.
+func (db *DB) FindFeedsByURLSubstring(query string) ([]*Feed, error) {
+	statement := `
+		SELECT url, title, description, last_updated, etag, last_modified,
+			last_fetch_time, last_successful_fetch, error_count, user_agent,
+			last_error, latest_item_date, feed_json
+		FROM feeds
+		WHERE instr(lower(url), lower(?)) > 0
+		ORDER BY url
+	`
+	rows, err := db.conn.Query(statement, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find feeds: %w", err)
+	}
+	defer rows.Close()
+
+	feeds := []*Feed{}
+	for rows.Next() {
+		feed := &Feed{}
+		if err := rows.Scan(
+			&feed.URL,
+			&feed.Title,
+			&feed.Description,
+			&feed.LastUpdated,
+			&feed.ETag,
+			&feed.LastModified,
+			&feed.LastFetchTime,
+			&feed.LastSuccessfulFetch,
+			&feed.ErrorCount,
+			&feed.UserAgent,
+			&feed.LastError,
+			&feed.LatestItemDate,
+			&feed.FeedJSON,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan matching feed: %w", err)
+		}
+		feeds = append(feeds, feed)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating matching feeds: %w", err)
+	}
+	return feeds, nil
+}
+
 // DeleteFeed deletes a feed and all its associated items from the database.
 func (db *DB) DeleteFeed(url string) error {
 	_, err := db.conn.Exec("DELETE FROM feeds WHERE url = ?", url)

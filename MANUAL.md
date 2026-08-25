@@ -260,9 +260,10 @@ the override. Conflicting values for one URL stop the fetch.
 
 ### show
 
-List items for a single feed.
+List items for a single feed. The selector may be an exact URL or a unique URL
+substring. Ambiguous selectors fail and list their matches.
 
-**Usage:** `feedspool show <url> [flags]`
+**Usage:** `feedspool show <feed> [flags]`
 
 **Flags:**
 
@@ -297,6 +298,103 @@ List items for a single feed.
   ]
 }
 ```
+
+**Side effects:** Read-only.
+
+Database-reading commands automatically apply pending schema migrations when
+opening an older database. “Read-only” here means they do not otherwise change
+feeds, items, annotations, or metadata.
+
+### feeds
+
+List every tracked feed with its title, last fetch time, item count, and
+consecutive fetch error count.
+
+**Usage:** `feedspool feeds [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--format` | `table` | `table` or `json` |
+| `--errors` | false | Show only feeds with a nonzero error count |
+
+The global `--json` flag selects JSON when `--format` is left at its default.
+JSON objects use `url`, `title`, `last_fetch_time`, `item_count`, and
+`error_count` fields.
+
+**Side effects:** Read-only.
+
+### items
+
+List items across all feeds, or narrow them by source, title, time, or
+seen/unseen annotation. The optional positional URL remains an exact-match
+shortcut; `--feed` instead performs a case-insensitive URL substring match.
+
+**Usage:** `feedspool items [exact-feed-url] [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--feed` | (none) | Filter by feed URL substring |
+| `--search` | (none) | Filter by item title substring |
+| `--since` | (none) | Items first discovered after this RFC3339 timestamp |
+| `--until` | (none) | Items first discovered at or before this RFC3339 timestamp |
+| `--limit` | `0` | Maximum results (0 = all) |
+| `--sort` | `newest` | `newest` or `oldest` |
+| `--seen` | false | Only items carrying a `seen` annotation |
+| `--unseen` | false | Only items without a `seen` annotation |
+| `--mark-seen` | false | Add a `seen` annotation to returned items |
+| `--format` | `table` | `table`, `json`, or `csv` |
+| `--compact` | false | Emit compact JSON manifest fields only |
+
+An exact positional URL cannot be combined with `--feed`; `--seen` and
+`--unseen` are also mutually exclusive. The global `--json` flag selects JSON
+when `--format` is left at its default. `--compact` requires JSON and emits
+`feed_url`, `guid`, `title`, `link`, `published_date`, and `discovered_at`.
+Discovery filters use `first_seen`,
+falling back to publication time only for legacy rows without that field; this
+makes `--since` suitable for a caller-owned last-checked cursor even when a
+newly discovered post has an older publication date. Combined filters form the
+half-open cursor window `(since, until]`, so a saved `until` value can become
+the next run's `since` without repeating boundary items.
+
+```bash
+feedspool --json items --since 2026-08-25T12:00:00Z
+feedspool --json items --compact --since 2026-08-25T12:00:00Z
+feedspool items --feed example.com --search "release notes" --limit 20
+```
+
+**Side effects:** Read-only unless `--mark-seen` is set.
+
+### item
+
+Show one item selected by link or exact feed URL and GUID. Output includes the
+stored item, annotations, and any unfurl metadata (OpenGraph/Twitter data,
+image, and favicon) already present in the database. If multiple items share a
+link, the command exits nonzero and lists each matching feed URL and GUID.
+
+**Usage:** `feedspool item [link] [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--format` | `table` | `table` or `json` |
+| `--feed` | (none) | Exact feed URL; requires `--guid` |
+| `--guid` | (none) | Exact item GUID; requires `--feed` |
+
+The global `--json` flag selects JSON when `--format` is left at its default.
+The command does not fetch missing unfurl data; run `unfurl <link>` first when
+needed.
+
+**Side effects:** Read-only.
+
+### status
+
+Print a one-shot orientation summary: feed count, item count, newest fetch
+attempt, number of failing feeds, and the sum of their consecutive errors.
+
+**Usage:** `feedspool status`
+
+Use global `--json` for the fields `feed_count`, `item_count`,
+`last_fetch_time`, `failing_feed_count`, and `consecutive_error_count`. The
+timestamp is `null` when no feed has been fetched.
 
 **Side effects:** Read-only.
 
