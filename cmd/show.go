@@ -67,7 +67,7 @@ func runShow(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	if showSort == "oldest" {
+	if showSort == sortOldest {
 		reverseItems(items)
 	}
 
@@ -129,7 +129,7 @@ func outputInFormat(format string, feed *database.Feed, items []*database.Item) 
 	switch format {
 	case formatJSON:
 		return outputJSON(feed, items)
-	case "csv":
+	case formatCSV:
 		return outputCSV(items)
 	case formatTable:
 		return outputTable(items)

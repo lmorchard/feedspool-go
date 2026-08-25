@@ -12,4 +12,10 @@ const (
 	// Output format constants.
 	formatJSON  = "json"
 	formatTable = "table"
+	formatCSV   = "csv"
+	sortOldest  = "oldest"
+	sortNewest  = "newest"
+
+	// Queries.
+	queryFindItemByLink = `SELECT feed_url, guid FROM items WHERE link = ? LIMIT 1`
 )
