@@ -13,11 +13,14 @@ import (
 )
 
 const (
-	techOPML    = "tech.opml"
-	comicsOPML  = "comics.opml"
-	maxAge24h   = "24h"
-	techTitle   = "Tech"
-	comicsTitle = "Comics"
+	techOPML                 = "tech.opml"
+	comicsOPML               = "comics.opml"
+	oneOPML                  = "one.opml"
+	twoOPML                  = "two.opml"
+	directoryCustomUserAgent = "Custom Reader/1.0"
+	maxAge24h                = "24h"
+	techTitle                = "Tech"
+	comicsTitle              = "Comics"
 )
 
 // newTestDB creates an initialized database containing feedA and feedB, each
@@ -63,8 +66,8 @@ func newTestDB(t *testing.T) string {
 
 func TestPlanFetchDedupes(t *testing.T) {
 	dir := writeDir(t, map[string]string{
-		"one.opml": opmlWith("One", feedA, feedB),
-		"two.opml": opmlWith("Two", feedB, feedC),
+		oneOPML: opmlWith("One", feedA, feedB),
+		twoOPML: opmlWith("Two", feedB, feedC),
 	})
 
 	plan, err := PlanFetch(dir)
@@ -79,6 +82,39 @@ func TestPlanFetchDedupes(t *testing.T) {
 	}
 	if len(plan.Sites) != 2 {
 		t.Errorf("len(Sites) = %d, want 2", len(plan.Sites))
+	}
+}
+
+func TestPlanFetchCarriesOPMLUserAgents(t *testing.T) {
+	dir := writeDir(t, map[string]string{
+		oneOPML:   `<opml version="2.0"><body><outline xmlUrl="` + feedA + `" userAgent="` + directoryCustomUserAgent + `" /></body></opml>`,
+		"two.txt": feedA + "\n" + feedB + "\n",
+	})
+
+	plan, err := PlanFetch(dir)
+	if err != nil {
+		t.Fatalf("PlanFetch() error = %v", err)
+	}
+	if len(plan.FeedConfigs) != 1 {
+		t.Fatalf("len(FeedConfigs) = %d, want 1 OPML configuration", len(plan.FeedConfigs))
+	}
+	if got := plan.FeedConfigs[0]; got.URL != feedA || got.UserAgent != directoryCustomUserAgent {
+		t.Errorf("FeedConfigs[0] = %#v, want configured %s", got, feedA)
+	}
+}
+
+func TestPlanFetchRejectsConflictingOPMLUserAgents(t *testing.T) {
+	dir := writeDir(t, map[string]string{
+		oneOPML: `<opml version="2.0"><body><outline xmlUrl="` + feedA + `" userAgent="First Reader/1.0" /></body></opml>`,
+		twoOPML: `<opml version="2.0"><body><outline xmlUrl="` + feedA + `" userAgent="Second Reader/2.0" /></body></opml>`,
+	})
+
+	_, err := PlanFetch(dir)
+	if err == nil {
+		t.Fatal("PlanFetch() error = nil, want conflicting User-Agent error")
+	}
+	if !strings.Contains(err.Error(), feedA) {
+		t.Errorf("PlanFetch() error = %q, want conflicting URL", err)
 	}
 }
 

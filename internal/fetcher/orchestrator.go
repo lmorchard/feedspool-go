@@ -86,7 +86,20 @@ func (o *Orchestrator) FetchFromFile(
 		return nil, fmt.Errorf("failed to load feed list %s: %w", filename, err)
 	}
 
-	feedURLs := list.GetURLs()
+	feeds, err := feedlist.DeduplicateFeeds(list.GetFeeds())
+	if err != nil {
+		return nil, fmt.Errorf("invalid feed list %s: %w", filename, err)
+	}
+	if format == feedlist.FormatOPML {
+		if err := o.SynchronizeFeedConfigs(feeds); err != nil {
+			return nil, err
+		}
+	}
+
+	feedURLs := make([]string, 0, len(feeds))
+	for _, feed := range feeds {
+		feedURLs = append(feedURLs, feed.URL)
+	}
 	if len(feedURLs) == 0 {
 		logrus.Infof("No feed URLs found in %s", filename)
 		return []*FetchResult{}, nil
@@ -99,6 +112,20 @@ func (o *Orchestrator) FetchFromFile(
 	}
 
 	return o.FetchFromURLs(ctx, feedURLs, opts), nil
+}
+
+// SynchronizeFeedConfigs writes authoritative OPML configuration to the database.
+func (o *Orchestrator) SynchronizeFeedConfigs(feeds []feedlist.Feed) error {
+	feeds, err := feedlist.DeduplicateFeeds(feeds)
+	if err != nil {
+		return fmt.Errorf("invalid feed configuration: %w", err)
+	}
+	for _, feed := range feeds {
+		if err := o.db.SetFeedUserAgent(feed.URL, feed.UserAgent); err != nil {
+			return fmt.Errorf("failed to synchronize feed configuration for %s: %w", feed.URL, err)
+		}
+	}
+	return nil
 }
 
 // FetchFromDatabase executes fetch from all feeds in database with optional unfurl.

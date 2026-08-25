@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/sirupsen/logrus"
 )
@@ -21,10 +22,11 @@ var ErrPartialFailure = errors.New("one or more feed lists were skipped or faile
 
 // FetchPlan is the deduped work for a directory-mode fetch.
 type FetchPlan struct {
-	Sites      []Site
-	Skipped    []Skipped
-	URLs       []string // Deduped union across every site.
-	References int      // Total URL references before dedup.
+	Sites       []Site
+	Skipped     []Skipped
+	URLs        []string        // Deduped union across every site.
+	FeedConfigs []feedlist.Feed // Deduped configuration from OPML lists.
+	References  int             // Total URL references before dedup.
 }
 
 // PlanFetch discovers the feed lists in dir and unions their URLs so a feed
@@ -36,15 +38,24 @@ func PlanFetch(dir string) (*FetchPlan, error) {
 	}
 
 	references := 0
+	feedConfigs := []feedlist.Feed{}
 	for i := range sites {
 		references += len(sites[i].URLs)
+		if sites[i].Format == feedlist.FormatOPML {
+			feedConfigs = append(feedConfigs, sites[i].Feeds...)
+		}
+	}
+	feedConfigs, err = feedlist.DeduplicateFeeds(feedConfigs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid directory feed configuration: %w", err)
 	}
 
 	return &FetchPlan{
-		Sites:      sites,
-		Skipped:    skipped,
-		URLs:       UnionURLs(sites),
-		References: references,
+		Sites:       sites,
+		Skipped:     skipped,
+		URLs:        UnionURLs(sites),
+		FeedConfigs: feedConfigs,
+		References:  references,
 	}, nil
 }
 

@@ -60,6 +60,40 @@ func TestGetFeedNotFound(t *testing.T) {
 	}
 }
 
+func TestSetFeedUserAgent(t *testing.T) {
+	db := setupTestDB(t)
+	const customUserAgent = "Custom Reader/1.0"
+
+	if err := db.SetFeedUserAgent(fixtureFeedURL, customUserAgent); err != nil {
+		t.Fatalf("SetFeedUserAgent() insert error = %v", err)
+	}
+	feed, err := db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatalf("GetFeed() error = %v", err)
+	}
+	if feed == nil || feed.UserAgent != customUserAgent {
+		t.Fatalf("GetFeed() = %#v, want UserAgent %q", feed, customUserAgent)
+	}
+
+	feed.Title = fixtureFeedTitle
+	if err := db.UpsertFeed(feed); err != nil {
+		t.Fatalf("UpsertFeed() error = %v", err)
+	}
+	if err := db.SetFeedUserAgent(fixtureFeedURL, ""); err != nil {
+		t.Fatalf("SetFeedUserAgent() clear error = %v", err)
+	}
+	feed, err = db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatalf("GetFeed() after clear error = %v", err)
+	}
+	if feed.UserAgent != "" {
+		t.Errorf("cleared UserAgent = %q, want empty string", feed.UserAgent)
+	}
+	if feed.Title != fixtureFeedTitle {
+		t.Errorf("Title = %q after User-Agent update, want preserved %q", feed.Title, fixtureFeedTitle)
+	}
+}
+
 func TestGetAllFeeds(t *testing.T) {
 	db := setupTestDB(t)
 

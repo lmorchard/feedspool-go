@@ -56,3 +56,23 @@ func TestExtractFeedURLsEmpty(t *testing.T) {
 		t.Errorf("len(urls) = %v, want %v", len(urls), 0)
 	}
 }
+
+func TestParseOPMLUserAgent(t *testing.T) {
+	const opmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+    <body>
+        <outline text="Protected Feed" type="rss" xmlUrl="https://example.com/feed.xml" userAgent="Custom Reader/1.0" />
+    </body>
+</opml>`
+
+	document, err := ParseOPML(strings.NewReader(opmlContent))
+	if err != nil {
+		t.Fatalf("ParseOPML() error = %v", err)
+	}
+	if len(document.Body.Outlines) != 1 {
+		t.Fatalf("len(Body.Outlines) = %d, want 1", len(document.Body.Outlines))
+	}
+	if got := document.Body.Outlines[0].UserAgent; got != "Custom Reader/1.0" {
+		t.Errorf("Outline.UserAgent = %q, want %q", got, "Custom Reader/1.0")
+	}
+}

@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	subscribeFormat   string
-	subscribeFilename string
-	subscribeDiscover bool
+	subscribeFormat    string
+	subscribeFilename  string
+	subscribeDiscover  bool
+	subscribeUserAgent string
 )
 
 var subscribeCmd = &cobra.Command{
@@ -22,6 +23,8 @@ If --discover is specified, the URL will be treated as a webpage and parsed for 
 
 Examples:
   feedspool subscribe https://example.com/feed.xml
+  feedspool subscribe --user-agent "Custom Reader/1.0" https://example.com/feed.xml
+  feedspool subscribe --user-agent= https://example.com/feed.xml
   feedspool subscribe --discover https://example.com/blog
   feedspool subscribe --format text --filename feeds.txt https://example.com/feed.xml`,
 	Args: cobra.ExactArgs(1),
@@ -32,10 +35,16 @@ func init() {
 	subscribeCmd.Flags().StringVar(&subscribeFormat, "format", "", "Feed list format (opml or text)")
 	subscribeCmd.Flags().StringVar(&subscribeFilename, "filename", "", "Feed list filename")
 	subscribeCmd.Flags().BoolVar(&subscribeDiscover, "discover", false, "Discover RSS/Atom feeds from HTML page")
+	subscribeCmd.Flags().StringVar(
+		&subscribeUserAgent,
+		"user-agent",
+		"",
+		"Per-feed User-Agent override for OPML lists (use --user-agent= to clear)",
+	)
 	rootCmd.AddCommand(subscribeCmd)
 }
 
-func runSubscribe(_ *cobra.Command, args []string) error {
+func runSubscribe(cmd *cobra.Command, args []string) error {
 	targetURL := args[0]
 	cfg := GetConfig()
 
@@ -55,7 +64,11 @@ func runSubscribe(_ *cobra.Command, args []string) error {
 		return nil
 	}
 
-	result, err := manager.Subscribe(format, filename, urlsToAdd)
+	options := subscription.SubscribeOptions{}
+	if cmd.Flags().Changed("user-agent") {
+		options.UserAgent = &subscribeUserAgent
+	}
+	result, err := manager.SubscribeWithOptions(format, filename, urlsToAdd, options)
 	if err != nil {
 		return err
 	}
@@ -76,7 +89,11 @@ func runSubscribe(_ *cobra.Command, args []string) error {
 	if result.AddedCount > 0 {
 		fmt.Printf("Added %d new feed(s)\n", result.AddedCount)
 		fmt.Printf("Saved %d new feed(s) to %s\n", result.AddedCount, filename)
-	} else {
+	}
+	if result.UpdatedCount > 0 {
+		fmt.Printf("Updated %d existing feed(s) in %s\n", result.UpdatedCount, filename)
+	}
+	if result.AddedCount == 0 && result.UpdatedCount == 0 {
 		fmt.Println("No new feeds to add.")
 	}
 

@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -14,13 +15,14 @@ import (
 
 // Shared test fixtures, hoisted so goconst stays quiet.
 const (
-	testAtomPath    = "/feed.atom"
-	testCustomTxt   = "custom.txt"
-	testDefaultOPML = "default.opml"
-	testDefaultTxt  = "default.txt"
-	testFormatText  = "text"
-	testFormatOPML  = "opml"
-	testRSSPath     = "/feed.rss"
+	testAtomPath        = "/feed.atom"
+	testCustomUserAgent = "Custom Reader/1.0"
+	testCustomTxt       = "custom.txt"
+	testDefaultOPML     = "default.opml"
+	testDefaultTxt      = "default.txt"
+	testFormatText      = "text"
+	testFormatOPML      = "opml"
+	testRSSPath         = "/feed.rss"
 )
 
 const (
@@ -166,7 +168,10 @@ func TestLoadOrCreateFeedList(t *testing.T) {
 
 	t.Run("Create new when file doesn't exist", func(t *testing.T) {
 		filename := filepath.Join(tmpDir, "new_feeds.txt")
-		list, createdNew := manager.LoadOrCreateFeedList(feedlist.FormatText, filename)
+		list, createdNew, err := manager.LoadOrCreateFeedList(feedlist.FormatText, filename)
+		if err != nil {
+			t.Fatalf("LoadOrCreateFeedList() error = %v", err)
+		}
 
 		if list == nil {
 			t.Fatal("LoadOrCreateFeedList returned nil")
@@ -190,7 +195,10 @@ func TestLoadOrCreateFeedList(t *testing.T) {
 		existingList.AddURL(testURL1)
 		existingList.Save(filename)
 
-		list, createdNew := manager.LoadOrCreateFeedList(feedlist.FormatText, filename)
+		list, createdNew, err := manager.LoadOrCreateFeedList(feedlist.FormatText, filename)
+		if err != nil {
+			t.Fatalf("LoadOrCreateFeedList() error = %v", err)
+		}
 
 		if list == nil {
 			t.Fatal("LoadOrCreateFeedList returned nil")
@@ -310,6 +318,137 @@ func TestSubscribe(t *testing.T) {
 			t.Error("Expected error for invalid format")
 		}
 	})
+}
+
+func TestSubscribeWithUserAgent(t *testing.T) {
+	tmpDir := t.TempDir()
+	manager := New(&config.Config{})
+	filename := filepath.Join(tmpDir, "feeds.opml")
+	initialUserAgent := "Initial Reader/1.0"
+
+	result, err := manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &initialUserAgent,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() error = %v", err)
+	}
+	if result.AddedCount != 1 || result.UpdatedCount != 0 {
+		t.Fatalf("result = %#v, want one added feed and no updates", result)
+	}
+
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	if got := list.GetFeeds()[0].UserAgent; got != initialUserAgent {
+		t.Errorf("saved UserAgent = %q, want %q", got, initialUserAgent)
+	}
+
+	updatedUserAgent := "Updated Reader/2.0"
+	result, err = manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &updatedUserAgent,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() update error = %v", err)
+	}
+	if result.AddedCount != 0 || result.UpdatedCount != 1 {
+		t.Fatalf("update result = %#v, want no additions and one update", result)
+	}
+
+	clearedUserAgent := ""
+	result, err = manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &clearedUserAgent,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() clear error = %v", err)
+	}
+	if result.UpdatedCount != 1 {
+		t.Fatalf("clear UpdatedCount = %d, want 1", result.UpdatedCount)
+	}
+
+	list, err = feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() after clear error = %v", err)
+	}
+	feeds := list.GetFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("len(GetFeeds()) = %d, want 1 after updates", len(feeds))
+	}
+	if feeds[0].UserAgent != "" {
+		t.Errorf("cleared UserAgent = %q, want empty string", feeds[0].UserAgent)
+	}
+}
+
+func TestSubscribeWithUserAgentRejectsTextList(t *testing.T) {
+	manager := New(&config.Config{})
+	filename := filepath.Join(t.TempDir(), "feeds.txt")
+	userAgent := testCustomUserAgent
+
+	_, err := manager.SubscribeWithOptions(testFormatText, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &userAgent,
+	})
+	if err == nil {
+		t.Fatal("SubscribeWithOptions() error = nil, want text-list validation error")
+	}
+	if _, statErr := os.Stat(filename); !os.IsNotExist(statErr) {
+		t.Errorf("text feed list was created despite unsupported User-Agent: stat error = %v", statErr)
+	}
+}
+
+func TestSubscribeDoesNotOverwriteMalformedFeedList(t *testing.T) {
+	manager := New(&config.Config{})
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	original := []byte(`<opml><body><outline xmlUrl="https://existing.example/feed.xml">`)
+	if err := os.WriteFile(filename, original, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	userAgent := testCustomUserAgent
+
+	_, err := manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &userAgent,
+	})
+	if err == nil {
+		t.Fatal("SubscribeWithOptions() error = nil, want malformed OPML error")
+	}
+	after, readErr := os.ReadFile(filename)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if !bytes.Equal(after, original) {
+		t.Errorf("malformed feed list was overwritten:\n got %q\nwant %q", after, original)
+	}
+}
+
+func TestSubscribeUpdatesAllDuplicatesWhenLastAlreadyMatches(t *testing.T) {
+	manager := New(&config.Config{})
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	desiredUserAgent := "Desired Reader/2.0"
+	content := `<opml version="2.0"><body>` +
+		`<outline xmlUrl="` + testURL1 + `" userAgent="Old Reader/1.0" />` +
+		`<outline xmlUrl="` + testURL1 + `" userAgent="` + desiredUserAgent + `" />` +
+		`</body></opml>`
+	if err := os.WriteFile(filename, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		UserAgent: &desiredUserAgent,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() error = %v", err)
+	}
+	if result.UpdatedCount != 1 {
+		t.Fatalf("UpdatedCount = %d, want 1", result.UpdatedCount)
+	}
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	for i, feed := range list.GetFeeds() {
+		if feed.UserAgent != desiredUserAgent {
+			t.Errorf("GetFeeds()[%d].UserAgent = %q, want %q", i, feed.UserAgent, desiredUserAgent)
+		}
+	}
 }
 
 func TestUnsubscribe(t *testing.T) {

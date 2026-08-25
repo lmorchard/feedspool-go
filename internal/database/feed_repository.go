@@ -42,6 +42,20 @@ func (db *DB) UpsertFeed(feed *Feed) error {
 	return nil
 }
 
+// SetFeedUserAgent inserts or updates only a feed's User-Agent override.
+func (db *DB) SetFeedUserAgent(url, userAgent string) error {
+	_, err := db.conn.Exec(`
+		INSERT INTO feeds (
+			url, user_agent, last_updated, last_fetch_time, last_successful_fetch
+		) VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(url) DO UPDATE SET user_agent = excluded.user_agent
+	`, url, userAgent, time.Time{}, time.Time{}, time.Time{})
+	if err != nil {
+		return fmt.Errorf("failed to set User-Agent for feed %s: %w", url, err)
+	}
+	return nil
+}
+
 // GetFeed retrieves a feed by URL from the database.
 func (db *DB) GetFeed(url string) (*Feed, error) {
 	query := `

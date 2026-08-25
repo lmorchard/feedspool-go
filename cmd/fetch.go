@@ -253,6 +253,9 @@ func runDirFetch(
 			len(plan.URLs), pluralize(len(plan.URLs), "feed", "feeds"),
 			plan.References, pluralize(plan.References, "reference", "references"))
 	}
+	if err := orchestrator.SynchronizeFeedConfigs(plan.FeedConfigs); err != nil {
+		return err
+	}
 
 	results := orchestrator.FetchFromURLs(ctx, plan.URLs, opts)
 

@@ -1,6 +1,7 @@
 package feedlist
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -19,6 +20,30 @@ const (
 	FormatText Format = "text"
 )
 
+// Feed describes a feed and the configuration carried by its list entry.
+type Feed struct {
+	URL       string
+	UserAgent string
+}
+
+// DeduplicateFeeds preserves first-seen order and rejects conflicting configuration.
+func DeduplicateFeeds(feeds []Feed) ([]Feed, error) {
+	seen := make(map[string]Feed, len(feeds))
+	unique := make([]Feed, 0, len(feeds))
+	for _, feed := range feeds {
+		existing, found := seen[feed.URL]
+		if !found {
+			seen[feed.URL] = feed
+			unique = append(unique, feed)
+			continue
+		}
+		if existing.UserAgent != feed.UserAgent {
+			return nil, fmt.Errorf("conflicting User-Agent values for feed %s", feed.URL)
+		}
+	}
+	return unique, nil
+}
+
 // String returns the string representation of the format.
 func (f Format) String() string {
 	return string(f)
@@ -26,7 +51,10 @@ func (f Format) String() string {
 
 // FeedList interface provides unified access to different feed list formats.
 type FeedList interface {
+	GetFeeds() []Feed
 	GetURLs() []string
+	AddFeed(feed Feed) error
+	SetUserAgent(url, userAgent string) bool
 	Title() string
 	AddURL(url string) error
 	RemoveURL(url string) error
@@ -36,7 +64,6 @@ type FeedList interface {
 // OPMLFeedList wraps OPML functionality.
 type OPMLFeedList struct {
 	opml *opml.OPML
-	urls []string
 }
 
 // TextFeedList uses the text parser.
@@ -68,10 +95,10 @@ func NewFeedList(format Format) FeedList {
 	case FormatOPML:
 		return &OPMLFeedList{
 			opml: &opml.OPML{
-				Head: opml.Head{Title: "Feed List"},
-				Body: opml.Body{Outlines: []opml.Outline{}},
+				Version: "2.0",
+				Head:    opml.Head{Title: "Feed List"},
+				Body:    opml.Body{Outlines: []opml.Outline{}},
 			},
-			urls: []string{},
 		}
 	case FormatText:
 		return &TextFeedList{
@@ -108,10 +135,8 @@ func loadOPMLFeedList(reader io.Reader) (FeedList, error) {
 		return nil, err
 	}
 
-	urls := opml.ExtractFeedURLs(opmlData)
 	return &OPMLFeedList{
 		opml: opmlData,
-		urls: urls,
 	}, nil
 }
 
@@ -129,9 +154,21 @@ func loadTextFeedList(reader io.Reader) (FeedList, error) {
 
 // OPMLFeedList methods.
 
+// GetFeeds returns feed URLs and their OPML configuration.
+func (ofl *OPMLFeedList) GetFeeds() []Feed {
+	feeds := []Feed{}
+	extractOPMLFeeds(ofl.opml.Body.Outlines, &feeds)
+	return feeds
+}
+
 // GetURLs returns all URLs in the OPML feed list.
 func (ofl *OPMLFeedList) GetURLs() []string {
-	return ofl.urls
+	feeds := ofl.GetFeeds()
+	urls := make([]string, 0, len(feeds))
+	for _, feed := range feeds {
+		urls = append(urls, feed.URL)
+	}
+	return urls
 }
 
 // Title returns the OPML head title, or an empty string if it is unset.
@@ -141,48 +178,39 @@ func (ofl *OPMLFeedList) Title() string {
 
 // AddURL adds a URL to the OPML feed list.
 func (ofl *OPMLFeedList) AddURL(url string) error {
+	return ofl.AddFeed(Feed{URL: url})
+}
+
+// AddFeed adds a configured feed to the OPML feed list.
+func (ofl *OPMLFeedList) AddFeed(feed Feed) error {
 	// Check if URL already exists
-	for _, existingURL := range ofl.urls {
-		if existingURL == url {
+	for _, existingFeed := range ofl.GetFeeds() {
+		if existingFeed.URL == feed.URL {
 			return nil // URL already exists, no error
 		}
 	}
 
-	// Add to URLs slice
-	ofl.urls = append(ofl.urls, url)
-
 	// Add to OPML structure
 	outline := opml.Outline{
-		Text:    url,
-		Title:   url,
-		Type:    "rss",
-		XMLURL:  url,
-		HTMLURL: "",
+		Text:      feed.URL,
+		Title:     feed.URL,
+		Type:      "rss",
+		XMLURL:    feed.URL,
+		UserAgent: feed.UserAgent,
 	}
 	ofl.opml.Body.Outlines = append(ofl.opml.Body.Outlines, outline)
 
 	return nil
 }
 
+// SetUserAgent updates the User-Agent for an existing OPML feed entry.
+func (ofl *OPMLFeedList) SetUserAgent(url, userAgent string) bool {
+	return setOPMLUserAgent(ofl.opml.Body.Outlines, url, userAgent)
+}
+
 // RemoveURL removes a URL from the OPML feed list.
 func (ofl *OPMLFeedList) RemoveURL(url string) error {
-	// Remove from URLs slice
-	newURLs := make([]string, 0)
-	for _, existingURL := range ofl.urls {
-		if existingURL != url {
-			newURLs = append(newURLs, existingURL)
-		}
-	}
-	ofl.urls = newURLs
-
-	// Remove from OPML structure
-	newOutlines := make([]opml.Outline, 0)
-	for _, outline := range ofl.opml.Body.Outlines {
-		if outline.XMLURL != url {
-			newOutlines = append(newOutlines, outline)
-		}
-	}
-	ofl.opml.Body.Outlines = newOutlines
+	ofl.opml.Body.Outlines = removeOPMLFeed(ofl.opml.Body.Outlines, url)
 
 	return nil
 }
@@ -195,39 +223,33 @@ func (ofl *OPMLFeedList) Save(filename string) error {
 	}
 	defer file.Close()
 
-	// Write OPML XML header
-	header := `<?xml version="1.0" encoding="UTF-8"?>
-<opml version="2.0">
-    <head>
-        <title>` + ofl.opml.Head.Title + `</title>
-    </head>
-    <body>
-`
-	if _, err := file.WriteString(header); err != nil {
+	data, err := xml.MarshalIndent(ofl.opml, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to encode OPML: %w", err)
+	}
+	if _, err := file.WriteString(xml.Header); err != nil {
 		return fmt.Errorf("failed to write OPML header: %w", err)
 	}
-
-	// Write outlines
-	for _, outline := range ofl.opml.Body.Outlines {
-		line := fmt.Sprintf(`        <outline text=%q type=%q xmlUrl=%q />%s`,
-			outline.Text, outline.Type, outline.XMLURL, "\n")
-		if _, err := file.WriteString(line); err != nil {
-			return fmt.Errorf("failed to write OPML outline: %w", err)
-		}
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("failed to write OPML: %w", err)
 	}
-
-	// Write OPML footer
-	footer := `    </body>
-</opml>
-`
-	if _, err := file.WriteString(footer); err != nil {
-		return fmt.Errorf("failed to write OPML footer: %w", err)
+	if _, err := file.WriteString("\n"); err != nil {
+		return fmt.Errorf("failed to finish OPML: %w", err)
 	}
 
 	return nil
 }
 
 // TextFeedList methods.
+
+// GetFeeds returns URL-only entries for a text feed list.
+func (tfl *TextFeedList) GetFeeds() []Feed {
+	feeds := make([]Feed, 0, len(tfl.urls))
+	for _, url := range tfl.urls {
+		feeds = append(feeds, Feed{URL: url})
+	}
+	return feeds
+}
 
 // GetURLs returns all URLs in the text feed list.
 func (tfl *TextFeedList) GetURLs() []string {
@@ -241,15 +263,62 @@ func (tfl *TextFeedList) Title() string {
 
 // AddURL adds a URL to the text feed list.
 func (tfl *TextFeedList) AddURL(url string) error {
+	return tfl.AddFeed(Feed{URL: url})
+}
+
+// AddFeed adds a URL-only feed to a text feed list.
+func (tfl *TextFeedList) AddFeed(feed Feed) error {
 	// Check if URL already exists
 	for _, existingURL := range tfl.urls {
-		if existingURL == url {
+		if existingURL == feed.URL {
 			return nil // URL already exists, no error
 		}
 	}
 
-	tfl.urls = append(tfl.urls, url)
+	tfl.urls = append(tfl.urls, feed.URL)
 	return nil
+}
+
+// SetUserAgent reports false because text feed lists carry URLs only.
+func (tfl *TextFeedList) SetUserAgent(_, _ string) bool {
+	return false
+}
+
+func extractOPMLFeeds(outlines []opml.Outline, feeds *[]Feed) {
+	for i := range outlines {
+		outline := &outlines[i]
+		if outline.XMLURL != "" {
+			*feeds = append(*feeds, Feed{URL: outline.XMLURL, UserAgent: outline.UserAgent})
+		}
+		extractOPMLFeeds(outline.Outlines, feeds)
+	}
+}
+
+func setOPMLUserAgent(outlines []opml.Outline, url, userAgent string) bool {
+	found := false
+	for i := range outlines {
+		if outlines[i].XMLURL == url {
+			outlines[i].UserAgent = userAgent
+			found = true
+		}
+		if setOPMLUserAgent(outlines[i].Outlines, url, userAgent) {
+			found = true
+		}
+	}
+	return found
+}
+
+func removeOPMLFeed(outlines []opml.Outline, url string) []opml.Outline {
+	kept := make([]opml.Outline, 0, len(outlines))
+	for i := range outlines {
+		outline := &outlines[i]
+		if outline.XMLURL == url {
+			continue
+		}
+		outline.Outlines = removeOPMLFeed(outline.Outlines, url)
+		kept = append(kept, *outline)
+	}
+	return kept
 }
 
 // RemoveURL removes a URL from the text feed list.
