@@ -2,11 +2,18 @@ package database
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+const discoveryTimeExpression = `julianday(CASE
+	WHEN first_seen IS NULL OR substr(CAST(first_seen AS TEXT), 1, 10) = '0001-01-01'
+	THEN published_date
+	ELSE first_seen
+END)`
 
 // UpsertItem inserts or updates an item record in the database.
 func (db *DB) UpsertItem(item *Item) error {
@@ -287,22 +294,64 @@ func (db *DB) getItemsForFeeds(feedURLMap map[string]bool, start, end time.Time)
 }
 
 type ItemFilter struct {
-	FeedURL string
-	Limit   int
-	Since   time.Time
-	Until   time.Time
-	Unseen  bool
-	Seen    bool
+	FeedURL   string
+	FeedQuery string
+	Search    string
+	Limit     int
+	Since     time.Time
+	Until     time.Time
+	Unseen    bool
+	Seen      bool
 }
 
 // GetItems retrieves items with filtering options.
 func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
-	query := `
+	query, args, filterTimesInGo := buildItemsQuery(filter)
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []*Item
+	for rows.Next() {
+		var item Item
+		if err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary,
+			&item.Archived, &item.ItemJSON,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		if !itemInDiscoveryWindow(&item, filter.Since, filter.Until) {
+			continue
+		}
+		items = append(items, &item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over items: %w", err)
+	}
+
+	if filterTimesInGo {
+		sort.SliceStable(items, func(i, j int) bool {
+			return items[i].PublishedDate.After(items[j].PublishedDate)
+		})
+		if filter.Limit > 0 && len(items) > filter.Limit {
+			items = items[:filter.Limit]
+		}
+	}
+
+	return items, nil
+}
+
+func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, filterTimesInGo bool) {
+	filterTimesInGo = !filter.Since.IsZero() || !filter.Until.IsZero()
+	query = `
 		SELECT i.id, i.feed_url, i.guid, i.title, i.link, i.published_date, i.first_seen,
 			i.content, i.summary, i.archived, i.item_json
 		FROM items i
 	`
-	var args []interface{}
 	var conditions []string
 
 	if filter.Unseen {
@@ -323,49 +372,47 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 		conditions = append(conditions, "i.feed_url = ?")
 		args = append(args, filter.FeedURL)
 	}
+	if filter.FeedQuery != "" {
+		conditions = append(conditions, "instr(lower(i.feed_url), lower(?)) > 0")
+		args = append(args, filter.FeedQuery)
+	}
+	if filter.Search != "" {
+		conditions = append(conditions, "instr(lower(i.title), lower(?)) > 0")
+		args = append(args, filter.Search)
+	}
 	if !filter.Since.IsZero() {
-		conditions = append(conditions, "i.published_date >= ?")
-		args = append(args, filter.Since)
+		conditions = append(conditions, fmt.Sprintf(
+			"(%[1]s IS NULL OR %[1]s >= julianday(?))", discoveryTimeExpression,
+		))
+		args = append(args, filter.Since.Format(time.RFC3339Nano))
 	}
 	if !filter.Until.IsZero() {
-		conditions = append(conditions, "i.published_date <= ?")
-		args = append(args, filter.Until)
+		conditions = append(conditions, fmt.Sprintf(
+			"(%[1]s IS NULL OR %[1]s <= julianday(?))", discoveryTimeExpression,
+		))
+		args = append(args, filter.Until.Format(time.RFC3339Nano))
 	}
-
 	if len(conditions) > 0 {
-		//nolint:gosec // conditions are safely constructed internally
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query += " ORDER BY i.published_date DESC"
-
-	if filter.Limit > 0 {
-		query += sqlLimitClause
-		args = append(args, filter.Limit)
-	}
-
-	rows, err := db.conn.Query(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []*Item
-	for rows.Next() {
-		var item Item
-		if err := rows.Scan(
-			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary,
-			&item.Archived, &item.ItemJSON,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan item: %w", err)
+	if !filterTimesInGo {
+		query += " ORDER BY i.published_date DESC"
+		if filter.Limit > 0 {
+			query += sqlLimitClause
+			args = append(args, filter.Limit)
 		}
-		items = append(items, &item)
 	}
+	return query, args, filterTimesInGo
+}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over items: %w", err)
+func itemInDiscoveryWindow(item *Item, since, until time.Time) bool {
+	discoveredAt := item.PublishedDate
+	if item.FirstSeen.Valid && !item.FirstSeen.Time.IsZero() {
+		discoveredAt = item.FirstSeen.Time
 	}
-
-	return items, nil
+	if !since.IsZero() && !discoveredAt.After(since) {
+		return false
+	}
+	return until.IsZero() || !discoveredAt.After(until)
 }

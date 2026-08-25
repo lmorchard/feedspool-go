@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -27,11 +28,16 @@ var (
 )
 
 var showCmd = &cobra.Command{
-	Use:   "show [URL]",
+	Use:   "show <feed>",
 	Short: "Show items for a feed",
-	Long:  `Lists items for a given feed URL from the database.`,
-	Args:  cobra.ExactArgs(1),
-	RunE:  runShow,
+	Long: `List items for a feed selected by its exact URL or a unique URL
+substring. A missing or ambiguous selector exits non-zero; ambiguity errors
+list every matching URL.`,
+	Example: `  feedspool show https://example.com/feed.xml
+  feedspool show example.com
+  feedspool --json show example.com --since 2026-08-25T12:00:00Z`,
+	Args: cobra.ExactArgs(1),
+	RunE: runShow,
 }
 
 func init() {
@@ -96,19 +102,46 @@ func parseDateFilters() (since, until time.Time, err error) {
 }
 
 func getFeedAndItems(
-	db *database.DB, feedURL string, since, until time.Time,
+	db *database.DB, feedQuery string, since, until time.Time,
 ) (*database.Feed, []*database.Item, error) {
-	feed, err := db.GetFeed(feedURL)
+	feed, err := resolveFeed(db, feedQuery)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get feed: %w", err)
 	}
 
-	items, err := db.GetItemsForFeed(feedURL, showLimit, since, until)
+	items, err := db.GetItemsForFeed(feed.URL, showLimit, since, until)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get items: %w", err)
 	}
 
 	return feed, items, nil
+}
+
+func resolveFeed(db *database.DB, query string) (*database.Feed, error) {
+	feed, err := db.GetFeed(query)
+	if err != nil {
+		return nil, err
+	}
+	if feed != nil {
+		return feed, nil
+	}
+
+	matches, err := db.FindFeedsByURLSubstring(query)
+	if err != nil {
+		return nil, err
+	}
+	switch len(matches) {
+	case 0:
+		return nil, fmt.Errorf("no feed URL matches %q", query)
+	case 1:
+		return matches[0], nil
+	default:
+		urls := make([]string, 0, len(matches))
+		for _, match := range matches {
+			urls = append(urls, match.URL)
+		}
+		return nil, fmt.Errorf("feed selector %q is ambiguous; matches: %s", query, strings.Join(urls, ", "))
+	}
 }
 
 func reverseItems(items []*database.Item) {

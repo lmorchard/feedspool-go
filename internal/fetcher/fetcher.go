@@ -129,8 +129,9 @@ func (f *Fetcher) processParsedFeed(
 
 	feed.ETag = resp.Header.Get("ETag")
 	feed.LastModified = resp.Header.Get("Last-Modified")
-	feed.LastFetchTime = time.Now()
-	feed.LastSuccessfulFetch = time.Now()
+	now := time.Now().UTC()
+	feed.LastFetchTime = now
+	feed.LastSuccessfulFetch = now
 	feed.ErrorCount = 0
 	feed.LastError = ""
 
@@ -219,7 +220,7 @@ func (f *Fetcher) processFeedItems(gofeedData *gofeed.Feed, feedURL string) (int
 
 		// Set first_seen timestamp for new items, or load it for existing items
 		if isNewItem {
-			item.FirstSeen = sql.NullTime{Time: time.Now(), Valid: true}
+			item.FirstSeen = sql.NullTime{Time: time.Now().UTC(), Valid: true}
 		} else {
 			// Load first_seen from database for existing items (needed as fallback)
 			existingFirstSeen, err := f.getItemFirstSeen(feedURL, item.GUID)
@@ -368,8 +369,9 @@ func (f *Fetcher) isValidURL(urlStr string) bool {
 
 func (f *Fetcher) handleCachedFeed(result *FetchResult, existingFeed *database.Feed) *FetchResult {
 	if existingFeed != nil {
-		existingFeed.LastFetchTime = time.Now()
-		existingFeed.LastSuccessfulFetch = time.Now()
+		now := time.Now().UTC()
+		existingFeed.LastFetchTime = now
+		existingFeed.LastSuccessfulFetch = now
 		if upsertErr := f.db.UpsertFeed(existingFeed); upsertErr != nil {
 			logrus.WithError(upsertErr).Warn("Failed to update feed in database")
 		}
@@ -383,7 +385,7 @@ func (f *Fetcher) updateFeedError(feed *database.Feed, errorMsg string) {
 	if feed != nil {
 		feed.ErrorCount++
 		feed.LastError = errorMsg
-		feed.LastFetchTime = time.Now()
+		feed.LastFetchTime = time.Now().UTC()
 		if err := f.db.UpsertFeed(feed); err != nil {
 			logrus.WithError(err).Warn("Failed to update feed error in database")
 		}

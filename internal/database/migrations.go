@@ -14,7 +14,8 @@ const (
 	migrationVersion4   = 4 // Add first_seen column to items
 	migrationVersion5   = 5 // Add user_agent column to feeds
 	migrationVersion6   = 6 // Add item_annotations table
-	maxMigrationVersion = migrationVersion6
+	migrationVersion7   = 7 // Add discovery-time query index
+	maxMigrationVersion = migrationVersion7
 )
 
 // getMigrations returns the database migration scripts.
@@ -54,6 +55,10 @@ func getMigrations() map[int]string {
 		);
 		CREATE INDEX IF NOT EXISTS idx_item_annotations_lookup ON item_annotations(feed_url, item_guid, kind);
 		CREATE INDEX IF NOT EXISTS idx_item_annotations_kind   ON item_annotations(kind, created_at);`,
+		migrationVersion7: fmt.Sprintf(
+			"CREATE INDEX IF NOT EXISTS idx_items_discovery_time ON items(%s);",
+			discoveryTimeExpression,
+		),
 	}
 }
 

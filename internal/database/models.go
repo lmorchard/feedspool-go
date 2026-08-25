@@ -44,6 +44,24 @@ type Feed struct {
 	FeedJSON            JSON         `db:"feed_json"`
 }
 
+// FeedSummary contains the fields needed to list tracked feeds.
+type FeedSummary struct {
+	URL           string       `json:"url"`
+	Title         string       `json:"title"`
+	LastFetchTime sql.NullTime `json:"-"`
+	ItemCount     int          `json:"item_count"`
+	ErrorCount    int          `json:"error_count"`
+}
+
+// SpoolStatus summarizes the current database contents and fetch health.
+type SpoolStatus struct {
+	FeedCount             int          `json:"feed_count"`
+	ItemCount             int          `json:"item_count"`
+	LastFetchTime         sql.NullTime `json:"-"`
+	FailingFeedCount      int          `json:"failing_feed_count"`
+	ConsecutiveErrorCount int          `json:"consecutive_error_count"`
+}
+
 type Item struct {
 	ID            int64        `db:"id"`
 	FeedURL       string       `db:"feed_url"`
