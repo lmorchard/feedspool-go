@@ -12,7 +12,8 @@ const (
 	migrationVersion2   = 2 // Add latest_item_date column to feeds
 	migrationVersion3   = 3 // Add url_metadata table
 	migrationVersion4   = 4 // Add first_seen column to items
-	maxMigrationVersion = migrationVersion4
+	migrationVersion5   = 5 // Add user_agent column to feeds
+	maxMigrationVersion = migrationVersion5
 )
 
 // getMigrations returns the database migration scripts.
@@ -40,6 +41,7 @@ func getMigrations() map[int]string {
 			UPDATE url_metadata SET updated_at = CURRENT_TIMESTAMP WHERE url = NEW.url;
 		END;`,
 		migrationVersion4: `ALTER TABLE items ADD COLUMN first_seen DATETIME;`,
+		migrationVersion5: `ALTER TABLE feeds ADD COLUMN user_agent TEXT NOT NULL DEFAULT '';`,
 	}
 }
 
@@ -115,6 +117,8 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration3()
 	case migrationVersion4:
 		return db.applyMigration4()
+	case migrationVersion5:
+		return db.applyMigration5()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -253,5 +257,30 @@ func (db *DB) applyMigration4WithBackfill() error {
 		return fmt.Errorf("failed to commit migration: %w", err)
 	}
 	committed = true
+	return nil
+}
+
+// applyMigration5 adds the user_agent column to feeds table.
+func (db *DB) applyMigration5() error {
+	// Check if user_agent column already exists
+	var colCount int
+	err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM pragma_table_info('feeds')
+		WHERE name = 'user_agent'
+	`).Scan(&colCount)
+	if err != nil {
+		return fmt.Errorf("failed to check column existence: %w", err)
+	}
+
+	if colCount == 0 {
+		migrations := getMigrations()
+		return db.ApplyMigration(migrationVersion5, migrations[migrationVersion5])
+	}
+
+	// Column exists, just record the migration
+	_, err = db.conn.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migrationVersion5)
+	if err != nil {
+		return fmt.Errorf("failed to record migration %d: %w", migrationVersion5, err)
+	}
 	return nil
 }

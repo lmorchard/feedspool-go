@@ -66,6 +66,12 @@ func (f *Fetcher) FetchFeed(feedURL string) *FetchResult {
 	}
 
 	headers := make(map[string]string)
+
+	// Apply per-feed User-Agent override if present
+	if existingFeed != nil && existingFeed.UserAgent != "" {
+		headers["User-Agent"] = existingFeed.UserAgent
+	}
+
 	if !f.forceFlag && existingFeed != nil {
 		if existingFeed.ETag != "" {
 			headers["If-None-Match"] = existingFeed.ETag
