@@ -1,8 +1,9 @@
 # Build stage
 FROM docker.io/golang:alpine AS builder
 
-# Install build dependencies including gcc for CGO
-RUN apk add --no-cache make git gcc musl-dev
+# No C toolchain needed: the sqlite driver is pure Go and the Makefile builds
+# with cgo disabled.
+RUN apk add --no-cache make git
 
 # Set working directory
 WORKDIR /app
@@ -14,11 +15,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary using make (not go build) for proper versioning
-# Enable CGO for SQLite support
-# Use build-static for portable binary with musl libc
-ENV CGO_ENABLED=1
-RUN make build-static
+# Build using make (not go build) for proper versioning. Cgo is disabled in the
+# Makefile, so the result is a static binary that needs no libc at runtime.
+RUN make build
 
 # Runtime stage
 FROM docker.io/alpine:latest

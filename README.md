@@ -105,17 +105,19 @@ Dockerfile variants, see [MANUAL.md#docker-reference](MANUAL.md#docker-reference
 
 ### Prerequisites
 
-- Go 1.21 or later
-- [golangci-lint](https://golangci-lint.run/usage/install/) for linting (required for `make lint`)
+- Go 1.25 or later (see the `go` directive in `go.mod`, which CI reads directly)
 - [gofumpt](https://github.com/mvdan/gofumpt) for advanced formatting (required for `make format`)
+
+No C compiler is needed. The SQLite driver is pure Go, and builds run with cgo
+disabled, so cross-compiling is just `GOOS=… GOARCH=… make build`.
 
 Install development tools:
 ```bash
-# Quick setup - install all required tools
+# Quick setup - installs gofumpt plus the pinned golangci-lint
 make setup
 
-# Or install manually
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+# Or install gofumpt manually; `make lint` installs its own pinned
+# golangci-lint into ./bin, so do not install that one by hand
 go install mvdan.cc/gofumpt@latest
 ```
 

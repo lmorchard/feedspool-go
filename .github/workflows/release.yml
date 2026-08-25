@@ -43,19 +43,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
-
-    - name: Install cross-compilation and static linking dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        # Install static linking libraries for all Linux builds
-        sudo apt-get install -y libc6-dev build-essential
-        # Install cross-compilation tools for ARM64
-        if [ "${{ matrix.goarch }}" = "arm64" ]; then
-          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-        fi
+        go-version-file: go.mod
 
     - name: Set version variables
       shell: bash
@@ -68,19 +56,15 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 1
         VERSION: ${{ env.VERSION }}
         COMMIT: ${{ env.COMMIT }}
         DATE: ${{ env.DATE }}
       shell: bash
       run: |
-        # Use make build-static for Linux (Docker needs static binary for Alpine)
-        # Use make build for other platforms
-        if [ "$GOOS" = "linux" ]; then
-          make build-static
-        else
-          make build
-        fi
+        # One build command for every target: the sqlite driver is pure Go, so
+        # there is no cgo, no target C toolchain, and the Linux binary is
+        # statically linked for Alpine. CGO_ENABLED=0 is set by the Makefile.
+        make build
 
         # Rename to expected output for Windows
         if [ "$GOOS" = "windows" ] && [ -f feedspool ]; then

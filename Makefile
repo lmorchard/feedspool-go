@@ -1,13 +1,19 @@
-.PHONY: build build-static test clean run lint format fmt setup print-golangci-lint-version
+.PHONY: build test clean run lint format fmt setup print-golangci-lint-version
 
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.0.1")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -X github.com/lmorchard/feedspool-go/cmd.Version=$(VERSION) -X github.com/lmorchard/feedspool-go/cmd.Commit=$(COMMIT) -X github.com/lmorchard/feedspool-go/cmd.Date=$(DATE)
 
-# Output path for `build`/`build-static`. Override to build somewhere other
-# than the repo root, e.g. `make build BINARY=/tmp/feedspool-test`.
+# Output path for `build`. Override to build somewhere other than the repo
+# root, e.g. `make build BINARY=/tmp/feedspool-test`.
 BINARY := feedspool
+
+# The sqlite driver is pure Go (modernc.org/sqlite), so nothing here needs a C
+# toolchain. Disabling cgo outright keeps that true: builds stay static, cross
+# compilation needs no target toolchain, and the darwin binaries get their
+# ad-hoc signature from Go's internal linker instead of an external one.
+export CGO_ENABLED = 0
 
 # Keep this in step with the version CI installs. CI reads it from here via
 # `make print-golangci-lint-version`, so this is the only place to change it.
@@ -20,17 +26,8 @@ TOOLS_DIR := $(CURDIR)/bin
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
 build:
-	@echo "Building for $(shell go env GOOS)/$(shell go env GOARCH)"
+	@echo "Building for $(shell go env GOOS)/$(shell go env GOARCH) (cgo disabled)"
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) main.go
-
-build-static:
-	@echo "Building static binary for $(shell go env GOOS)/$(shell go env GOARCH)"
-	@if [ "$(shell go env GOOS)" = "linux" ]; then \
-		echo "Using static linking for Linux build"; \
-		go build -ldflags "$(LDFLAGS) -linkmode external -extldflags '-static'" -o $(BINARY) main.go; \
-	else \
-		go build -ldflags "$(LDFLAGS)" -o $(BINARY) main.go; \
-	fi
 
 test:
 	go test ./...

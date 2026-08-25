@@ -31,7 +31,7 @@ jobs:
       if: steps.skip_check.outputs.skip != 'true'
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22'
+        go-version-file: go.mod
 
     - name: Download dependencies
       if: steps.skip_check.outputs.skip != 'true'

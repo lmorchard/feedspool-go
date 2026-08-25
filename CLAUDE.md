@@ -9,6 +9,8 @@
 
 The Makefile handles build flags, version injection, and other build-time configuration that `go build` alone does not provide.
 
+Builds are cgo-free: the SQLite driver is `modernc.org/sqlite` (pure Go), and the Makefile sets `CGO_ENABLED=0`. Keep it that way — it is what makes the binaries static, lets every release target cross-compile without a C toolchain, and keeps the darwin builds ad-hoc signed by Go's internal linker. Do not reintroduce `github.com/mattn/go-sqlite3` or a `-linkmode external` build. Note the race detector does need cgo, so `go test -race` runs outside the Makefile (as CI does it).
+
 ## Linting and Testing
 
 After every set of major changes, YOU MUST run `make format` and `make lint` for basic source code linting and then `make test` to ensure tests pass.
