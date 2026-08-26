@@ -552,7 +552,18 @@ func (db *DB) applyMigration11() error {
 	}
 
 	// Its own implicit transaction, entered only once the index is complete.
-	if _, err := db.conn.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migrationVersion11); err != nil {
+	//
+	// OR IGNORE, unlike every other migration here: IsInitialized runs
+	// migrations, so a running `serve` and a cron `fetch` can both enter this
+	// backfill on the first post-upgrade open, and this one's window is tens of
+	// seconds rather than a single fast transaction. Both do the work
+	// idempotently -- SQLite serializes the writes and the upserts are
+	// content-identical -- so the loser has nothing left to do but record the
+	// version, and a UNIQUE violation there would fail a migration that in fact
+	// succeeded.
+	if _, err := db.conn.Exec(
+		"INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)", migrationVersion11,
+	); err != nil {
 		return fmt.Errorf("failed to record migration %d: %w", migrationVersion11, err)
 	}
 	return nil

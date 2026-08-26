@@ -14,6 +14,10 @@ import (
 // produced by a different generator or an older version of it. A changed item
 // is handled on the live write path, which is the only thing that changes item
 // text, so the backfill does not need to re-hash every row on every run.
+//
+// upsertItemTextIfChanged is the write-path half of this definition and
+// compares the same generator and generator_version (plus the source hash the
+// predicate deliberately skips). Change one and change the other.
 const itemTextStalenessCondition = `t.item_id IS NULL OR t.generator <> ? OR t.generator_version <> ?`
 
 // itemTextBackfill derives HTML-free search text for items that lack it.

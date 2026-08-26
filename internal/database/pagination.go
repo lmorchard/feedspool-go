@@ -70,6 +70,14 @@ type ItemPage struct {
 	After *ItemCursor
 }
 
+// isRelevance reports whether this page is ranked by bm25 rather than by date.
+// It is derived in three places -- the ordering, the cursor it hands back, and
+// whether the keyset predicate applies at all -- and the third is negated, so
+// the answer lives here rather than being re-spelled at each site.
+func (p *ItemPage) isRelevance() bool {
+	return p.Sort == SortRelevance
+}
+
 // FeedPage describes one page of a feed query, ordered by URL. URL is the
 // primary key -- never NULL, always unique -- so the cursor needs no tiebreak.
 type FeedPage struct {
@@ -113,7 +121,7 @@ func (db *DB) ListItems(page *ItemPage) ([]*Item, *ItemCursor, error) {
 	}
 	// The same guard buildItemsQuery carries, for the same reason: bm25 reads
 	// the joined FTS table, and without a search there is no join.
-	relevance := page.Sort == SortRelevance
+	relevance := page.isRelevance()
 	if relevance && searchExpr == "" {
 		return nil, nil, ErrRelevanceNeedsSearch
 	}
@@ -146,7 +154,7 @@ func (db *DB) ListItems(page *ItemPage) ([]*Item, *ItemCursor, error) {
 func buildItemPageQuery(page *ItemPage, searchExpr string, limit int) (
 	query string, args []interface{}, offset int,
 ) {
-	relevance := page.Sort == SortRelevance
+	relevance := page.isRelevance()
 	conditions, args := itemPageConditions(page, searchExpr)
 	query = "SELECT " + itemSelectColumns + ", " + dateRankExpression + " AS date_rank, " +
 		aliasedEffectiveDateExpression + " AS effective_date\n\tFROM items i"
@@ -223,7 +231,7 @@ func scanItemPageRows(rows *sql.Rows) ([]*Item, []ItemCursor, error) {
 func itemPageConditions(page *ItemPage, searchExpr string) (conditions []string, args []interface{}) {
 	// Relevance paginates by an offset carried in the cursor, so there is no
 	// keyset position to filter on; the predicate is for the date orderings.
-	if page.After != nil && page.Sort != SortRelevance {
+	if page.After != nil && !page.isRelevance() {
 		condition, cursorArgs := itemCursorCondition(page.After, page.Ascending)
 		conditions = append(conditions, condition)
 		args = append(args, cursorArgs...)

@@ -37,6 +37,9 @@ const (
 
 	// replacementBodyTerm is the term an update swaps in for seedBodyTerm.
 	replacementBodyTerm = "dirigible"
+
+	// seedGUIDFormat builds the GUID of the nth seeded item.
+	seedGUIDFormat = "seed-guid-%d"
 )
 
 // execSQL runs a statement that the test expects to succeed.
@@ -120,7 +123,7 @@ func seedSearchableItems(t *testing.T, count int) *DB {
 	for i := range count {
 		item := &Item{
 			FeedURL:       fixtureFeedURL,
-			GUID:          fmt.Sprintf("seed-guid-%d", i),
+			GUID:          fmt.Sprintf(seedGUIDFormat, i),
 			Title:         fmt.Sprintf("Item %d %s", i, seedSharedTerm),
 			Link:          fmt.Sprintf("https://example.com/item-%d", i),
 			PublishedDate: published.Add(time.Duration(i) * time.Minute),
@@ -306,6 +309,62 @@ func TestReindexItemTextForceRebuilds(t *testing.T) {
 	integrityCheck(t, db)
 }
 
+// The live write path and itemTextStalenessCondition have to agree on what
+// "current" means. The predicate treats a row written by a different generator
+// as stale even at a matching version; UpsertItem has to as well, or a row left
+// behind by a second generator (#30) would look current to every fetch and
+// never be rewritten with the text this generator would derive.
+func TestUpsertItemRederivesTextLeftByAnotherGenerator(t *testing.T) {
+	const (
+		junkTerm       = "corrupted"
+		otherGenerator = "some-other-generator"
+	)
+	db := seedIndexedItems(t, 1)
+	id := firstItemID(t, db)
+
+	// The hash and version stay exactly as the write path last wrote them, so
+	// only the generator name can make this row stale. The mangled body is what
+	// makes a re-derivation observable.
+	execSQL(
+		t, db,
+		`UPDATE item_text SET generator = ?, body = ? WHERE item_id = ?`,
+		otherGenerator, junkTerm, id,
+	)
+	if got := countMatching(t, db, junkTerm); got != 1 {
+		t.Fatalf("mangled body matches %d items, want 1", got)
+	}
+
+	// Re-fetching the feed writes the identical item back, which is the case
+	// upsertItemTextIfChanged short-circuits.
+	item, err := db.getItemByKey(fixtureFeedURL, fmt.Sprintf(seedGUIDFormat, 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item == nil {
+		t.Fatal("seeded item is missing")
+	}
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatal(err)
+	}
+
+	var generator, body string
+	if err := db.conn.QueryRow(
+		`SELECT generator, body FROM item_text WHERE item_id = ?`, id,
+	).Scan(&generator, &body); err != nil {
+		t.Fatal(err)
+	}
+	if generator != itemtext.Generator {
+		t.Errorf("generator = %q, want %q", generator, itemtext.Generator)
+	}
+	if got := countMatching(t, db, junkTerm); got != 0 {
+		t.Errorf("mangled term still matches %d items, want 0", got)
+	}
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Errorf("re-derived body term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
 // TestMigration11BackfillsExistingItems walks the path a real spool takes:
 // items already on disk, no derived text, no index.
 func TestMigration11BackfillsExistingItems(t *testing.T) {
@@ -378,6 +437,53 @@ func TestMigration11SchemaStageDoesNotRecordVersion(t *testing.T) {
 	}
 	if version != migrationVersion11 {
 		t.Errorf("version = %d after the full migration, want %d", version, migrationVersion11)
+	}
+	if got := countItemTextRows(t, db); got != seedCount {
+		t.Errorf("item_text has %d rows, want %d", got, seedCount)
+	}
+	if got := countIndexedItems(t, db); got != seedCount {
+		t.Errorf("index holds %d items, want %d", got, seedCount)
+	}
+	integrityCheck(t, db)
+}
+
+// Two processes can enter migration 11 at once: IsInitialized runs migrations,
+// so a running `serve` and a cron `fetch` both do on the first post-upgrade
+// open, and this migration's window is tens of seconds rather than one fast
+// transaction. Both do the work idempotently, and the loser then has nothing
+// left to do but record the version -- which must not fail as a duplicate.
+//
+// A second in-process run stands in for the loser: identical DDL, a backfill
+// with nothing left to do, and a version row that already exists. It does not
+// reproduce the interleaving, but the duplicate version record is the only part
+// of that race that ever failed.
+func TestMigration11RecordsItsVersionIdempotently(t *testing.T) {
+	const seedCount = 2
+	db := seedSearchableItems(t, seedCount)
+	rewindPastMigration11(t, db)
+
+	if err := db.applyMigration11(); err != nil {
+		t.Fatalf("first applyMigration11() error = %v", err)
+	}
+	if err := db.applyMigration11(); err != nil {
+		t.Fatalf("second applyMigration11() error = %v", err)
+	}
+
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != migrationVersion11 {
+		t.Errorf("version = %d, want %d", version, migrationVersion11)
+	}
+	var records int
+	if err := db.conn.QueryRow(
+		`SELECT COUNT(*) FROM schema_migrations WHERE version = ?`, migrationVersion11,
+	).Scan(&records); err != nil {
+		t.Fatal(err)
+	}
+	if records != 1 {
+		t.Errorf("schema_migrations holds %d rows for version %d, want 1", records, migrationVersion11)
 	}
 	if got := countItemTextRows(t, db); got != seedCount {
 		t.Errorf("item_text has %d rows, want %d", got, seedCount)

@@ -93,25 +93,33 @@ func (db *DB) UpsertItem(item *Item) error {
 	return nil
 }
 
-// upsertItemTextIfChanged derives and stores item_text unless the stored hash
-// and generator version already match. Re-fetching an unchanged feed is the
+// upsertItemTextIfChanged derives and stores item_text unless the stored hash,
+// generator and generator version already match. Re-fetching an unchanged feed is the
 // common case, and this keeps that case to one indexed lookup instead of an
 // HTML parse per item -- it also avoids firing the update trigger, which
 // would delete and reinsert identical index rows.
 func upsertItemTextIfChanged(tx *sql.Tx, id int64, item *Item) error {
 	hash := itemtext.SourceHash(item.Title, item.Summary, item.Content)
 
-	var storedHash string
+	var storedHash, storedGenerator string
 	var storedVersion int
 	err := tx.QueryRow(
-		`SELECT source_hash, generator_version FROM item_text WHERE item_id = ?`, id,
-	).Scan(&storedHash, &storedVersion)
+		`SELECT source_hash, generator, generator_version FROM item_text WHERE item_id = ?`, id,
+	).Scan(&storedHash, &storedGenerator, &storedVersion)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		// No derived text yet -- fall through and derive it.
 	case err != nil:
 		return fmt.Errorf("failed to read item text for item %d: %w", id, err)
-	case storedHash == hash && storedVersion == itemtext.Version:
+	// generator is compared as well as its version, so this stays in step with
+	// itemTextStalenessCondition, which the reindex backfill uses. Both are
+	// no-ops while itemtext.Generator is the only generator; the moment a
+	// second one writes item_text (#30), a version match under a different
+	// generator's name would otherwise read as up to date here but as stale
+	// there.
+	case storedHash == hash &&
+		storedGenerator == itemtext.Generator &&
+		storedVersion == itemtext.Version:
 		return nil
 	}
 
