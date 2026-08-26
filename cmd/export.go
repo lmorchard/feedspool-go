@@ -77,8 +77,10 @@ func runExport(_ *cobra.Command, args []string) error {
 	// Add all feeds and any metadata supported by the target format.
 	for _, feed := range feeds {
 		if err := list.AddFeed(feedlist.Feed{
-			URL:       feed.URL,
-			UserAgent: feed.UserAgent,
+			URL:            feed.URL,
+			UserAgent:      feed.UserAgent,
+			Type:           feed.Type,
+			ScrapeSelector: feed.ScrapeSelector,
 		}); err != nil {
 			return fmt.Errorf("failed to add URL %s to feed list: %w", feed.URL, err)
 		}

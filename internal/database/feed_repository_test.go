@@ -22,7 +22,7 @@ func TestUpsertAndGetFeed(t *testing.T) {
 		Description:  "Test Description",
 		LastUpdated:  time.Now().UTC().Truncate(time.Second),
 		ETag:         "test-etag",
-		LastModified: "Mon, 01 Jan 2024 00:00:00 GMT",
+		LastModified: fixtureLastModified,
 		FeedJSON:     JSON(`{"title": "Test Feed"}`),
 	}
 
@@ -102,6 +102,82 @@ func TestSetFeedUserAgent(t *testing.T) {
 	}
 }
 
+func TestSetFeedConfig(t *testing.T) {
+	db := setupTestDB(t)
+	const (
+		feedType  = "scrape"
+		selector  = "article.card"
+		userAgent = "Scrape Reader/1.0"
+	)
+
+	if err := db.SetFeedConfig(fixtureFeedURL, feedType, selector, userAgent); err != nil {
+		t.Fatalf("SetFeedConfig() insert error = %v", err)
+	}
+	feed, err := db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatalf("GetFeed() error = %v", err)
+	}
+	if feed == nil || feed.Type != feedType || feed.ScrapeSelector != selector || feed.UserAgent != userAgent {
+		t.Fatalf("GetFeed() = %#v, want persisted scrape configuration", feed)
+	}
+
+	feed.Title = fixtureFeedTitle
+	if err := db.UpsertFeed(feed); err != nil {
+		t.Fatalf("UpsertFeed() error = %v", err)
+	}
+	if err := db.SetFeedConfig(fixtureFeedURL, "rss", "", ""); err != nil {
+		t.Fatalf("SetFeedConfig() update error = %v", err)
+	}
+	feed, err = db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatalf("GetFeed() after update error = %v", err)
+	}
+	if feed.Type != "rss" || feed.ScrapeSelector != "" || feed.UserAgent != "" {
+		t.Errorf("updated feed config = %#v, want cleared RSS configuration", feed)
+	}
+	if feed.Title != fixtureFeedTitle {
+		t.Errorf("Title = %q after config update, want preserved %q", feed.Title, fixtureFeedTitle)
+	}
+}
+
+func TestSetFeedConfigInvalidatesCacheWhenParserChanges(t *testing.T) {
+	db := setupTestDB(t)
+	recentFetch := time.Now().UTC().Truncate(time.Second)
+	feed := &Feed{
+		URL:            fixtureFeedURL,
+		Type:           FeedTypeScrape,
+		ScrapeSelector: ".old",
+		ETag:           "old-etag",
+		LastModified:   fixtureLastModified,
+		LastFetchTime:  recentFetch,
+	}
+	if err := db.UpsertFeed(feed); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.SetFeedConfig(fixtureFeedURL, FeedTypeScrape, ".old", "Reader/2.0"); err != nil {
+		t.Fatal(err)
+	}
+	unchanged, err := db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unchanged.ETag != feed.ETag || !unchanged.LastFetchTime.Equal(recentFetch) {
+		t.Errorf("unchanged parser config invalidated cache: %#v", unchanged)
+	}
+
+	if err := db.SetFeedConfig(fixtureFeedURL, FeedTypeScrape, ".new", "Reader/2.0"); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := db.GetFeed(fixtureFeedURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.ETag != "" || changed.LastModified != "" || !changed.LastFetchTime.IsZero() {
+		t.Errorf("changed parser config retained cache state: %#v", changed)
+	}
+}
+
 func TestGetAllFeeds(t *testing.T) {
 	db := setupTestDB(t)
 
@@ -143,11 +219,15 @@ func TestGetAllFeeds(t *testing.T) {
 }
 
 func TestGetFeedSummaries(t *testing.T) {
+	const (
+		alphaTitle = "Alpha"
+		betaTitle  = "Beta"
+	)
 	db := setupTestDB(t)
 	lastFetch := time.Date(2026, 8, 25, 12, 0, 0, 0, time.UTC)
 	feeds := []*Feed{
-		{URL: testAlphaFeedURL, Title: "Alpha", LastFetchTime: lastFetch, ErrorCount: 2},
-		{URL: testBetaFeedURL, Title: "Beta"},
+		{URL: testAlphaFeedURL, Title: alphaTitle, LastFetchTime: lastFetch, ErrorCount: 2},
+		{URL: testBetaFeedURL, Title: betaTitle},
 	}
 	for _, feed := range feeds {
 		if err := db.UpsertFeed(feed); err != nil {

@@ -259,6 +259,13 @@ func TestRunMigrationsOnProperlyInitializedDatabase(t *testing.T) {
 
 func TestRunMigrationsOnExistingDatabase(t *testing.T) {
 	db := setupOldDatabase(t)
+	if _, err := db.conn.Exec(`
+		INSERT INTO feeds (url, title) VALUES ('https://legacy.example/feed', 'Legacy');
+		INSERT INTO items (feed_url, guid, published_date)
+		VALUES ('https://legacy.example/feed', 'legacy-item', '2026-08-25 13:00:00 -0700 PDT');
+	`); err != nil {
+		t.Fatal(err)
+	}
 
 	// Verify the old schema doesn't have latest_item_date column
 	var colCount int
@@ -301,6 +308,29 @@ func TestRunMigrationsOnExistingDatabase(t *testing.T) {
 
 	if colCount != 1 {
 		t.Errorf("After migration, should have latest_item_date column, but found %d", colCount)
+	}
+
+	for _, column := range []string{"type", "scrape_selector"} {
+		err = db.conn.QueryRow(`
+			SELECT COUNT(*) FROM pragma_table_info('feeds') WHERE name = ?
+		`, column).Scan(&colCount)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if colCount != 1 {
+			t.Errorf("After migration, should have %s column, but found %d", column, colCount)
+		}
+	}
+
+	var normalized int
+	if err := db.conn.QueryRow(`
+		SELECT julianday(published_date) IS NOT NULL
+		FROM items WHERE guid = 'legacy-item'
+	`).Scan(&normalized); err != nil {
+		t.Fatal(err)
+	}
+	if normalized != 1 {
+		t.Error("legacy publication date was not normalized for chronological SQLite queries")
 	}
 
 	// Verify we can insert data into the new column

@@ -395,6 +395,99 @@ func TestSubscribeWithUserAgentRejectsTextList(t *testing.T) {
 	}
 }
 
+func TestSubscribeWithScrapeConfiguration(t *testing.T) {
+	manager := New(&config.Config{})
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	feedType := feedlist.FeedTypeScrape
+	selector := "article.card"
+
+	result, err := manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		FeedType:       &feedType,
+		ScrapeSelector: &selector,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() error = %v", err)
+	}
+	if result.AddedCount != 1 || result.UpdatedCount != 0 {
+		t.Fatalf("result = %#v, want one added feed", result)
+	}
+
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	feed := list.GetFeeds()[0]
+	if feed.Type != feedlist.FeedTypeScrape || feed.ScrapeSelector != selector {
+		t.Errorf("saved feed = %#v, want scrape selector %q", feed, selector)
+	}
+
+	updatedSelector := ".entry > a"
+	result, err = manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		FeedType:       &feedType,
+		ScrapeSelector: &updatedSelector,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() update error = %v", err)
+	}
+	if result.UpdatedCount != 1 {
+		t.Fatalf("UpdatedCount = %d, want 1", result.UpdatedCount)
+	}
+
+	rssType := feedlist.FeedTypeRSS
+	result, err = manager.SubscribeWithOptions(testFormatOPML, filename, []string{testURL1}, SubscribeOptions{
+		FeedType: &rssType,
+	})
+	if err != nil {
+		t.Fatalf("SubscribeWithOptions() RSS update error = %v", err)
+	}
+	if result.UpdatedCount != 1 {
+		t.Fatalf("RSS UpdatedCount = %d, want 1", result.UpdatedCount)
+	}
+	list, err = feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() after RSS update error = %v", err)
+	}
+	feed = list.GetFeeds()[0]
+	if feed.Type != feedlist.FeedTypeRSS || feed.ScrapeSelector != "" {
+		t.Errorf("feed after RSS update = %#v, want RSS with empty selector", feed)
+	}
+}
+
+func TestSubscribeRejectsInvalidScrapeConfiguration(t *testing.T) {
+	manager := New(&config.Config{})
+	scrapeType := feedlist.FeedTypeScrape
+	rssType := feedlist.FeedTypeRSS
+	selector := ".post"
+	emptySelector := ""
+	badType := "html"
+
+	tests := []struct {
+		name    string
+		format  string
+		options SubscribeOptions
+	}{
+		{name: "text list", format: testFormatText, options: SubscribeOptions{FeedType: &scrapeType, ScrapeSelector: &selector}},
+		{name: "missing selector", format: testFormatOPML, options: SubscribeOptions{FeedType: &scrapeType}},
+		{name: "empty selector", format: testFormatOPML, options: SubscribeOptions{FeedType: &scrapeType, ScrapeSelector: &emptySelector}},
+		{name: "selector with RSS", format: testFormatOPML, options: SubscribeOptions{FeedType: &rssType, ScrapeSelector: &selector}},
+		{name: "selector without type", format: testFormatOPML, options: SubscribeOptions{ScrapeSelector: &selector}},
+		{name: "unknown type", format: testFormatOPML, options: SubscribeOptions{FeedType: &badType}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			filename := filepath.Join(t.TempDir(), "feeds.opml")
+			_, err := manager.SubscribeWithOptions(test.format, filename, []string{testURL1}, test.options)
+			if err == nil {
+				t.Fatal("SubscribeWithOptions() error = nil, want validation error")
+			}
+			if _, statErr := os.Stat(filename); !os.IsNotExist(statErr) {
+				t.Errorf("feed list created despite invalid options: stat error = %v", statErr)
+			}
+		})
+	}
+}
+
 func TestSubscribeDoesNotOverwriteMalformedFeedList(t *testing.T) {
 	manager := New(&config.Config{})
 	filename := filepath.Join(t.TempDir(), "feeds.opml")

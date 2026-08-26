@@ -15,7 +15,9 @@ const (
 	migrationVersion5   = 5 // Add user_agent column to feeds
 	migrationVersion6   = 6 // Add item_annotations table
 	migrationVersion7   = 7 // Add discovery-time query index
-	maxMigrationVersion = migrationVersion7
+	migrationVersion8   = 8 // Add feed parser type and scrape selector
+	migrationVersion9   = 9 // Add effective-date query index
+	maxMigrationVersion = migrationVersion9
 )
 
 // getMigrations returns the database migration scripts.
@@ -58,6 +60,13 @@ func getMigrations() map[int]string {
 		migrationVersion7: fmt.Sprintf(
 			"CREATE INDEX IF NOT EXISTS idx_items_discovery_time ON items(%s);",
 			discoveryTimeExpression,
+		),
+		migrationVersion8: `ALTER TABLE feeds ADD COLUMN type TEXT NOT NULL DEFAULT 'rss';
+		ALTER TABLE feeds ADD COLUMN scrape_selector TEXT NOT NULL DEFAULT '';`,
+		migrationVersion9: fmt.Sprintf(
+			`CREATE INDEX IF NOT EXISTS idx_items_effective_date ON items(%[1]s);
+			CREATE INDEX IF NOT EXISTS idx_items_feed_effective_date ON items(feed_url, %[1]s);`,
+			effectiveDateExpression,
 		),
 	}
 }
@@ -107,7 +116,7 @@ func (db *DB) RunMigrations() error {
 	appliedCount := 0
 	for version := currentVersion + 1; version <= maxMigrationVersion; version++ {
 		if _, exists := migrations[version]; exists {
-			logrus.Infof("Applying migration %d: Adding latest_item_date column", version)
+			logrus.Infof("Applying migration %d", version)
 			if err := db.applySpecificMigration(version); err != nil {
 				return err
 			}
@@ -138,6 +147,10 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration5()
 	case migrationVersion6:
 		return db.applyMigration6()
+	case migrationVersion8:
+		return db.applyMigration8()
+	case migrationVersion9:
+		return db.applyMigration9()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -318,4 +331,125 @@ func (db *DB) applyMigration6() error {
 
 	migrations := getMigrations()
 	return db.ApplyMigration(migrationVersion6, migrations[migrationVersion6])
+}
+
+// applyMigration8 adds feed parser configuration columns.
+func (db *DB) applyMigration8() error {
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion8, err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
+			}
+		}
+	}()
+
+	columns := []struct {
+		name string
+		sql  string
+	}{
+		{name: "type", sql: `ALTER TABLE feeds ADD COLUMN type TEXT NOT NULL DEFAULT 'rss'`},
+		{name: "scrape_selector", sql: `ALTER TABLE feeds ADD COLUMN scrape_selector TEXT NOT NULL DEFAULT ''`},
+	}
+	for _, column := range columns {
+		var count int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('feeds') WHERE name = ?`, column.name).
+			Scan(&count); err != nil {
+			return fmt.Errorf("failed to check %s column: %w", column.name, err)
+		}
+		if count == 0 {
+			if _, err := tx.Exec(column.sql); err != nil {
+				return fmt.Errorf("failed to add %s column: %w", column.name, err)
+			}
+		}
+	}
+
+	if _, err := tx.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migrationVersion8); err != nil {
+		return fmt.Errorf("failed to record migration %d: %w", migrationVersion8, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit migration %d: %w", migrationVersion8, err)
+	}
+	committed = true
+	return nil
+}
+
+// applyMigration9 normalizes legacy item timestamps before indexing chronological queries.
+func (db *DB) applyMigration9() error {
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion9, err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
+			}
+		}
+	}()
+
+	type itemTimestamps struct {
+		rowID         int64
+		publishedDate interface{}
+		firstSeen     interface{}
+	}
+	rows, err := tx.Query(`SELECT rowid, published_date, first_seen FROM items`)
+	if err != nil {
+		return fmt.Errorf("failed to read item timestamps: %w", err)
+	}
+	defer rows.Close()
+	var records []itemTimestamps
+	for rows.Next() {
+		var record itemTimestamps
+		if err := rows.Scan(&record.rowID, &record.publishedDate, &record.firstSeen); err != nil {
+			return fmt.Errorf("failed to scan item timestamps: %w", err)
+		}
+		records = append(records, record)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("failed to iterate item timestamps: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("failed to close item timestamp rows: %w", err)
+	}
+
+	for _, record := range records {
+		publishedDate := normalizedMigrationTime(record.publishedDate)
+		firstSeen := normalizedMigrationTime(record.firstSeen)
+		if _, err := tx.Exec(
+			`UPDATE items SET published_date = ?, first_seen = ? WHERE rowid = ?`,
+			publishedDate, firstSeen, record.rowID,
+		); err != nil {
+			return fmt.Errorf("failed to normalize item timestamps: %w", err)
+		}
+	}
+
+	migration := getMigrations()[migrationVersion9]
+	if _, err := tx.Exec(migration); err != nil {
+		return fmt.Errorf("failed to create effective-date indexes: %w", err)
+	}
+	if _, err := tx.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migrationVersion9); err != nil {
+		return fmt.Errorf("failed to record migration %d: %w", migrationVersion9, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit migration %d: %w", migrationVersion9, err)
+	}
+	committed = true
+	return nil
+}
+
+func normalizedMigrationTime(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
+	timestamp, err := parseDatabaseTime(value)
+	if err != nil {
+		return value
+	}
+	return formatDatabaseTime(timestamp)
 }

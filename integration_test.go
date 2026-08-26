@@ -46,6 +46,8 @@ const integrationTestFeed = `<?xml version="1.0" encoding="UTF-8"?>
     </channel>
 </rss>`
 
+const integrationScrapeSelector = "article.post"
+
 func TestSubscribeUserAgentCLI(t *testing.T) {
 	binaryPath := buildBinaryViaMake(t)
 	filename := filepath.Join(t.TempDir(), "feeds.opml")
@@ -73,6 +75,33 @@ func TestSubscribeUserAgentCLI(t *testing.T) {
 	}
 }
 
+func TestSubscribeScrapeCLI(t *testing.T) {
+	binaryPath := buildBinaryViaMake(t)
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	const selector = "article.card > h2"
+
+	output, err := runCommand(
+		binaryPath,
+		"subscribe", "--format", "opml", "--filename", filename,
+		"--type", "scrape", "--selector", selector, "https://example.com/archive",
+	)
+	if err != nil {
+		t.Fatalf("subscribe --type scrape failed: %v, output: %s", err, output)
+	}
+
+	list, err := feedlist.LoadFeedList(feedlist.FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	feeds := list.GetFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("len(GetFeeds()) = %d, want 1", len(feeds))
+	}
+	if feeds[0].Type != feedlist.FeedTypeScrape || feeds[0].ScrapeSelector != selector {
+		t.Errorf("subscribed feed = %#v, want scrape selector %q", feeds[0], selector)
+	}
+}
+
 func TestExportPreservesUserAgent(t *testing.T) {
 	tmpDir := t.TempDir()
 	databasePath := filepath.Join(tmpDir, "feeds.db")
@@ -87,9 +116,11 @@ func TestExportPreservesUserAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := db.UpsertFeed(&database.Feed{
-		URL:       "https://example.com/feed.xml",
-		Title:     "Example Feed",
-		UserAgent: userAgent,
+		URL:            "https://example.com/feed.xml",
+		Title:          "Example Feed",
+		UserAgent:      userAgent,
+		Type:           database.FeedTypeScrape,
+		ScrapeSelector: integrationScrapeSelector,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -117,6 +148,81 @@ func TestExportPreservesUserAgent(t *testing.T) {
 	}
 	if got := feeds[0].UserAgent; got != userAgent {
 		t.Errorf("exported UserAgent = %q, want %q", got, userAgent)
+	}
+	if feeds[0].Type != feedlist.FeedTypeScrape || feeds[0].ScrapeSelector != integrationScrapeSelector {
+		t.Errorf("exported parser config = %#v, want scrape selector", feeds[0])
+	}
+}
+
+func TestScrapedItemCLIUsesFirstSeenDate(t *testing.T) {
+	tmpDir := t.TempDir()
+	databasePath := filepath.Join(tmpDir, "feeds.db")
+	const (
+		feedURL = "https://example.com/archive"
+		itemURL = "https://example.com/article"
+	)
+	firstSeen := time.Date(2026, time.August, 25, 20, 30, 0, 0, time.UTC)
+
+	db, err := database.New(databasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertFeed(&database.Feed{
+		URL:            feedURL,
+		Title:          "Scraped Feed",
+		Type:           database.FeedTypeScrape,
+		ScrapeSelector: integrationScrapeSelector,
+		LatestItemDate: sql.NullTime{Time: firstSeen, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertItem(&database.Item{
+		FeedURL:   feedURL,
+		GUID:      itemURL,
+		Title:     "Scraped item",
+		Link:      itemURL,
+		FirstSeen: sql.NullTime{Time: firstSeen, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	binaryPath := buildBinaryViaMake(t)
+	showOutput, err := runCommand(binaryPath, "--database", databasePath, "show", feedURL)
+	if err != nil {
+		t.Fatalf("show failed: %v, output: %s", err, showOutput)
+	}
+	if !strings.Contains(showOutput, "2026-08-25 20:30") {
+		t.Errorf("show output does not use first_seen: %s", showOutput)
+	}
+
+	itemOutput, err := runCommand(binaryPath, "--database", databasePath, "item", itemURL)
+	if err != nil {
+		t.Fatalf("item failed: %v, output: %s", err, itemOutput)
+	}
+	if !strings.Contains(itemOutput, "Date: 2026-08-25T20:30:00Z") {
+		t.Errorf("item output does not use first_seen: %s", itemOutput)
+	}
+
+	itemJSONOutput, err := runCommand(
+		binaryPath, "--database", databasePath, "item", "--format", "json", itemURL,
+	)
+	if err != nil {
+		t.Fatalf("item --format json failed: %v, output: %s", err, itemJSONOutput)
+	}
+	var itemJSON struct {
+		PublishedDate time.Time
+	}
+	if err := json.Unmarshal([]byte(itemJSONOutput), &itemJSON); err != nil {
+		t.Fatalf("decode item JSON: %v, output: %s", err, itemJSONOutput)
+	}
+	if !itemJSON.PublishedDate.IsZero() {
+		t.Errorf("item JSON PublishedDate = %v, want absent publication date", itemJSON.PublishedDate)
 	}
 }
 

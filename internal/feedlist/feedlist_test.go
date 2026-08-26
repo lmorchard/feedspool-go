@@ -16,6 +16,8 @@ const (
 	testURL1              = "https://example.com/feed.xml"
 	testURL2              = "https://another.com/rss"
 	testURL3              = "https://third.com/atom.xml"
+	testScrapeSelector    = ".post"
+	testNestedSelector    = ".entry > h2"
 )
 
 func TestDetectFormat(t *testing.T) {
@@ -304,8 +306,8 @@ func TestOPMLFeedUserAgentRoundTrip(t *testing.T) {
 		t.Fatalf("LoadFeedList() error = %v", err)
 	}
 	want := []Feed{
-		{URL: testURL1, UserAgent: testExistingUserAgent},
-		{URL: testURL2, UserAgent: testNewUserAgent},
+		{URL: testURL1, UserAgent: testExistingUserAgent, Type: FeedTypeRSS},
+		{URL: testURL2, UserAgent: testNewUserAgent, Type: FeedTypeRSS},
 	}
 	got := reloaded.GetFeeds()
 	if len(got) != len(want) {
@@ -315,6 +317,103 @@ func TestOPMLFeedUserAgentRoundTrip(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("GetFeeds()[%d] = %#v, want %#v", i, got[i], want[i])
 		}
+	}
+}
+
+func TestOPMLScrapeFeedRoundTrip(t *testing.T) {
+	const source = `<opml version="2.0"><body><outline text="Articles" type="scrape" xmlUrl="https://example.com/archive" selector="article.card" /></body></opml>`
+
+	list, err := loadOPMLFeedList(strings.NewReader(source))
+	if err != nil {
+		t.Fatalf("loadOPMLFeedList() error = %v", err)
+	}
+	feeds := list.GetFeeds()
+	if len(feeds) != 1 {
+		t.Fatalf("len(GetFeeds()) = %d, want 1", len(feeds))
+	}
+	want := Feed{URL: "https://example.com/archive", Type: FeedTypeScrape, ScrapeSelector: "article.card"}
+	if feeds[0] != want {
+		t.Errorf("GetFeeds()[0] = %#v, want %#v", feeds[0], want)
+	}
+
+	if err := list.AddFeed(Feed{
+		URL:            "https://another.example/archive",
+		Type:           FeedTypeScrape,
+		ScrapeSelector: testNestedSelector,
+	}); err != nil {
+		t.Fatalf("AddFeed() error = %v", err)
+	}
+
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	if err := list.Save(filename); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+	reloaded, err := LoadFeedList(FormatOPML, filename)
+	if err != nil {
+		t.Fatalf("LoadFeedList() error = %v", err)
+	}
+	got := reloaded.GetFeeds()
+	if len(got) != 2 {
+		t.Fatalf("len(GetFeeds()) after round trip = %d, want 2", len(got))
+	}
+	if got[1].Type != FeedTypeScrape || got[1].ScrapeSelector != testNestedSelector {
+		t.Errorf("round-tripped scrape config = %#v", got[1])
+	}
+}
+
+func TestOPMLFeedListSetFeedTypeUpdatesNestedDuplicates(t *testing.T) {
+	const source = `<opml version="2.0"><body><outline xmlUrl="https://example.com/feed.xml" /><outline text="Category"><outline xmlUrl="https://example.com/feed.xml" type="rss" /></outline></body></opml>`
+
+	list, err := loadOPMLFeedList(strings.NewReader(source))
+	if err != nil {
+		t.Fatalf("loadOPMLFeedList() error = %v", err)
+	}
+	if found := list.SetFeedType(testURL1, FeedTypeScrape, testScrapeSelector); !found {
+		t.Fatal("SetFeedType() = false, want true")
+	}
+	for i, feed := range list.GetFeeds() {
+		if feed.Type != FeedTypeScrape || feed.ScrapeSelector != testScrapeSelector {
+			t.Errorf("GetFeeds()[%d] = %#v, want scrape config", i, feed)
+		}
+	}
+
+	if found := list.SetFeedType(testURL1, FeedTypeRSS, ""); !found {
+		t.Fatal("SetFeedType() RSS = false, want true")
+	}
+	for i, feed := range list.GetFeeds() {
+		if feed.Type != FeedTypeRSS || feed.ScrapeSelector != "" {
+			t.Errorf("GetFeeds()[%d] = %#v, want RSS config", i, feed)
+		}
+	}
+}
+
+func TestDeduplicateFeedsRejectsConflictingParserConfiguration(t *testing.T) {
+	tests := []struct {
+		name  string
+		feeds []Feed
+	}{
+		{
+			name: "type",
+			feeds: []Feed{
+				{URL: testURL1, Type: FeedTypeRSS},
+				{URL: testURL1, Type: FeedTypeScrape, ScrapeSelector: testScrapeSelector},
+			},
+		},
+		{
+			name: "selector",
+			feeds: []Feed{
+				{URL: testURL1, Type: FeedTypeScrape, ScrapeSelector: testScrapeSelector},
+				{URL: testURL1, Type: FeedTypeScrape, ScrapeSelector: ".entry"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := DeduplicateFeeds(test.feeds); err == nil {
+				t.Fatal("DeduplicateFeeds() error = nil, want conflict")
+			}
+		})
 	}
 }
 
@@ -593,7 +692,10 @@ func TestDeduplicateFeedsPreservesFirstSeenOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DeduplicateFeeds() error = %v", err)
 	}
-	want := []Feed{{URL: testURL1, UserAgent: testNewUserAgent}, {URL: testURL2}}
+	want := []Feed{
+		{URL: testURL1, UserAgent: testNewUserAgent, Type: FeedTypeRSS},
+		{URL: testURL2, Type: FeedTypeRSS},
+	}
 	if len(got) != len(want) {
 		t.Fatalf("DeduplicateFeeds() = %#v, want %#v", got, want)
 	}

@@ -1,12 +1,74 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type nullableTimeDestination struct {
+	destination *time.Time
+}
+
+func scanNullableTime(destination *time.Time) sql.Scanner {
+	return &nullableTimeDestination{destination: destination}
+}
+
+func (scanner *nullableTimeDestination) Scan(value interface{}) error {
+	*scanner.destination = time.Time{}
+	if value == nil {
+		return nil
+	}
+	timestamp, err := parseDatabaseTime(value)
+	if err != nil {
+		return err
+	}
+	*scanner.destination = timestamp
+	return nil
+}
+
+func parseDatabaseTime(value interface{}) (time.Time, error) {
+	if timestamp, ok := value.(time.Time); ok {
+		return timestamp, nil
+	}
+
+	var text string
+	switch value := value.(type) {
+	case string:
+		text = value
+	case []byte:
+		text = string(value)
+	default:
+		var nullable sql.NullTime
+		if err := nullable.Scan(value); err != nil {
+			return time.Time{}, err
+		}
+		return nullable.Time, nil
+	}
+
+	if monotonic := strings.Index(text, " m="); monotonic >= 0 {
+		text = text[:monotonic]
+	}
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05.999999999Z07:00",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02",
+	} {
+		if timestamp, err := time.Parse(layout, text); err == nil {
+			return timestamp, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unsupported database time %q", text)
+}
+
+func formatDatabaseTime(timestamp time.Time) string {
+	return timestamp.UTC().Format(time.RFC3339Nano)
+}
 
 // ParseTimeWindow parses CLI time arguments and returns start and end times.
 func ParseTimeWindow(maxAge, startStr, endStr string) (startTime, endTime time.Time, err error) {
@@ -32,6 +94,7 @@ func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Ti
 		if err != nil {
 			return time.Time{}, time.Time{}, fmt.Errorf("invalid start time format: %w", err)
 		}
+		startTime = startTime.UTC()
 	}
 
 	if endStr != "" {
@@ -39,6 +102,7 @@ func parseExplicitTimeRange(startStr, endStr string) (startTime, endTime time.Ti
 		if err != nil {
 			return time.Time{}, time.Time{}, fmt.Errorf("invalid end time format: %w", err)
 		}
+		endTime = endTime.UTC()
 	} else {
 		endTime = time.Now().UTC()
 	}

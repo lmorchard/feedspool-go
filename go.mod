@@ -3,6 +3,8 @@ module github.com/lmorchard/feedspool-go
 go 1.25.0
 
 require (
+	github.com/PuerkitoBio/goquery v1.5.1
+	github.com/andybalholm/cascadia v1.1.0
 	github.com/mmcdole/gofeed v1.1.3
 	github.com/otiai10/opengraph/v2 v2.1.0
 	github.com/sirupsen/logrus v1.8.1
@@ -13,8 +15,6 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.5.1 // indirect
-	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect

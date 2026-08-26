@@ -13,6 +13,9 @@ import (
 )
 
 const (
+	FeedTypeRSS    = "rss"
+	FeedTypeScrape = "scrape"
+
 	// MinReasonableItemDate is the minimum date we consider reasonable for feed items.
 	// Items with dates before this are likely due to:
 	// - Missing or malformed dates in feeds
@@ -39,6 +42,8 @@ type Feed struct {
 	LastSuccessfulFetch time.Time    `db:"last_successful_fetch"`
 	ErrorCount          int          `db:"error_count"`
 	UserAgent           string       `db:"user_agent"`
+	Type                string       `db:"type"`
+	ScrapeSelector      string       `db:"scrape_selector"`
 	LastError           string       `db:"last_error"`
 	LatestItemDate      sql.NullTime `db:"latest_item_date"`
 	FeedJSON            JSON         `db:"feed_json"`
@@ -74,6 +79,17 @@ type Item struct {
 	Summary       string       `db:"summary"`
 	Archived      bool         `db:"archived"`
 	ItemJSON      JSON         `db:"item_json"`
+}
+
+// EffectiveDate returns PublishedDate, falling back to when the item was first seen.
+func (item *Item) EffectiveDate() time.Time {
+	if !item.PublishedDate.IsZero() {
+		return item.PublishedDate.UTC()
+	}
+	if item.FirstSeen.Valid {
+		return item.FirstSeen.Time.UTC()
+	}
+	return time.Time{}
 }
 
 type URLMetadata struct {
@@ -183,6 +199,30 @@ func ItemFromGofeed(gi *gofeed.Item, feedURL string) (*Item, error) {
 	}
 
 	return item, nil
+}
+
+// ItemFromScrape converts a link extracted from HTML into a database item.
+// Scraped items intentionally leave PublishedDate unset so FirstSeen controls ordering.
+func ItemFromScrape(title, link, feedURL string) (*Item, error) {
+	itemJSON, err := json.Marshal(struct {
+		Title string `json:"title"`
+		Link  string `json:"link"`
+	}{Title: title, Link: link})
+	if err != nil {
+		return nil, err
+	}
+
+	guid := link
+	if guid == "" {
+		guid = generateGUID(link, title)
+	}
+	return &Item{
+		FeedURL:  feedURL,
+		GUID:     guid,
+		Title:    html.UnescapeString(title),
+		Link:     link,
+		ItemJSON: JSON(itemJSON),
+	}, nil
 }
 
 func generateGUID(link, title string) string {

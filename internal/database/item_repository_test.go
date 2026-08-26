@@ -58,6 +58,77 @@ func TestUpsertAndGetItem(t *testing.T) {
 	}
 }
 
+func TestGetItemsByLinkAndIdentity(t *testing.T) {
+	const (
+		alphaFeedURL = "https://alpha.example/feed"
+		alphaGUID    = "alpha-guid"
+		alphaTitle   = "Alpha"
+		betaFeedURL  = "https://beta.example/feed"
+		betaGUID     = "beta-guid"
+		betaTitle    = "Beta"
+		sharedLink   = "https://example.com/shared"
+	)
+	db := setupTestDB(t)
+	for _, feedURL := range []string{alphaFeedURL, betaFeedURL} {
+		if err := db.UpsertFeed(&Feed{URL: feedURL, Title: feedURL}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	firstSeen := time.Date(2026, 8, 25, 12, 0, 0, 0, time.UTC)
+	items := []*Item{
+		{
+			FeedURL:   betaFeedURL,
+			GUID:      betaGUID,
+			Title:     betaTitle,
+			Link:      sharedLink,
+			FirstSeen: sql.NullTime{Time: firstSeen, Valid: true},
+		},
+		{
+			FeedURL:       alphaFeedURL,
+			GUID:          alphaGUID,
+			Title:         alphaTitle,
+			Link:          sharedLink,
+			PublishedDate: firstSeen.Add(-time.Hour),
+		},
+	}
+	for _, item := range items {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	matches, err := db.GetItemsByLink(sharedLink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 2 {
+		t.Fatalf("GetItemsByLink() returned %d items, want 2", len(matches))
+	}
+	if matches[0].GUID != alphaGUID || matches[1].GUID != betaGUID {
+		t.Fatalf("GetItemsByLink() order = [%s, %s], want [alpha-guid, beta-guid]",
+			matches[0].GUID, matches[1].GUID)
+	}
+	if !matches[1].PublishedDate.IsZero() || !matches[1].EffectiveDate().Equal(firstSeen) {
+		t.Errorf("scraped item dates = published %v, effective %v", matches[1].PublishedDate, matches[1].EffectiveDate())
+	}
+
+	item, err := db.GetItem(betaFeedURL, betaGUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item == nil || item.Title != betaTitle {
+		t.Fatalf("GetItem() = %#v, want beta item", item)
+	}
+	missing, err := db.GetItem(betaFeedURL, "missing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if missing != nil {
+		t.Fatalf("GetItem() missing = %#v, want nil", missing)
+	}
+}
+
 func TestUpsertItemDateStability(t *testing.T) {
 	const updatedTitle = "Updated Title"
 
@@ -216,6 +287,100 @@ func TestGetItemsForFeedWithFilters(t *testing.T) {
 
 	if retrieved[0].GUID != testItem3GUID {
 		t.Errorf("Filtered item GUID = %v, want %s", retrieved[0].GUID, testItem3GUID)
+	}
+}
+
+func TestGetItemsForFeedUsesUTCFirstSeenFallback(t *testing.T) {
+	db := setupTestDB(t)
+	if err := db.UpsertFeed(&Feed{URL: fixtureFeedURL, Title: fixtureFeedTitle}); err != nil {
+		t.Fatal(err)
+	}
+	firstSeen := time.Date(2026, time.August, 25, 20, 0, 0, 0, time.UTC)
+	if err := db.UpsertItem(&Item{
+		FeedURL:   fixtureFeedURL,
+		GUID:      fixtureGUID,
+		Title:     testItemTitle,
+		Link:      fixtureItemLink,
+		FirstSeen: sql.NullTime{Time: firstSeen, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	localZone := time.FixedZone("PDT", -7*60*60)
+	since := time.Date(2026, time.August, 25, 12, 30, 0, 0, localZone)
+	until := time.Date(2026, time.August, 25, 13, 30, 0, 0, localZone)
+	items, err := db.GetItemsForFeed(
+		fixtureFeedURL,
+		0,
+		since,
+		until,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(GetItemsForFeed()) = %d, want 1 across timezone offsets", len(items))
+	}
+	if got := items[0].EffectiveDate(); got.Location() != time.UTC || got.Hour() != 20 {
+		t.Errorf("EffectiveDate() = %v, want 20:00 UTC", got)
+	}
+
+	filtered, err := db.GetItems(&ItemFilter{Since: since, Until: until})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(filtered) != 1 {
+		t.Fatalf("len(GetItems()) = %d, want 1 across timezone offsets", len(filtered))
+	}
+}
+
+func TestEffectiveDateQueriesHandleLegacyOffsetsConservatively(t *testing.T) {
+	const afterCutoffGUID = "after-cutoff"
+	db := setupTestDB(t)
+	if err := db.UpsertFeed(&Feed{URL: fixtureFeedURL, Title: fixtureFeedTitle}); err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []struct {
+		guid          string
+		publishedDate string
+	}{
+		{guid: "before-cutoff", publishedDate: "2026-08-25T12:00:00-07:00"},
+		{guid: afterCutoffGUID, publishedDate: "2026-08-25T13:00:00-07:00"},
+		{guid: "unparseable", publishedDate: "not-a-date"},
+	} {
+		_, err := db.conn.Exec(`
+			INSERT INTO items (feed_url, guid, published_date, archived)
+			VALUES (?, ?, ?, 1)
+		`, fixtureFeedURL, item.guid, item.publishedDate)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cutoff := time.Date(2026, 8, 25, 19, 45, 0, 0, time.UTC)
+	items, err := db.GetItemsForFeed(fixtureFeedURL, 0, cutoff, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].GUID != afterCutoffGUID {
+		t.Fatalf("GetItemsForFeed() = %#v, want only after-cutoff; unparseable dates cannot be placed in a window", items)
+	}
+
+	deleted, err := db.DeleteArchivedItems(cutoff)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deleted != 1 {
+		t.Fatalf("DeleteArchivedItems() deleted %d items, want only before-cutoff", deleted)
+	}
+	var remaining int
+	if err := db.conn.QueryRow(`
+		SELECT COUNT(*) FROM items WHERE guid IN ('after-cutoff', 'unparseable')
+	`).Scan(&remaining); err != nil {
+		t.Fatal(err)
+	}
+	if remaining != 2 {
+		t.Fatalf("remaining protected items = %d, want 2", remaining)
 	}
 }
 
@@ -471,5 +636,36 @@ func TestGetItemsDiscoveryWindowUsesIndex(t *testing.T) {
 	}
 	if !strings.Contains(plan.String(), "idx_items_discovery_time") {
 		t.Fatalf("discovery query plan does not use discovery index:\n%s", plan.String())
+	}
+}
+
+func TestGetItemsEffectiveDateOrderingUsesIndex(t *testing.T) {
+	db := setupTestDB(t)
+	rows, err := db.conn.Query(`
+		EXPLAIN QUERY PLAN
+		SELECT id FROM items
+		WHERE feed_url = ?
+		ORDER BY julianday(COALESCE(published_date, first_seen)) DESC
+	`, fixtureFeedURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	var plan strings.Builder
+	for rows.Next() {
+		var id, parent, unused int
+		var detail string
+		if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		plan.WriteString(detail)
+		plan.WriteByte('\n')
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(plan.String(), "idx_items_feed_effective_date") || strings.Contains(plan.String(), "USE TEMP B-TREE") {
+		t.Fatalf("per-feed effective-date query plan does not use composite index:\n%s", plan.String())
 	}
 }

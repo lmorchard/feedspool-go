@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 )
 
@@ -87,7 +88,8 @@ func TestPlanFetchDedupes(t *testing.T) {
 
 func TestPlanFetchCarriesOPMLUserAgents(t *testing.T) {
 	dir := writeDir(t, map[string]string{
-		oneOPML:   `<opml version="2.0"><body><outline xmlUrl="` + feedA + `" userAgent="` + directoryCustomUserAgent + `" /></body></opml>`,
+		oneOPML: `<opml version="2.0"><body><outline xmlUrl="` + feedA + `" userAgent="` +
+			directoryCustomUserAgent + `" type="scrape" selector=".post" /></body></opml>`,
 		"two.txt": feedA + "\n" + feedB + "\n",
 	})
 
@@ -100,6 +102,16 @@ func TestPlanFetchCarriesOPMLUserAgents(t *testing.T) {
 	}
 	if got := plan.FeedConfigs[0]; got.URL != feedA || got.UserAgent != directoryCustomUserAgent {
 		t.Errorf("FeedConfigs[0] = %#v, want configured %s", got, feedA)
+	}
+	if len(plan.ParserConfigs) != 2 {
+		t.Fatalf("len(ParserConfigs) = %d, want two unique URLs", len(plan.ParserConfigs))
+	}
+	if got := plan.ParserConfigs[0]; got.URL != feedA || got.Type != feedlist.FeedTypeScrape ||
+		got.ScrapeSelector != ".post" {
+		t.Errorf("ParserConfigs[0] = %#v, want OPML scrape config", got)
+	}
+	if got := plan.ParserConfigs[1]; got.URL != feedB || got.Type != feedlist.FeedTypeRSS {
+		t.Errorf("ParserConfigs[1] = %#v, want text-list RSS config", got)
 	}
 }
 

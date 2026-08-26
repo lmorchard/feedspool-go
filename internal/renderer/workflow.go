@@ -46,7 +46,7 @@ type WorkflowConfig struct {
 type Result struct {
 	FeedCount  int       // Feeds matching the time window and feed-list filter.
 	ItemCount  int       // Items rendered, after min/max per-feed limits.
-	NewestItem time.Time // Newest PublishedDate rendered; zero if no items.
+	NewestItem time.Time // Newest effective item date rendered; zero if no items.
 }
 
 // summarize computes a Result from the data about to be rendered.
@@ -56,8 +56,9 @@ func summarize(feeds []database.Feed, items map[string][]database.Item) *Result 
 		feedItems := items[feeds[i].URL]
 		result.ItemCount += len(feedItems)
 		for j := range feedItems {
-			if feedItems[j].PublishedDate.After(result.NewestItem) {
-				result.NewestItem = feedItems[j].PublishedDate
+			itemDate := feedItems[j].EffectiveDate()
+			if itemDate.After(result.NewestItem) {
+				result.NewestItem = itemDate
 			}
 		}
 	}

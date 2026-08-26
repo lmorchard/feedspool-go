@@ -179,9 +179,14 @@ from a webpage.
 | `--filename` | (config) | Path to subscription file |
 | `--discover` | false | Treat URL as a webpage; parse its HTML for `<link>` feed references |
 | `--user-agent` | (unset) | Set the feed's User-Agent override in an OPML list; use `--user-agent=` to clear it |
+| `--type` | (unset) | Set the OPML parser type to `rss` or `scrape` |
+| `--selector` | (unset) | CSS selector required with `--type scrape` |
 
-`--user-agent` works only with OPML lists. Re-subscribing to an existing URL
-updates its `userAgent` outline attribute instead of adding a duplicate.
+Per-feed options work only with OPML lists. Re-subscribing to an existing URL
+updates its outline attributes instead of adding a duplicate. A scrape feed
+requires both `--type scrape` and a non-empty `--selector`; setting `--type rss`
+clears an existing selector. Scraping is explicit and cannot be combined with
+`--discover`.
 
 **Side effects:** Creates the subscription file if it does not exist; adds or
 updates the URL. Makes a network request only when `--discover` is set. Does
@@ -194,6 +199,7 @@ feedspool subscribe https://example.com/feed.xml
 feedspool subscribe --discover https://example.com/blog
 feedspool subscribe --format opml --filename feeds.opml https://example.com/feed.xml
 feedspool subscribe --format opml --filename feeds.opml --user-agent "Custom Reader/1.0" https://example.com/feed.xml
+feedspool subscribe --format opml --filename feeds.opml --type scrape --selector "article.post" https://example.com/archive
 ```
 
 ### unsubscribe
@@ -241,8 +247,29 @@ Fetch feed content. Has three modes depending on arguments.
 longer in the live feed as archived. May delete feed rows when
 `--remove-missing` is used. If `--with-unfurl` is set, also writes
 `url_metadata`. Before fetching OPML lists, including directory mode, copies
-each outline's `userAgent` value into the feed row; a missing attribute clears
-the override. Conflicting values for one URL stop the fetch.
+each outline's `userAgent`, `type`, and `selector` values into the feed row;
+missing values restore the defaults. Conflicting values for one URL stop the
+fetch.
+
+#### HTML scrape feeds
+
+An OPML outline can treat an HTML page as a feed:
+
+```xml
+<outline type="scrape"
+         xmlUrl="https://example.com/archive"
+         selector="article.post" />
+```
+
+The normal HTTP path still handles User-Agent overrides, ETag, Last-Modified,
+timeouts, and `--force`. After a 200 response, feedspool applies the selector,
+uses a matched or nearby `<a>` element, resolves relative links, deduplicates
+them, and stores feed-shaped items. Link text is the preferred title, followed
+by the link's `title` attribute and the matched element's text.
+
+Scrape is a first-class parser type, not a fallback when RSS parsing fails.
+Scraped items have no `published_date`; feedspool uses `first_seen` for time
+filters and ordering. Text feed lists remain URL-only RSS lists.
 
 **JSON output (`--json`):**
 
@@ -596,8 +623,9 @@ Write all feeds currently in the database to a subscription file.
 
 **Usage:** `feedspool export <filename> --format <opml|text>`
 
-OPML exports include each feed's `userAgent` override. Text lists contain URLs
-only.
+OPML exports include each feed's `userAgent`, `type`, and `selector`
+configuration. Text lists contain URLs only, so exporting a scrape feed as text
+does not preserve its parser configuration.
 
 **Side effects:** Overwrites the target file.
 
@@ -828,8 +856,11 @@ One row per feed URL.
 | `last_fetch_time` | DATETIME | Last fetch attempt (success or failure) |
 | `last_successful_fetch` | DATETIME | Last 200 OK |
 | `error_count` | INTEGER | Consecutive errors; reset on success |
+| `user_agent` | TEXT | Optional per-feed request User-Agent |
+| `type` | TEXT | `rss` (default) or `scrape` |
+| `scrape_selector` | TEXT | CSS selector for a scrape feed |
 | `last_error` | TEXT | Last error message |
-| `latest_item_date` | DATETIME | Most recent item's clamped `published_date` |
+| `latest_item_date` | DATETIME | Most recent clamped `published_date`, falling back to `first_seen` |
 | `feed_json` | JSON | Full parsed feed structure |
 
 ### `items`
@@ -844,7 +875,7 @@ flagged `archived=1` rather than deleted.
 | `guid` | TEXT | Normalized GUID; see [GUID dedup](#guid-deduplication) |
 | `title` | TEXT | |
 | `link` | TEXT | Item URL |
-| `published_date` | DATETIME | *Clamped*; see [date clamping](#published-date-clamping) |
+| `published_date` | DATETIME | Nullable; *clamped* when present, otherwise `first_seen` is used |
 | `content` | TEXT | Full content (HTML entities decoded) |
 | `summary` | TEXT | Description/summary |
 | `archived` | BOOLEAN | `1` once item disappears from the live feed |
@@ -1024,11 +1055,12 @@ touch the database. The database accumulates whatever you fetch. To bring
 the DB back in line with the subscription list, run `purge --format <fmt>
 --filename <file>` (or `fetch --remove-missing`).
 
-OPML outlines may carry a per-feed `userAgent` attribute. An OPML-backed fetch
-synchronizes that attribute before making requests. Directory mode does the
-same across all OPML files and rejects conflicting values for one URL. Removing
-the attribute restores feedspool's default User-Agent on the next fetch. Text
-lists cannot store per-feed User-Agent overrides.
+OPML outlines may carry per-feed `userAgent`, `type`, and `selector` attributes.
+An OPML-backed fetch synchronizes those attributes before making requests.
+Directory mode does the same across all OPML files and rejects conflicting
+values for one URL. Removing `userAgent` restores feedspool's default
+User-Agent; removing `type` restores RSS parsing. Text lists cannot store
+per-feed configuration.
 
 ### What `purge` actually deletes
 

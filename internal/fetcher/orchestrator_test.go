@@ -151,6 +151,115 @@ func TestFetchFromFileSynchronizesUserAgent(t *testing.T) {
 	}
 }
 
+func TestFetchFromFileSynchronizesScrapeConfiguration(t *testing.T) {
+	db := setupTestDatabase(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(testScrapeHTML))
+	}))
+	defer server.Close()
+
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	content := `<opml version="2.0"><body><outline type="scrape" selector="` + testScrapeSelector + `" xmlUrl="` +
+		server.URL + `" /></body></opml>`
+	if err := os.WriteFile(filename, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	o := NewOrchestrator(db, config.GetDefault())
+	results, err := o.FetchFromFile(context.Background(), feedlist.FormatOPML, filename, FetchOptions{
+		Timeout:     config.DefaultTimeout,
+		MaxItems:    config.DefaultMaxItems,
+		Concurrency: 1,
+	})
+	if err != nil {
+		t.Fatalf("FetchFromFile() error = %v", err)
+	}
+	if len(results) != 1 || results[0].Error != nil || results[0].ItemCount != 2 {
+		t.Fatalf("FetchFromFile() results = %#v, want one successful two-item scrape", results)
+	}
+	feed, err := db.GetFeed(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Type != database.FeedTypeScrape || feed.ScrapeSelector != testScrapeSelector {
+		t.Errorf("database feed config = %#v, want scrape selector", feed)
+	}
+}
+
+func TestFetchFromFileParserChangeBypassesMaxAge(t *testing.T) {
+	db := setupTestDatabase(t)
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		_, _ = w.Write([]byte(testScrapeHTML))
+	}))
+	defer server.Close()
+
+	if err := db.UpsertFeed(&database.Feed{
+		URL:           server.URL,
+		Type:          database.FeedTypeRSS,
+		LastFetchTime: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	filename := filepath.Join(t.TempDir(), "feeds.opml")
+	content := `<opml version="2.0"><body><outline type="scrape" selector="` + testScrapeSelector +
+		`" xmlUrl="` + server.URL + `" /></body></opml>`
+	if err := os.WriteFile(filename, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	o := NewOrchestrator(db, config.GetDefault())
+	results, err := o.FetchFromFile(context.Background(), feedlist.FormatOPML, filename, FetchOptions{
+		Timeout:     config.DefaultTimeout,
+		MaxItems:    config.DefaultMaxItems,
+		MaxAge:      time.Hour,
+		Concurrency: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hits.Load() != 1 || len(results) != 1 || results[0].ItemCount != 2 {
+		t.Errorf("hits = %d, results = %#v; want fresh scrape despite max-age", hits.Load(), results)
+	}
+}
+
+func TestFetchFromTextListRestoresRSSParserWithoutClearingUserAgent(t *testing.T) {
+	db := setupTestDatabase(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(testFeedXML))
+	}))
+	defer server.Close()
+	const userAgent = "Preserved Reader/1.0"
+	if err := db.SetFeedConfig(server.URL, database.FeedTypeScrape, testScrapeSelector, userAgent); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(t.TempDir(), "feeds.txt")
+	if err := os.WriteFile(filename, []byte(server.URL+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	o := NewOrchestrator(db, config.GetDefault())
+	results, err := o.FetchFromFile(context.Background(), feedlist.FormatText, filename, FetchOptions{
+		Timeout:     config.DefaultTimeout,
+		MaxItems:    config.DefaultMaxItems,
+		Concurrency: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Error != nil || results[0].ItemCount != 2 {
+		t.Fatalf("FetchFromFile() results = %#v, want RSS parse", results)
+	}
+	feed, err := db.GetFeed(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if feed.Type != database.FeedTypeRSS || feed.UserAgent != userAgent {
+		t.Errorf("feed config = %#v, want RSS with preserved User-Agent", feed)
+	}
+}
+
 func TestFetchFromFileRejectsConflictingUserAgents(t *testing.T) {
 	db := setupTestDatabase(t)
 	var hits atomic.Int32

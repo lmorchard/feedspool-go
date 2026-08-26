@@ -99,39 +99,19 @@ func parseItemSelector(args []string) (itemSelector, error) {
 }
 
 func getItemOutput(db *database.DB, selector itemSelector) (*ItemOutput, error) {
-	query := `
-		SELECT id, feed_url, guid, title, link, published_date, first_seen,
-			content, summary, archived, item_json
-		FROM items
-	`
-	var args []any
+	var items []*database.Item
+	var err error
 	if selector.link != "" {
-		query += " WHERE link = ? ORDER BY feed_url"
-		args = append(args, selector.link)
+		items, err = db.GetItemsByLink(selector.link)
 	} else {
-		query += " WHERE feed_url = ? AND guid = ?"
-		args = append(args, selector.feedURL, selector.guid)
+		var item *database.Item
+		item, err = db.GetItem(selector.feedURL, selector.guid)
+		if item != nil {
+			items = append(items, item)
+		}
 	}
-	rows, err := db.GetConnection().Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up item: %w", err)
-	}
-	defer rows.Close()
-
-	var items []database.Item
-	for rows.Next() {
-		var item database.Item
-		if err := rows.Scan(
-			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
-			&item.PublishedDate, &item.FirstSeen, &item.Content, &item.Summary,
-			&item.Archived, &item.ItemJSON,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan item: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate matching items: %w", err)
 	}
 	if len(items) == 0 {
 		if selector.link != "" {
@@ -159,7 +139,7 @@ func getItemOutput(db *database.DB, selector itemSelector) (*ItemOutput, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &ItemOutput{Item: &item, Annotations: annotations, Metadata: metadata}, nil
+	return &ItemOutput{Item: item, Annotations: annotations, Metadata: metadata}, nil
 }
 
 func outputItem(format string, output *ItemOutput) error {
@@ -179,7 +159,7 @@ func outputItemTable(output *ItemOutput) error {
 	item := output.Item
 	//nolint:forbidigo // Command output.
 	fmt.Printf("Title: %s\nLink: %s\nFeed URL: %s\nDate: %s\nSummary: %s\nContent: %s\n",
-		item.Title, item.Link, item.FeedURL, item.PublishedDate.Format(time.RFC3339), item.Summary, item.Content)
+		item.Title, item.Link, item.FeedURL, item.EffectiveDate().Format(time.RFC3339), item.Summary, item.Content)
 	if item.FirstSeen.Valid {
 		//nolint:forbidigo // Command output.
 		fmt.Printf("First Seen: %s\n", item.FirstSeen.Time.Format(time.RFC3339))
