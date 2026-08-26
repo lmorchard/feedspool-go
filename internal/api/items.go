@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/search"
@@ -191,6 +192,12 @@ func parseItemFilters(query url.Values) (itemFilters, error) {
 		return filters, fmt.Errorf("%s: %w", paramArchived, err)
 	}
 
+	rawQuery := query.Get(paramQuery)
+	if length := utf8.RuneCountInString(rawQuery); length > maxQueryLength {
+		return filters, fmt.Errorf("%s is %d characters; the maximum is %d",
+			paramQuery, length, maxQueryLength)
+	}
+
 	sort := query.Get(paramSort)
 	if sort == "" {
 		sort = sortNewest
@@ -199,7 +206,7 @@ func parseItemFilters(query url.Values) (itemFilters, error) {
 		return filters, fmt.Errorf("%s must be %s, %s or %s",
 			paramSort, sortNewest, sortOldest, sortRelevance)
 	}
-	if sort == sortRelevance && strings.TrimSpace(query.Get(paramQuery)) == "" {
+	if sort == sortRelevance && strings.TrimSpace(rawQuery) == "" {
 		return filters, fmt.Errorf("%s=%s requires %s", paramSort, sortRelevance, paramQuery)
 	}
 	filters.sort = sort

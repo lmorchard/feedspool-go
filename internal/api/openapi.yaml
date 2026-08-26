@@ -178,7 +178,11 @@ paths:
             ANDed; `"quoted phrases"`, `-exclusions` and `prefix*` are
             supported; everything else is matched literally. Identical to
             `feedspool items --search`.
-          schema: { type: string }
+
+            At most 2048 characters; longer queries are rejected with
+            `400 invalid_parameter`. A query of nothing but exclusions is
+            rejected the same way.
+          schema: { type: string, maxLength: 2048 }
         - name: since
           in: query
           description: |

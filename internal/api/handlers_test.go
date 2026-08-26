@@ -778,6 +778,88 @@ func TestDiscoveredAtKeepsSubSecondPrecisionForPolling(t *testing.T) {
 	}
 }
 
+// A NUL byte in q used to reach FTS5 verbatim. SQLite reads the bound MATCH
+// operand as a NUL-terminated C string, so the expression truncated
+// mid-literal, FTS5 raised "unterminated string", and the handler surfaced it
+// as a 500 -- for a plain query-string parameter, from any client.
+func TestListItemsSearchToleratesControlCharactersInQuery(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	clean, _ := h.getCollection(t, searchPath("&limit=100"))
+	want := itemIDsFrom(t, clean)
+	if len(want) != searchCorpusSize {
+		t.Fatalf("baseline matches = %d, want %d", len(want), searchCorpusSize)
+	}
+
+	cases := []struct{ name, query string }{
+		{"leading nul", "\x00" + searchTerm},
+		{"trailing nul", searchTerm + "\x00"},
+		{"surrounding nuls", "\x00" + searchTerm + "\x00"},
+		{"other c0 controls", "\x01" + searchTerm + "\x1f"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, _ := h.getCollection(t, pathItems+"?limit=100&q="+url.QueryEscape(tc.query))
+			if got := itemIDsFrom(t, data); !slices.Equal(got, want) {
+				t.Errorf("q=%q matched %d items, want the same %d as q=%q",
+					tc.query, len(got), len(want), searchTerm)
+			}
+		})
+	}
+
+	// A query of nothing but control characters reduces to no filter at all,
+	// which is the same as omitting q rather than an error.
+	status, payload := h.get(t, pathItems+"?limit=100&q="+url.QueryEscape("\x00"))
+	if status != http.StatusOK {
+		t.Fatalf("q=%%00 status = %d, want 200: %s", status, payload)
+	}
+}
+
+// q is capped. Without one, a request-line-sized flat AND chain executes
+// happily and holds the single database connection for the duration.
+func TestListItemsRejectsOverlongQuery(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, 1)
+
+	atLimit := strings.Repeat("a", maxQueryLength)
+	if status, payload := h.get(t, pathItems+"?q="+atLimit); status != http.StatusOK {
+		t.Fatalf("a q of exactly %d characters returned %d: %s", maxQueryLength, status, payload)
+	}
+
+	// The cap counts characters, not bytes, so a multi-byte query is not
+	// rejected earlier than an ASCII one of the same length.
+	multibyte := url.QueryEscape(strings.Repeat("\u00e9", maxQueryLength))
+	if status, payload := h.get(t, pathItems+"?q="+multibyte); status != http.StatusOK {
+		t.Fatalf("a q of %d multi-byte characters returned %d: %s", maxQueryLength, status, payload)
+	}
+
+	status, payload := h.get(t, pathItems+"?q="+atLimit+"a")
+	if status != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400: %s", status, payload)
+	}
+	assertErrorCode(t, payload, codeInvalidParameter)
+}
+
+// A forged cursor carrying a negative offset used to be accepted. SQLite
+// clamps a negative OFFSET to zero, so the caller got page 1 back together
+// with a still-negative next cursor, and a paging loop then re-read page 1
+// roughly |offset|/limit times without ever advancing or reporting a problem.
+func TestListItemsRejectsCursorWithNegativeOffset(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	for _, offset := range []int{-1, -9007199254740991} {
+		forged := encodeItemCursor(&database.ItemCursor{Relevance: true, Offset: offset})
+		path := searchPath(relevanceSuffix() + "&limit=5&" + paramCursor + "=" + url.QueryEscape(forged))
+		status, payload := h.get(t, path)
+		if status != http.StatusBadRequest {
+			t.Fatalf("offset %d status = %d, want 400: %s", offset, status, payload)
+		}
+		assertErrorCode(t, payload, codeInvalidCursor)
+	}
+}
+
 func mustGet(t *testing.T, h *testHarness, path string) []byte {
 	t.Helper()
 	status, payload := h.get(t, path)

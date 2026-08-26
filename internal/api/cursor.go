@@ -71,6 +71,12 @@ func decodeItemCursor(encoded string) (*database.ItemCursor, error) {
 	if payload.DateRank != 0 && payload.DateRank != 1 {
 		return nil, fmt.Errorf("cursor date rank %d is out of range", payload.DateRank)
 	}
+	// SQLite clamps a negative OFFSET to zero, so a forged negative offset
+	// would return page 1 and hand back a still-negative next cursor -- the
+	// paging loop this decoder's contract says cannot happen.
+	if payload.Offset < 0 {
+		return nil, fmt.Errorf("cursor offset %d is out of range", payload.Offset)
+	}
 
 	return &database.ItemCursor{
 		DateRank:      payload.DateRank,
