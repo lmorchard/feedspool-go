@@ -1,7 +1,6 @@
 package renderer
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	configpkg "github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
+	"github.com/lmorchard/feedspool-go/internal/ids"
 )
 
 // WorkflowConfig holds all configuration for rendering operations.
@@ -332,7 +332,7 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	for i := range feeds {
 		feedsWithIDs[i] = FeedWithID{
 			Feed: feeds[i],
-			ID:   generateFeedID(feeds[i].URL),
+			ID:   ids.FeedID(feeds[i].URL),
 		}
 	}
 
@@ -463,7 +463,7 @@ func renderSingleFeed(r *Renderer, feedsDir string, feed *database.Feed,
 	feedItems []database.Item, metadata map[string]*database.URLMetadata,
 	favicon string, chrome SiteChrome,
 ) error {
-	feedID := generateFeedID(feed.URL)
+	feedID := ids.FeedID(feed.URL)
 	feedContext := &FeedTemplateContext{
 		SiteChrome:  chrome,
 		Feed:        *feed,
@@ -534,11 +534,4 @@ func printSuccessMessage(feedCount int, feedTemplateExists bool, outputDir, outp
 	}
 	//nolint:forbidigo // User-facing output
 	fmt.Printf("Open %s in your browser to view the site\n", outputFile)
-}
-
-// generateFeedID creates a consistent ID from a feed URL using SHA-256.
-// Returns first 8 characters of the hex-encoded hash.
-func generateFeedID(feedURL string) string {
-	hash := sha256.Sum256([]byte(feedURL))
-	return fmt.Sprintf("%x", hash)[:8]
 }
