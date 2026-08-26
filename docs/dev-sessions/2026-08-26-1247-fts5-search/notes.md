@@ -44,8 +44,12 @@ old database that had never seen migrations 5–11).
 
 **Migration.** 23.5 seconds wall time for migrations 5 through 11 together
 (not migration 11 alone — this database needed all of them). All 19,750 items
-ended up indexed; SQLite's FTS5 integrity check (`INSERT INTO items_fts(items_fts)
-VALUES('integrity-check')`) came back clean afterward.
+ended up indexed; SQLite's FTS5 integrity check came back clean afterward —
+the strong form, `INSERT INTO items_fts(items_fts, rank)
+VALUES('integrity-check', 1)`, which is what actually ran. The `rank`
+argument is the whole point: the bare `('integrity-check')` only checks the
+index's internal consistency and passes happily on an index that has drifted
+from its content table. See the correction in `research.md`.
 
 **Disk.** 478,056,448 → 593,018,880 bytes, +24%. That's the cost of a second
 copy of every item's stripped text plus the inverted index over it.
@@ -141,13 +145,14 @@ spool that's ~24 seconds of apparent hang during an otherwise-instant
 `items_fts` in the Data Model section so a future upgrade isn't mistaken for
 a stuck migration.
 
-## Loose end noticed, not fixed
+## Loose end noticed, then fixed
 
-`MANUAL.md`'s `schema_migrations` entry says "Current version: 4," which
-predates this work by a long way — the schema is now at version 11. Out of
-scope for this phase (nothing here asked for it, and it's not related to
-FTS5), but worth a follow-up pass since it's directly under the tables this
-phase just documented.
+`MANUAL.md`'s `schema_migrations` entry said "Current version: 4," which
+predated this work by a long way — the schema is now at version 11. It was
+first left alone as out of scope, but this phase's own text a few paragraphs
+above says "migrating from schema v4 to v11," which made the stale line read
+as a contradiction rather than as staleness. The final review pass corrected
+it to 11.
 
 ## For whoever picks this up next
 

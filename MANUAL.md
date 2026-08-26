@@ -674,11 +674,27 @@ before the index existed.
 |---|---|---|
 | `--force` | false | Discard every derived row and rebuild from scratch |
 
-Use `--force` after changing how text is derived or tokenized — for example,
-if a future release changes the `porter` stemmer setting — since the stale
-rows otherwise look up to date and nothing else will invalidate them. Budget
-on the order of 30 seconds for a full rebuild on a 20,000-item spool (measured
-at 34.4s). A no-op run — nothing to do — is still slower than it looks: about
+Use `--force` for either of two reasons:
+
+- **After changing how text is derived or tokenized** — for example, if a
+  future release changes the `porter` stemmer setting — since the stale rows
+  otherwise look up to date and nothing else will invalidate them.
+- **After running an older `feedspool` against the database.** A release
+  rollback breaks the assumption the staleness check rests on: an older
+  binary's item writes update `items.title` and `items.content` without
+  touching `item_text`, and because the check ignores the source hash, the
+  derived row goes on looking current forever. Items the old binary *inserted*
+  are picked up by a plain `reindex` — they have no derived row at all — but
+  items it *updated* are only repaired by `--force`.
+
+Note that `--force` clears the derived text before the rebuild begins, and the
+rebuild commits in batches, so an interrupted `--force` leaves search returning
+nothing at all until it is run again. A plain `reindex` has no such window: it
+only fills in what is missing, so an interruption leaves the index partially
+built rather than empty.
+
+Budget on the order of 30 seconds for a full rebuild on a 20,000-item spool
+(measured at 34.4s). A no-op run — nothing to do — is still slower than it looks: about
 5 seconds wall time on the same spool, nearly all of it spent scanning for
 stale rows rather than doing any work.
 
@@ -797,7 +813,7 @@ curl -s 'localhost:8889/api/v1/items?limit=20&seen=false' | jq '.data[].title'
 | `feed_url` | exact feed URL | — |
 | `feed_query` | feed URL substring, case-insensitive | — |
 | `link` | exact item link | — |
-| `q` | full-text search over title, summary, and body | — |
+| `q` | full-text search over title, summary, and body; at most 2048 characters | — |
 | `since` / `until` | RFC3339, on discovery time | — |
 | `seen` | `true` \| `false` | both |
 | `archived` | `true` \| `false` \| `any` | `false` |
@@ -844,7 +860,10 @@ Three of these have sharp edges worth knowing:
   `NEAR` are searched for rather than treated as operators. A query of nothing
   but exclusions (`q=-draft` on its own) is a `400 invalid_parameter` — FTS5
   cannot answer "everything except X", and an empty result set would read as a
-  bug rather than a rejected query. `sort=relevance` ranks by `bm25()` (title
+  bug rather than a rejected query. **`q` is limited to 2048 characters**, also
+  a `400 invalid_parameter` past that: no search box comes near the cap, but
+  without one a single request can carry a chain of hundreds of thousands of
+  terms and hold the one database connection for as long as it takes to run. `sort=relevance` ranks by `bm25()` (title
   weighted above summary above body) and requires `q`; **`newest` stays the
   default sort even when `q` is given.** Remember that `archived` defaults to
   `false` here — a search against this endpoint sees fewer hits than the same
@@ -1271,7 +1290,7 @@ problem. Run with `-v` to see progress.
 
 ### `schema_migrations`
 
-Internal version tracking. Current version: 4.
+Internal version tracking. Current version: 11.
 
 ## SQL Recipes
 
