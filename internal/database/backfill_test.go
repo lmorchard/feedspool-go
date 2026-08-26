@@ -34,6 +34,11 @@ func TestRunBackfillIsResumable(t *testing.T) {
 		batchSize = 10
 	)
 	db := seedSearchableItems(t, itemCount)
+	// Phase 3's UpsertItem derives item_text on write, so the seeded items are
+	// already indexed. Discard that to reproduce the case this test is about:
+	// existing items whose derived text is missing or stale, which is what
+	// gives the interrupted backfill real work to interrupt.
+	execSQL(t, db, `DELETE FROM item_text`)
 
 	var reported [][2]int64
 	interrupted := &interruptedBackfill{

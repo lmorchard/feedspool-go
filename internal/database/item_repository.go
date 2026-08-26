@@ -1,10 +1,13 @@
 package database
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/lmorchard/feedspool-go/internal/itemtext"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +28,27 @@ const (
 		" IS NOT NULL AND " + effectiveDateExpression + " <= julianday(?)"
 )
 
-// UpsertItem inserts or updates an item record in the database.
+// upsertItemQuery is RETURNING id, not a bare INSERT: LastInsertId is not
+// meaningful for the ON CONFLICT DO UPDATE branch, which is the common case
+// on re-fetch, and the returned id is what attaches the derived item_text row
+// below to the right item.
+const upsertItemQuery = `
+	INSERT INTO items (feed_url, guid, title, link, published_date, first_seen,
+		content, summary, archived, item_json)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(feed_url, guid) DO UPDATE SET
+		title = excluded.title,
+		link = excluded.link,
+		content = excluded.content,
+		summary = excluded.summary,
+		archived = excluded.archived,
+		item_json = excluded.item_json
+	RETURNING id
+`
+
+// UpsertItem inserts or updates an item record and keeps its derived search
+// text current, all in one transaction so a crash cannot leave the item
+// written but the index stale.
 func (db *DB) UpsertItem(item *Item) error {
 	var publishedDate interface{}
 	if !item.PublishedDate.IsZero() {
@@ -35,28 +58,65 @@ func (db *DB) UpsertItem(item *Item) error {
 	if item.FirstSeen.Valid {
 		firstSeen = formatDatabaseTime(item.FirstSeen.Time)
 	}
-	query := `
-		INSERT INTO items (feed_url, guid, title, link, published_date, first_seen,
-			content, summary, archived, item_json)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(feed_url, guid) DO UPDATE SET
-			title = excluded.title,
-			link = excluded.link,
-			content = excluded.content,
-			summary = excluded.summary,
-			archived = excluded.archived,
-			item_json = excluded.item_json
-	`
 
-	_, err := db.conn.Exec(query,
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin item upsert: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				logrus.WithError(rollbackErr).Warn("Failed to roll back item upsert")
+			}
+		}
+	}()
+
+	var id int64
+	err = tx.QueryRow(upsertItemQuery,
 		item.FeedURL, item.GUID, item.Title, item.Link, publishedDate, firstSeen,
-		item.Content, item.Summary, item.Archived, item.ItemJSON)
+		item.Content, item.Summary, item.Archived, item.ItemJSON).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("failed to upsert item: %w", err)
 	}
 
+	if err := upsertItemTextIfChanged(tx, id, item); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit item upsert: %w", err)
+	}
+	committed = true
+
 	logrus.Debugf("Upserted item: %s - %s", item.FeedURL, item.GUID)
 	return nil
+}
+
+// upsertItemTextIfChanged derives and stores item_text unless the stored hash
+// and generator version already match. Re-fetching an unchanged feed is the
+// common case, and this keeps that case to one indexed lookup instead of an
+// HTML parse per item -- it also avoids firing the update trigger, which
+// would delete and reinsert identical index rows.
+func upsertItemTextIfChanged(tx *sql.Tx, id int64, item *Item) error {
+	hash := itemtext.SourceHash(item.Title, item.Summary, item.Content)
+
+	var storedHash string
+	var storedVersion int
+	err := tx.QueryRow(
+		`SELECT source_hash, generator_version FROM item_text WHERE item_id = ?`, id,
+	).Scan(&storedHash, &storedVersion)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		// No derived text yet -- fall through and derive it.
+	case err != nil:
+		return fmt.Errorf("failed to read item text for item %d: %w", id, err)
+	case storedHash == hash && storedVersion == itemtext.Version:
+		return nil
+	}
+
+	text := itemtext.Derive(item.Title, item.Summary, item.Content, itemtext.DefaultOptions())
+	return upsertItemTextTx(tx, id, text, hash)
 }
 
 // GetItemsByLink retrieves every item with the exact link in deterministic order.

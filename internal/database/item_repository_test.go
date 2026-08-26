@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/itemtext"
 )
 
 func TestUpsertAndGetItem(t *testing.T) {
@@ -664,5 +666,163 @@ func TestGetItemsEffectiveDateOrderingUsesIndex(t *testing.T) {
 	}
 	if !strings.Contains(plan.String(), "idx_items_feed_effective_date") || strings.Contains(plan.String(), "USE TEMP B-TREE") {
 		t.Fatalf("per-feed effective-date query plan does not use composite index:\n%s", plan.String())
+	}
+}
+
+// newUpsertItemTextFixture builds an item with markup in its content, ready
+// to exercise the item_text derivation UpsertItem performs.
+func newUpsertItemTextFixture(term string) *Item {
+	return &Item{
+		FeedURL:       fixtureFeedURL,
+		GUID:          fixtureGUID,
+		Title:         testItemTitle,
+		Link:          fixtureItemLink,
+		PublishedDate: time.Now().UTC().Truncate(time.Second),
+		Content:       seededItemContent(0, term),
+		Summary:       fixtureItemSummary,
+	}
+}
+
+// setupItemTextFixtureDB seeds a feed so UpsertItem's foreign key succeeds.
+func setupItemTextFixtureDB(t *testing.T) *DB {
+	t.Helper()
+	db := setupTestDB(t)
+	if err := db.UpsertFeed(&Feed{URL: fixtureFeedURL}); err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+// itemTextBody reads the derived body text for an item.
+func itemTextBody(t *testing.T, db *DB, itemID int64) string {
+	t.Helper()
+	var body string
+	if err := db.conn.QueryRow(
+		`SELECT body FROM item_text WHERE item_id = ?`, itemID,
+	).Scan(&body); err != nil {
+		t.Fatalf("reading item_text body for item %d: %v", itemID, err)
+	}
+	return body
+}
+
+func TestUpsertItemIndexesNewItem(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("db.UpsertItem() error = %v", err)
+	}
+
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored == nil {
+		t.Fatal("db.GetItem() returned nil after upsert")
+	}
+
+	want := itemtext.Derive(item.Title, item.Summary, item.Content, itemtext.DefaultOptions()).Body
+	if got := itemTextBody(t, db, stored.ID); got != want {
+		t.Errorf("item_text body = %q, want %q", got, want)
+	}
+
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Errorf("body term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
+func TestUpsertItemSkipsDerivationWhenUnchanged(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("no item_text row after first upsert")
+	}
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+	after, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("item_text row disappeared after second upsert")
+	}
+
+	if after != before {
+		t.Errorf("computed_at moved from %q to %q; unchanged content should skip derivation", before, after)
+	}
+}
+
+func TestUpsertItemReindexesChangedContent(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Fatalf("initial body term matches %d items, want 1", got)
+	}
+
+	item.Content = seededItemContent(0, replacementBodyTerm)
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+
+	if got := countMatching(t, db, seedBodyTerm); got != 0 {
+		t.Errorf("retired body term still matches %d items, want 0", got)
+	}
+	if got := countMatching(t, db, replacementBodyTerm); got != 1 {
+		t.Errorf("new body term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
+func TestUpsertItemReindexesOnVersionBump(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	execSQL(t, db, `UPDATE item_text SET generator_version = ? WHERE item_id = ?`, itemtext.Version-1, stored.ID)
+	before, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("no item_text row after hand-setting generator_version")
+	}
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+
+	after, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("item_text row disappeared after second upsert")
+	}
+	if after == before {
+		t.Errorf("computed_at unchanged at %q; a version bump should force recompute despite a matching hash", before)
+	}
+
+	var version int
+	if err := db.conn.QueryRow(
+		`SELECT generator_version FROM item_text WHERE item_id = ?`, stored.ID,
+	).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if version != itemtext.Version {
+		t.Errorf("generator_version = %d, want %d", version, itemtext.Version)
 	}
 }
