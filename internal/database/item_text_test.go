@@ -1,0 +1,358 @@
+package database
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/itemtext"
+)
+
+const (
+	// ftsIntegrityCheckSQL asks FTS5 to compare its index against the content
+	// table. An external-content index that has drifted returns wrong results
+	// rather than erroring, so an explicit check is the only thing that catches
+	// a missing trigger.
+	//
+	// The argument is load-bearing, and its sense is the opposite of what the
+	// name suggests. Measured against this driver: with no argument, or with 0,
+	// FTS5 checks only that the index is internally consistent -- which stays
+	// true while the index and item_text disagree, so both an orphaned and a
+	// missing entry sail through. Argument 1 is the one that reads the content
+	// table back, and it reports SQLITE_CORRUPT for either.
+	ftsIntegrityCheckSQL = `INSERT INTO items_fts(items_fts, rank) VALUES('integrity-check', 1)`
+
+	// ftsMatchCountSQL counts index entries, not content rows. A bare
+	// "SELECT COUNT(*) FROM items_fts" would read the content table and report
+	// the same number whether or not the index was maintained, which would make
+	// every trigger case below pass vacuously.
+	ftsMatchCountSQL = `SELECT COUNT(*) FROM items_fts WHERE items_fts MATCH ?`
+
+	// seedSharedTerm appears in the title of every seeded item, so a match count
+	// on it is a count of indexed items.
+	seedSharedTerm = "headline"
+
+	// seedBodyTerm appears in the body of every seeded item.
+	seedBodyTerm = "zeppelin"
+
+	// replacementBodyTerm is the term an update swaps in for seedBodyTerm.
+	replacementBodyTerm = "dirigible"
+)
+
+// execSQL runs a statement that the test expects to succeed.
+func execSQL(t *testing.T, db *DB, query string, args ...any) {
+	t.Helper()
+	if _, err := db.conn.Exec(query, args...); err != nil {
+		t.Fatalf("exec %q: %v", query, err)
+	}
+}
+
+// integrityCheck fails the test if the FTS index disagrees with item_text.
+func integrityCheck(t *testing.T, db *DB) {
+	t.Helper()
+	if _, err := db.conn.Exec(ftsIntegrityCheckSQL); err != nil {
+		t.Fatalf("fts integrity-check failed: %v", err)
+	}
+}
+
+// countMatching reports how many items the index returns for a bare term.
+func countMatching(t *testing.T, db *DB, term string) int {
+	t.Helper()
+	var count int
+	if err := db.conn.QueryRow(ftsMatchCountSQL, term).Scan(&count); err != nil {
+		t.Fatalf("counting matches for %q: %v", term, err)
+	}
+	return count
+}
+
+// countIndexedItems reports how many seeded items the index still returns.
+func countIndexedItems(t *testing.T, db *DB) int {
+	t.Helper()
+	return countMatching(t, db, seedSharedTerm)
+}
+
+// countItemTextRows reports how many derived-text rows exist.
+func countItemTextRows(t *testing.T, db *DB) int {
+	t.Helper()
+	var count int
+	if err := db.conn.QueryRow(`SELECT COUNT(*) FROM item_text`).Scan(&count); err != nil {
+		t.Fatalf("counting item_text rows: %v", err)
+	}
+	return count
+}
+
+// firstItemID returns the lowest item ID, which is the first seeded item.
+func firstItemID(t *testing.T, db *DB) int64 {
+	t.Helper()
+	var id int64
+	if err := db.conn.QueryRow(`SELECT MIN(id) FROM items`).Scan(&id); err != nil {
+		t.Fatalf("reading first item id: %v", err)
+	}
+	return id
+}
+
+// seededItemContent is the raw HTML body seeded for item i.
+func seededItemContent(index int, term string) string {
+	return fmt.Sprintf("<div>Body of item %d, a %s</div>", index, term)
+}
+
+// seedSearchableItems inserts count items under fixtureFeedURL with
+// deterministic, searchable text. published_date is always set:
+// DeleteArchivedItems filters on the effective date being non-NULL, so an item
+// without one would make the archived-purge case below assert nothing.
+func seedSearchableItems(t *testing.T, count int) *DB {
+	t.Helper()
+	db := setupTestDB(t)
+	if err := db.UpsertFeed(&Feed{URL: fixtureFeedURL}); err != nil {
+		t.Fatalf("seeding feed: %v", err)
+	}
+	published := time.Now().UTC().Add(-time.Hour)
+	for i := range count {
+		item := &Item{
+			FeedURL:       fixtureFeedURL,
+			GUID:          fmt.Sprintf("seed-guid-%d", i),
+			Title:         fmt.Sprintf("Item %d %s", i, seedSharedTerm),
+			Link:          fmt.Sprintf("https://example.com/item-%d", i),
+			PublishedDate: published.Add(time.Duration(i) * time.Minute),
+			Summary:       fmt.Sprintf("<p>Summary of item %d</p>", i),
+			Content:       seededItemContent(i, seedBodyTerm),
+		}
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatalf("seeding item %d: %v", i, err)
+		}
+	}
+	return db
+}
+
+// seedIndexedItems seeds items and brings the derived text and index up to date.
+func seedIndexedItems(t *testing.T, count int) *DB {
+	t.Helper()
+	db := seedSearchableItems(t, count)
+	if err := db.ReindexItemText(false, nil); err != nil {
+		t.Fatalf("indexing seeded items: %v", err)
+	}
+	if got := countIndexedItems(t, db); got != count {
+		t.Fatalf("seed indexed %d items, want %d", got, count)
+	}
+	return db
+}
+
+func TestItemTextTriggersCoverEveryDeletePath(t *testing.T) {
+	const seedCount = 2
+	cases := []struct {
+		name     string
+		act      func(t *testing.T, db *DB)
+		wantRows int // expected items left in the index, from a seed of 2
+	}{
+		{"direct delete", func(t *testing.T, db *DB) {
+			execSQL(t, db, `DELETE FROM item_text WHERE item_id = ?`, firstItemID(t, db))
+		}, 1},
+		{"one-level cascade from items", func(t *testing.T, db *DB) {
+			execSQL(t, db, `DELETE FROM items WHERE id = ?`, firstItemID(t, db))
+		}, 1},
+		{"two-level cascade from feeds", func(t *testing.T, db *DB) {
+			// feeds -> items -> item_text -> trigger. DeleteFeed reaches the
+			// index no other way; there is no FTS code on the purge path.
+			if err := db.DeleteFeed(fixtureFeedURL); err != nil {
+				t.Fatal(err)
+			}
+		}, 0},
+		{"archived purge", func(t *testing.T, db *DB) {
+			execSQL(t, db, `UPDATE items SET archived = 1`)
+			deleted, err := db.DeleteArchivedItems(time.Now().Add(time.Hour))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if deleted != seedCount {
+				t.Fatalf("purge deleted %d items, want %d", deleted, seedCount)
+			}
+		}, 0},
+		{"marking archived indexes nothing away", func(t *testing.T, db *DB) {
+			// archived is a filter on items, not a text change, so the index
+			// must be untouched.
+			if err := db.MarkItemsArchived(fixtureFeedURL, nil); err != nil {
+				t.Fatal(err)
+			}
+		}, seedCount},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := seedIndexedItems(t, seedCount)
+			testCase.act(t, db)
+			if got := countIndexedItems(t, db); got != testCase.wantRows {
+				t.Errorf("index holds %d items, want %d", got, testCase.wantRows)
+			}
+			integrityCheck(t, db)
+		})
+	}
+}
+
+// TestItemTextUpdateRetiresStaleTerms guards the update trigger's 'delete'
+// command. An update trigger that inserts without first deleting leaves both
+// the old and the new body searchable, and integrity-check still passes, so
+// only the stale-term assertion catches it.
+func TestItemTextUpdateRetiresStaleTerms(t *testing.T) {
+	db := seedIndexedItems(t, 1)
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Fatalf("seeded body term matches %d items, want 1", got)
+	}
+
+	execSQL(
+		t, db,
+		`UPDATE items SET content = ? WHERE id = ?`,
+		seededItemContent(0, replacementBodyTerm), firstItemID(t, db),
+	)
+	// Phase 3 owns the live write path; here a version rewind is what makes the
+	// backfill recompute the row, which drives item_text through an UPDATE.
+	execSQL(t, db, `UPDATE item_text SET generator_version = generator_version - 1`)
+	if err := db.ReindexItemText(false, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := countMatching(t, db, seedBodyTerm); got != 0 {
+		t.Errorf("retired body term still matches %d items, want 0", got)
+	}
+	if got := countMatching(t, db, replacementBodyTerm); got != 1 {
+		t.Errorf("new body term matches %d items, want 1", got)
+	}
+	if got := countIndexedItems(t, db); got != 1 {
+		t.Errorf("untouched title term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
+func TestReindexItemTextRecomputesOnVersionBump(t *testing.T) {
+	const seedCount = 3
+	db := seedIndexedItems(t, seedCount)
+	before := itemTextComputedAt(t, db)
+
+	execSQL(t, db, `UPDATE item_text SET generator_version = ?`, itemtext.Version-1)
+	if err := db.ReindexItemText(false, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	var stale int
+	if err := db.conn.QueryRow(
+		`SELECT COUNT(*) FROM item_text WHERE generator <> ? OR generator_version <> ?`,
+		itemtext.Generator, itemtext.Version,
+	).Scan(&stale); err != nil {
+		t.Fatal(err)
+	}
+	if stale != 0 {
+		t.Errorf("%d rows still carry the old generator version", stale)
+	}
+
+	after := itemTextComputedAt(t, db)
+	if len(after) != len(before) {
+		t.Fatalf("row count changed from %d to %d", len(before), len(after))
+	}
+	for id, timestamp := range after {
+		if timestamp == before[id] {
+			t.Errorf("item %d kept computed_at %q, so it was not recomputed", id, timestamp)
+		}
+	}
+	integrityCheck(t, db)
+}
+
+func TestReindexItemTextForceRebuilds(t *testing.T) {
+	const (
+		junkTerm  = "corrupted"
+		seedCount = 3
+	)
+	db := seedIndexedItems(t, seedCount)
+
+	// Corrupt the derived text by hand. Without force the backfill would leave
+	// it alone: the rows are already at the current generator version.
+	execSQL(t, db, `UPDATE item_text SET body = ?`, junkTerm)
+	if got := countMatching(t, db, junkTerm); got != seedCount {
+		t.Fatalf("corrupted body matches %d items, want %d", got, seedCount)
+	}
+
+	if err := db.ReindexItemText(true, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := countMatching(t, db, junkTerm); got != 0 {
+		t.Errorf("corrupted term still matches %d items, want 0", got)
+	}
+	if got := countMatching(t, db, seedBodyTerm); got != seedCount {
+		t.Errorf("rebuilt body term matches %d items, want %d", got, seedCount)
+	}
+	want := itemtext.Derive("", "", seededItemContent(0, seedBodyTerm), itemtext.DefaultOptions()).Body
+	var body string
+	if err := db.conn.QueryRow(
+		`SELECT body FROM item_text WHERE item_id = ?`, firstItemID(t, db),
+	).Scan(&body); err != nil {
+		t.Fatal(err)
+	}
+	if body != want {
+		t.Errorf("rebuilt body = %q, want %q", body, want)
+	}
+	integrityCheck(t, db)
+}
+
+// TestMigration11BackfillsExistingItems walks the path a real spool takes:
+// items already on disk, no derived text, no index.
+func TestMigration11BackfillsExistingItems(t *testing.T) {
+	const seedCount = 3
+	db := seedSearchableItems(t, seedCount)
+	rewindPastMigration11(t, db)
+
+	if err := db.RunMigrations(); err != nil {
+		t.Fatalf("RunMigrations() error = %v", err)
+	}
+
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != maxMigrationVersion {
+		t.Errorf("migration version = %d, want %d", version, maxMigrationVersion)
+	}
+	if got := countItemTextRows(t, db); got != seedCount {
+		t.Errorf("item_text has %d rows, want %d", got, seedCount)
+	}
+	if got := countIndexedItems(t, db); got != seedCount {
+		t.Errorf("index holds %d items, want %d", got, seedCount)
+	}
+	integrityCheck(t, db)
+}
+
+// rewindPastMigration11 drops everything migration 11 creates, leaving a
+// database that looks like it was last opened by an older feedspool.
+func rewindPastMigration11(t *testing.T, db *DB) {
+	t.Helper()
+	for _, statement := range []string{
+		`DROP TRIGGER IF EXISTS item_text_ai`,
+		`DROP TRIGGER IF EXISTS item_text_ad`,
+		`DROP TRIGGER IF EXISTS item_text_au`,
+		`DROP TABLE IF EXISTS items_fts`,
+		`DROP TABLE IF EXISTS item_text`,
+	} {
+		execSQL(t, db, statement)
+	}
+	execSQL(t, db, `DELETE FROM schema_migrations WHERE version = ?`, migrationVersion11)
+}
+
+// itemTextComputedAt maps each derived row to its computed_at timestamp.
+func itemTextComputedAt(t *testing.T, db *DB) map[int64]string {
+	t.Helper()
+	rows, err := db.conn.Query(`SELECT item_id, computed_at FROM item_text`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	stamps := make(map[int64]string)
+	for rows.Next() {
+		var id int64
+		var computedAt string
+		if err := rows.Scan(&id, &computedAt); err != nil {
+			t.Fatal(err)
+		}
+		stamps[id] = computedAt
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return stamps
+}

@@ -18,7 +18,8 @@ const (
 	migrationVersion8   = 8  // Add feed parser type and scrape selector
 	migrationVersion9   = 9  // Add effective-date query index
 	migrationVersion10  = 10 // Deduplicate annotations and enforce uniqueness
-	maxMigrationVersion = migrationVersion10
+	migrationVersion11  = 11 // Add derived item text and the FTS5 search index
+	maxMigrationVersion = migrationVersion11
 )
 
 // getMigrations returns the database migration scripts.
@@ -86,6 +87,49 @@ func getMigrations() map[int]string {
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_item_annotations_unique
 			ON item_annotations(feed_url, item_guid, kind, COALESCE(value, ''));`,
+		// This DDL is deliberately identical to the tail of schema.sql, the same
+		// arrangement item_annotations has with migration 6: a fresh database gets
+		// it from the schema and an existing one gets it from here, and both end
+		// up in the same place. IF NOT EXISTS throughout keeps re-running it free,
+		// which is what lets an interrupted migration 11 simply start over.
+		//
+		// items_fts is an external-content index: it stores the terms and reads
+		// column values back out of item_text. That is why a 'delete' command has
+		// to carry the OLD values -- once item_text holds the new text, the old
+		// terms cannot be recovered from anywhere.
+		migrationVersion11: `CREATE TABLE IF NOT EXISTS item_text (
+			item_id           INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+			title             TEXT NOT NULL DEFAULT '',
+			summary           TEXT NOT NULL DEFAULT '',
+			body              TEXT NOT NULL DEFAULT '',
+			source_hash       TEXT NOT NULL,
+			generator         TEXT NOT NULL,
+			generator_version INTEGER NOT NULL,
+			computed_at       DATETIME NOT NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_item_text_generator
+			ON item_text(generator, generator_version);
+
+		CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
+			title, summary, body,
+			content='item_text', content_rowid='item_id',
+			tokenize="porter unicode61 remove_diacritics 2"
+		);
+
+		CREATE TRIGGER IF NOT EXISTS item_text_ai AFTER INSERT ON item_text BEGIN
+			INSERT INTO items_fts(rowid, title, summary, body)
+			VALUES (new.item_id, new.title, new.summary, new.body);
+		END;
+		CREATE TRIGGER IF NOT EXISTS item_text_ad AFTER DELETE ON item_text BEGIN
+			INSERT INTO items_fts(items_fts, rowid, title, summary, body)
+			VALUES ('delete', old.item_id, old.title, old.summary, old.body);
+		END;
+		CREATE TRIGGER IF NOT EXISTS item_text_au AFTER UPDATE ON item_text BEGIN
+			INSERT INTO items_fts(items_fts, rowid, title, summary, body)
+			VALUES ('delete', old.item_id, old.title, old.summary, old.body);
+			INSERT INTO items_fts(rowid, title, summary, body)
+			VALUES (new.item_id, new.title, new.summary, new.body);
+		END;`,
 	}
 }
 
@@ -171,6 +215,8 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration9()
 	case migrationVersion10:
 		return db.applyMigration10()
+	case migrationVersion11:
+		return db.applyMigration11()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -484,4 +530,55 @@ func normalizedMigrationTime(value interface{}) interface{} {
 func (db *DB) applyMigration10() error {
 	migrations := getMigrations()
 	return db.ApplyMigration(migrationVersion10, migrations[migrationVersion10])
+}
+
+// applyMigration11 adds the derived item_text table, the items_fts index, and
+// the triggers that maintain it, then indexes whatever is already on disk.
+//
+// The three stages are deliberately not one transaction. The version is
+// recorded last, so it means "fully indexed": if the backfill is interrupted,
+// the version stays unbumped, the next run re-applies the idempotent DDL, and
+// the backfill picks up from the batches it already committed. Bumping the
+// version first would mark a half-indexed database as done and search would
+// silently miss those items forever.
+func (db *DB) applyMigration11() error {
+	if err := db.applyMigration11Schema(); err != nil {
+		return err
+	}
+
+	logrus.Info("Building the full-text search index; this may take a while on a large spool")
+	if err := db.ReindexItemText(false, ItemTextProgressLogger()); err != nil {
+		return fmt.Errorf("failed to build the full-text search index: %w", err)
+	}
+
+	// Its own implicit transaction, entered only once the index is complete.
+	if _, err := db.conn.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migrationVersion11); err != nil {
+		return fmt.Errorf("failed to record migration %d: %w", migrationVersion11, err)
+	}
+	return nil
+}
+
+// applyMigration11Schema creates the search schema in its own transaction.
+func (db *DB) applyMigration11Schema() error {
+	tx, err := db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion11, err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
+			}
+		}
+	}()
+
+	if _, err := tx.Exec(getMigrations()[migrationVersion11]); err != nil {
+		return fmt.Errorf("failed to create the item text schema: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit migration %d schema: %w", migrationVersion11, err)
+	}
+	committed = true
+	return nil
 }
