@@ -82,12 +82,35 @@ type Item struct {
 }
 
 // EffectiveDate returns PublishedDate, falling back to when the item was first seen.
+//
+// This is the ordering key. Note the precedence is the opposite of
+// DiscoveredAt's, which is deliberate: ordering wants the date the publisher
+// claims, while filtering wants the date this spool actually saw the item.
 func (item *Item) EffectiveDate() time.Time {
 	if !item.PublishedDate.IsZero() {
 		return item.PublishedDate.UTC()
 	}
 	if item.FirstSeen.Valid {
 		return item.FirstSeen.Time.UTC()
+	}
+	return time.Time{}
+}
+
+// DiscoveredAt returns when this spool first saw the item: FirstSeen, falling
+// back to PublishedDate when FirstSeen is absent or holds the zero-value
+// sentinel.
+//
+// This is the Go twin of discoveryTimeExpression, which is what --since and
+// --until compare against. Keep the two in step: a client polling with
+// "since = max(discovered_at)" depends on the field it reads and the field the
+// filter uses being the same thing. Feeds routinely post-date published_date,
+// so getting this backwards silently skips new items.
+func (item *Item) DiscoveredAt() time.Time {
+	if item.FirstSeen.Valid && !item.FirstSeen.Time.IsZero() {
+		return item.FirstSeen.Time.UTC()
+	}
+	if !item.PublishedDate.IsZero() {
+		return item.PublishedDate.UTC()
 	}
 	return time.Time{}
 }

@@ -68,7 +68,20 @@ type RenderConfig struct {
 
 type ServeConfig struct {
 	Port int
+	// Bind is the listen address. Empty means all interfaces, preserving the
+	// behavior from before the option existed.
+	Bind string
 	Dir  string
+	API  APIConfig
+}
+
+// APIConfig controls the JSON API mounted on the serve command.
+type APIConfig struct {
+	Enabled bool
+	// Token is deliberately not exposed as a command-line flag: a token passed
+	// on the command line ends up in ps output. Config file or
+	// FEEDSPOOL_API_TOKEN only.
+	Token string
 }
 
 type InitConfig struct {
@@ -123,7 +136,12 @@ func LoadConfig() *Config {
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
+			Bind: viper.GetString("serve.bind"),
 			Dir:  viper.GetString("serve.dir"),
+			API: APIConfig{
+				Enabled: viper.GetBool("serve.api.enabled"),
+				Token:   viper.GetString("serve.api.token"),
+			},
 		},
 		Init: InitConfig{
 			TemplatesDir: viper.GetString("init.templates_dir"),

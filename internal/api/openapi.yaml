@@ -1,0 +1,570 @@
+openapi: 3.1.0
+info:
+  title: feedspool HTTP API
+  version: "1"
+  description: |
+    Read and annotate a feedspool database over HTTP.
+
+    Enable with `feedspool serve --api`. Authentication is off unless a token
+    is configured (`serve.api.token` or `FEEDSPOOL_API_TOKEN`); when one is
+    set, every endpoint requires `Authorization: Bearer <token>`.
+
+    Compatibility: within v1, changes are additive only -- new fields, new
+    optional parameters, new endpoints, new error codes, new `include` values.
+    Removing or renaming a field, changing a type, or changing a parameter's
+    default requires v2. The cursor encoding is explicitly outside the
+    contract: treat it as an opaque token.
+
+    Unknown query parameters are rejected with 400 rather than ignored, so a
+    typo surfaces immediately instead of silently returning a default page.
+
+    Paths below are absolute on whatever host is running `feedspool serve`.
+    There is deliberately no `servers` block: the `/api/v1/` prefix is part of
+    the contract rather than a relocatable deployment detail, and declaring it
+    as a server base would make tooling compose `/api/v1/api/v1/...`.
+
+security:
+  - bearerAuth: []
+  - {}
+
+paths:
+  /api/v1/:
+    get:
+      summary: Service root
+      description: Reports the API contract version and the feedspool build version.
+      operationId: getRoot
+      responses:
+        "200":
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [api_version, feedspool_version]
+                properties:
+                  api_version:
+                    type: string
+                    examples: ["v1"]
+                  feedspool_version:
+                    type: string
+                    examples: ["1.0.2"]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/openapi.yaml:
+    get:
+      summary: This document
+      operationId: getOpenAPI
+      responses:
+        "200":
+          description: The OpenAPI document
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/status:
+    get:
+      summary: Spool health
+      description: Mirrors `feedspool status`.
+      operationId: getStatus
+      responses:
+        "200":
+          description: Current database contents and fetch health
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Status" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/feeds:
+    get:
+      summary: List feeds
+      description: |
+        Ordered by URL ascending. There is no `sort` parameter: URL is the
+        primary key, so the keyset cursor needs no tiebreak, and with only tens
+        to hundreds of feeds a client wanting "most recently active first" can
+        sort locally on `latest_item_date`.
+      operationId: listFeeds
+      parameters:
+        - name: url
+          in: query
+          description: Exact feed URL to look up.
+          schema: { type: string }
+        - name: limit
+          in: query
+          description: Page size. Values above the maximum are clamped, and the effective value is echoed in the response.
+          schema: { type: integer, minimum: 1, maximum: 500, default: 200 }
+        - name: cursor
+          in: query
+          description: Opaque continuation token from a previous `next_cursor`.
+          schema: { type: string }
+        - name: include
+          in: query
+          description: Comma-separated opt-in fields.
+          schema:
+            type: string
+            examples: ["counts", "raw,counts"]
+      responses:
+        "200":
+          description: A page of feeds
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Collection"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Feed" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/feeds/{feedID}:
+    get:
+      summary: Get one feed
+      operationId: getFeed
+      parameters:
+        - name: feedID
+          in: path
+          required: true
+          description: First 8 hex characters of sha256(feed URL). Matches the static site's `feeds/<id>.html`.
+          schema: { type: string, pattern: "^[0-9a-f]{8}$" }
+        - name: include
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: The feed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Feed" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/v1/items:
+    get:
+      summary: List items
+      description: |
+        Keyset-paginated, newest first by default. Offset paging is not offered
+        because items arrive at the head of the ordering continuously, which
+        makes offsets skip and duplicate rows mid-scan.
+
+        Note that `archived` defaults to `false` here, which differs from
+        `feedspool items`, where archived rows are included.
+      operationId: listItems
+      parameters:
+        - name: feed_id
+          in: query
+          description: Filter to one feed by derived ID. Mutually exclusive with `feed_url` and `feed_query`.
+          schema: { type: string }
+        - name: feed_url
+          in: query
+          description: Filter to one feed by exact URL. Mutually exclusive with `feed_id` and `feed_query`.
+          schema: { type: string }
+        - name: feed_query
+          in: query
+          description: Filter to feeds whose URL contains this substring, case-insensitively.
+          schema: { type: string }
+        - name: link
+          in: query
+          description: Exact item link. May match several items across feeds.
+          schema: { type: string }
+        - name: q
+          in: query
+          description: |
+            Case-insensitive substring match on the item title only -- not body
+            or summary. Identical to `feedspool items --search`.
+          schema: { type: string }
+        - name: since
+          in: query
+          description: |
+            RFC3339. Exclusive. Filters on discovery time (`first_seen`,
+            falling back to `published_date`), not publication date, because
+            feeds routinely backdate `published_date`. Exclusive so that
+            polling with `since = max(discovered_at)` returns only what is new.
+          schema: { type: string, format: date-time }
+        - name: until
+          in: query
+          description: RFC3339, on discovery time. Inclusive.
+          schema: { type: string, format: date-time }
+        - name: seen
+          in: query
+          description: Filter by presence of a `seen` annotation. Omit for both.
+          schema: { type: string, enum: ["true", "false"] }
+        - name: archived
+          in: query
+          description: Defaults to `false`. Use `any` for both.
+          schema: { type: string, enum: ["true", "false", "any"], default: "false" }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest], default: newest }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: include
+          in: query
+          description: Comma-separated. One of `content`, `raw`, `metadata`, `annotations`.
+          schema: { type: string }
+      responses:
+        "200":
+          description: A page of items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Collection"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Item" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/v1/items/{itemID}:
+    get:
+      summary: Get one item
+      description: Defaults to `include=content,annotations`. Passing `include` replaces that default rather than adding to it.
+      operationId: getItem
+      parameters:
+        - name: itemID
+          in: path
+          required: true
+          description: First 16 hex characters of sha256(feed URL + "\n" + GUID).
+          schema: { type: string, pattern: "^[0-9a-f]{16}$" }
+        - name: include
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: The item
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Item" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/v1/items/{itemID}/annotations:
+    get:
+      summary: List an item's annotations
+      operationId: listAnnotations
+      parameters:
+        - name: itemID
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The item's annotations, possibly empty
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Annotation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      summary: Add an annotation
+      description: Idempotent. Returns 201 when the annotation is created and 200 when it was already present.
+      operationId: addAnnotation
+      parameters:
+        - name: itemID
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind:
+                  type: string
+                  maxLength: 64
+                  pattern: "^[A-Za-z0-9_.:-]{1,64}$"
+                  description: |
+                    Restricted charset because `kind` is a path segment in the
+                    DELETE route. The CLI is unrestricted, so a kind written by
+                    `feedspool annotate` outside this set is readable here but
+                    must be removed with `feedspool unannotate`.
+                  examples: ["seen"]
+                value:
+                  type: [string, "null"]
+                actor:
+                  type: [string, "null"]
+      responses:
+        "200":
+          description: The annotation was already present
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Annotation" }
+        "201":
+          description: The annotation was created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Annotation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+
+  /api/v1/items/{itemID}/annotations/{kind}:
+    delete:
+      summary: Remove annotations of one kind
+      description: |
+        Mirrors `RemoveAnnotation`: without `value`, removes rows whose value is
+        NULL; with `value`, removes rows matching it. It does not remove every
+        row of a kind regardless of value.
+
+        Idempotent -- 204 even when nothing matched.
+      operationId: deleteAnnotation
+      parameters:
+        - name: itemID
+          in: path
+          required: true
+          schema: { type: string }
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[A-Za-z0-9_.:-]{1,64}$" }
+        - name: value
+          in: query
+          schema: { type: string }
+      responses:
+        "204":
+          description: Removed, or nothing matched
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/v1/annotations:
+    post:
+      summary: Add one annotation to many items
+      description: |
+        Add only. Marking a screenful seen is the common reader operation;
+        unmarking a screenful is not, and supporting it would mean either
+        DELETE with a body or an RPC-shaped `op` field.
+
+        Unknown item IDs land in `not_found` rather than failing the request.
+      operationId: bulkAnnotate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_ids, kind]
+              properties:
+                item_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: { type: string }
+                kind:
+                  type: string
+                  pattern: "^[A-Za-z0-9_.:-]{1,64}$"
+                value:
+                  type: [string, "null"]
+                actor:
+                  type: [string, "null"]
+      responses:
+        "200":
+          description: Tallies of what happened
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [added, already_present, not_found]
+                properties:
+                  added: { type: integer }
+                  already_present: { type: integer }
+                  not_found:
+                    type: array
+                    items: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Collection:
+      type: object
+      required: [data, next_cursor, limit]
+      description: |
+        The envelope every list endpoint returns. There is deliberately no
+        total: it costs a second full scan and is stale by the time a client
+        reads it.
+      properties:
+        data:
+          type: array
+          items: {}
+        next_cursor:
+          type: [string, "null"]
+          description: Opaque token for the next page, or null when exhausted.
+        limit:
+          type: integer
+          description: The effective page size, after any clamping.
+
+    Item:
+      type: object
+      required:
+        [id, feed_id, feed_url, guid, title, link, summary, published_date,
+         first_seen, discovered_at, archived]
+      properties:
+        id: { type: string }
+        feed_id: { type: string }
+        feed_url: { type: string }
+        guid: { type: string }
+        title: { type: string }
+        link: { type: string }
+        summary: { type: string }
+        published_date:
+          type: [string, "null"]
+          format: date-time
+          description: Null for scraped feeds, which deliberately leave it unset.
+        first_seen:
+          type: [string, "null"]
+          format: date-time
+        discovered_at:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            When this spool first saw the item: first_seen, falling back to
+            published_date. This is the field `since` and `until` compare
+            against, so `since = max(discovered_at)` is a correct way to poll
+            for what is new. Note this is *not* the ordering key -- ordering
+            uses published_date falling back to first_seen, the opposite
+            precedence.
+        archived: { type: boolean }
+        content:
+          type: string
+          description: Present only with include=content.
+        item_json:
+          description: Raw parsed source. Present only with include=raw.
+        annotations:
+          type: array
+          items: { $ref: "#/components/schemas/Annotation" }
+          description: Present only with include=annotations.
+        metadata:
+          description: Unfurl record for the item's link. Present only with include=metadata.
+          type: [object, "null"]
+
+    Feed:
+      type: object
+      required:
+        [id, url, title, description, last_updated, last_fetch_time,
+         last_successful_fetch, latest_item_date, error_count, last_error,
+         user_agent, type, scrape_selector]
+      properties:
+        id: { type: string }
+        url: { type: string }
+        title: { type: string }
+        description: { type: string }
+        last_updated: { type: [string, "null"], format: date-time }
+        last_fetch_time: { type: [string, "null"], format: date-time }
+        last_successful_fetch: { type: [string, "null"], format: date-time }
+        latest_item_date: { type: [string, "null"], format: date-time }
+        error_count: { type: integer }
+        last_error: { type: string }
+        user_agent: { type: string }
+        type:
+          type: string
+          enum: [rss, scrape]
+        scrape_selector:
+          type: string
+          description: Populated only when type is scrape.
+        feed_json:
+          description: Present only with include=raw.
+        item_count:
+          type: integer
+          description: Present only with include=counts.
+        unseen_count:
+          type: integer
+          description: Present only with include=counts.
+
+    Annotation:
+      type: object
+      required: [kind, value, actor, created_at]
+      properties:
+        kind: { type: string }
+        value: { type: [string, "null"] }
+        actor: { type: [string, "null"] }
+        created_at: { type: [string, "null"], format: date-time }
+
+    Status:
+      type: object
+      required:
+        [feed_count, item_count, last_fetch_time, failing_feed_count,
+         consecutive_error_count]
+      properties:
+        feed_count: { type: integer }
+        item_count: { type: integer }
+        last_fetch_time: { type: [string, "null"], format: date-time }
+        failing_feed_count: { type: integer }
+        consecutive_error_count: { type: integer }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - invalid_parameter
+                - invalid_cursor
+                - unauthorized
+                - not_found
+                - method_not_allowed
+                - unsupported_media_type
+                - payload_too_large
+                - internal_error
+            message: { type: string }
+
+  responses:
+    BadRequest:
+      description: A parameter was missing, malformed, or unrecognized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: A token is configured and the request did not present it
+      headers:
+        WWW-Authenticate:
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No such resource
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    PayloadTooLarge:
+      description: The request body exceeded the limit
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    UnsupportedMediaType:
+      description: Content-Type was not application/json
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
