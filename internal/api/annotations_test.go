@@ -328,3 +328,109 @@ func TestSeenFilterReflectsAPIWrites(t *testing.T) {
 		t.Errorf("seen=false results = %d, want 4", len(data))
 	}
 }
+
+// AnnotationExists and migration 10's unique index both compare through a
+// COALESCE, so NULL and "" are the same annotation to the database.
+// Treating them as distinct on read-back turned a successful no-op write into
+// a 500.
+func TestAddAnnotationEmptyValueMatchesNullValue(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+	path := annotationsPath("guid-0")
+
+	if status, payload := h.do(t, http.MethodPost, path, jsonType, bodySeen); status != http.StatusCreated {
+		t.Fatalf("setup POST = %d: %s", status, payload)
+	}
+
+	// Same annotation, spelled with an explicit empty value.
+	status, payload := h.do(t, http.MethodPost, path, jsonType, `{"kind":"seen","value":""}`)
+	if status != http.StatusOK {
+		t.Fatalf("POST with value:\"\" = %d, want 200: %s", status, payload)
+	}
+
+	if got := decodeArray(t, mustGet(t, h, path)); len(got) != 1 {
+		t.Errorf("annotations = %d, want 1 -- NULL and \"\" are the same row", len(got))
+	}
+}
+
+// The reverse order fails the same way if the comparison is naive.
+func TestAddAnnotationNullValueMatchesEmptyValue(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+	path := annotationsPath("guid-0")
+
+	if status, payload := h.do(t, http.MethodPost, path, jsonType,
+		`{"kind":"seen","value":""}`); status != http.StatusCreated {
+		t.Fatalf("setup POST = %d: %s", status, payload)
+	}
+
+	status, payload := h.do(t, http.MethodPost, path, jsonType, bodySeen)
+	if status != http.StatusOK {
+		t.Fatalf("POST with value omitted = %d, want 200: %s", status, payload)
+	}
+}
+
+// Bulk resolves the whole batch in one scan now. This pins the behavior --
+// tallies and ordering-independence -- so the optimization cannot regress
+// correctness.
+func TestBulkAnnotateResolvesBatchCorrectly(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	known := make([]string, 0, 5)
+	for i := range 5 {
+		known = append(known, ids.ItemID(testFeedURL, fmt.Sprintf("guid-%d", i)))
+	}
+	// Interleave misses with hits so a positional bug would show up.
+	batch := []string{
+		unknownItemID, known[0], "eeeeeeeeeeeeeeee", known[1], known[2],
+		known[3], known[4], "dddddddddddddddd",
+	}
+
+	body, err := jsonBody(map[string]any{fieldItemIDs: batch, fieldKindKey: kindSeen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, payload := h.do(t, http.MethodPost, "/api/v1/annotations", jsonType, body)
+	if status != http.StatusOK {
+		t.Fatalf("status = %d: %s", status, payload)
+	}
+
+	decoded := decodeMap(t, payload)
+	if decoded["added"] != float64(5) {
+		t.Errorf("added = %v, want 5", decoded["added"])
+	}
+	notFound, _ := decoded["not_found"].([]any)
+	if len(notFound) != 3 {
+		t.Errorf("not_found = %v, want the 3 unknown ids", decoded["not_found"])
+	}
+
+	// Every hit really got annotated, not just counted.
+	_, page := h.get(t, "/api/v1/items?seen=true&limit=10")
+	data, _, _ := decodeCollection(t, page)
+	if len(data) != 5 {
+		t.Errorf("items marked seen = %d, want 5", len(data))
+	}
+}
+
+// A repeated id inside one batch must not double-count.
+func TestBulkAnnotateHandlesDuplicateIDsInBatch(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	id := ids.ItemID(testFeedURL, "guid-0")
+	body, err := jsonBody(map[string]any{fieldItemIDs: []string{id, id, id}, fieldKindKey: kindSeen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, payload := h.do(t, http.MethodPost, "/api/v1/annotations", jsonType, body)
+	if status != http.StatusOK {
+		t.Fatalf("status = %d: %s", status, payload)
+	}
+
+	decoded := decodeMap(t, payload)
+	if decoded["added"] != float64(1) || decoded["already_present"] != float64(2) {
+		t.Errorf("tallies = (added %v, already_present %v), want (1, 2)",
+			decoded["added"], decoded["already_present"])
+	}
+}

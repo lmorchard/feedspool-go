@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -457,3 +458,73 @@ func TestOpenAPIDocumentIsServed(t *testing.T) {
 }
 
 func nullStr() sql.NullString { return sql.NullString{} }
+
+// discovered_at must be the field since/until compare against, so that
+// "poll with since = max(discovered_at)" is actually correct.
+func TestDiscoveredAtRoundTripsThroughSince(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	_, payload := h.get(t, "/api/v1/items?limit=1")
+	data, _, _ := decodeCollection(t, payload)
+	newest := data[0].(map[string]any)
+	discoveredAt, ok := newest["discovered_at"].(string)
+	if !ok {
+		t.Fatalf("discovered_at = %v, want a timestamp", newest["discovered_at"])
+	}
+
+	// Everything strictly after the newest item's discovery time: nothing.
+	_, payload = h.get(t, "/api/v1/items?since="+discoveredAt)
+	data, _, _ = decodeCollection(t, payload)
+	for _, entry := range data {
+		if entry.(map[string]any)["id"] != newest["id"] {
+			t.Errorf("since=max(discovered_at) returned an unexpected item: %v",
+				entry.(map[string]any)["id"])
+		}
+	}
+}
+
+// Real first_seen values carry microseconds. Emitting whole seconds broke the
+// documented polling loop -- max(discovered_at) came back truncated, the
+// exclusive `since` failed to exclude the boundary row, and every poll
+// re-delivered the same batch. The unit tests missed it because they seeded
+// whole-second timestamps; a run against a real database caught it.
+func TestDiscoveredAtKeepsSubSecondPrecisionForPolling(t *testing.T) {
+	h := newTestHarness(t, "")
+	if err := h.db.UpsertFeed(&database.Feed{URL: testFeedURL, Title: "Feed"}); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2026, 8, 25, 19, 56, 20, 530695000, time.UTC)
+	if err := h.db.UpsertItem(&database.Item{
+		FeedURL:   testFeedURL,
+		GUID:      "precise",
+		Title:     "Precise",
+		FirstSeen: sql.NullTime{Time: stamp, Valid: true},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, payload := h.get(t, "/api/v1/items?limit=1")
+	data, _, _ := decodeCollection(t, payload)
+	discoveredAt := data[0].(map[string]any)["discovered_at"].(string)
+
+	if !strings.Contains(discoveredAt, ".") {
+		t.Fatalf("discovered_at = %q, want sub-second precision preserved", discoveredAt)
+	}
+
+	// The whole point: feeding it straight back must exclude that row.
+	_, payload = h.get(t, "/api/v1/items?since="+url.QueryEscape(discoveredAt))
+	data, _, _ = decodeCollection(t, payload)
+	if len(data) != 0 {
+		t.Errorf("since=max(discovered_at) returned %d items, want 0", len(data))
+	}
+}
+
+func mustGet(t *testing.T, h *testHarness, path string) []byte {
+	t.Helper()
+	status, payload := h.get(t, path)
+	if status != http.StatusOK {
+		t.Fatalf("GET %s = %d: %s", path, status, payload)
+	}
+	return payload
+}

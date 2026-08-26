@@ -93,3 +93,36 @@ func TestAuthGatesReadsAndWrites(t *testing.T) {
 		t.Errorf("bulk annotate without a token = %d, want 401", status)
 	}
 }
+
+// The catch-all handles unknown paths and method mismatches. Left unguarded it
+// lets an anonymous client map the API by reading 404 against 405.
+func TestCatchAllRequiresAuthWhenTokenIsSet(t *testing.T) {
+	h := newTestHarness(t, testToken)
+
+	tests := []struct {
+		name, method, path string
+	}{
+		{"unknown path", http.MethodGet, "/api/v1/doesnotexist"},
+		{"method mismatch on a real path", http.MethodPost, pathStatus},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, payload := h.do(t, tt.method, tt.path, jsonType, "")
+			if status != http.StatusUnauthorized {
+				t.Errorf("status = %d, want 401 so the surface is not enumerable: %s", status, payload)
+			}
+		})
+	}
+}
+
+// With no token configured the catch-all still has to distinguish the two.
+func TestCatchAllStillDistinguishes404From405WhenOpen(t *testing.T) {
+	h := newTestHarness(t, "")
+
+	if status, _ := h.get(t, "/api/v1/doesnotexist"); status != http.StatusNotFound {
+		t.Errorf("unknown path = %d, want 404", status)
+	}
+	if status, _ := h.do(t, http.MethodPost, pathStatus, jsonType, "{}"); status != http.StatusMethodNotAllowed {
+		t.Errorf("method mismatch = %d, want 405", status)
+	}
+}
