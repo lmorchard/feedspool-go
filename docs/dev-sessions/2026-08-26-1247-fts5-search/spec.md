@@ -147,7 +147,7 @@ CREATE VIRTUAL TABLE items_fts USING fts5(
 Plus `AFTER INSERT` / `AFTER UPDATE` / `AFTER DELETE` triggers on `item_text`
 issuing the standard FTS5 external-content maintenance commands.
 
-Ranking is `bm25(f, 10.0, 4.0, 1.0)` over title, summary, body, ascending
+Ranking is `bm25(items_fts, 10.0, 4.0, 1.0)` over title, summary, body, ascending
 (bm25 is negative-better), tie-broken by `effective_date DESC, i.id DESC` so the
 ordering is total.
 

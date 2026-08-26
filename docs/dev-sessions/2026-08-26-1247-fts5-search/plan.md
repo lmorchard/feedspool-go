@@ -747,11 +747,11 @@ this still ships.
 // The predecessor to this file was a duplicated instr() expression in two
 // places held in step only by a comment.
 const (
-	itemsFTSJoin  = " JOIN items_fts f ON f.rowid = i.id"
-	itemsFTSMatch = "f MATCH ?"
+	itemsFTSJoin  = " JOIN items_fts ON items_fts.rowid = i.id"
+	itemsFTSMatch = "items_fts MATCH ?"
 	// Title outranks summary outranks body. Without column weights, a body
 	// mention buries an exact title match.
-	itemsFTSRank = "bm25(f, 10.0, 4.0, 1.0)"
+	itemsFTSRank = "bm25(items_fts, 10.0, 4.0, 1.0)"
 )
 
 // SortRelevance and friends name the orderings both surfaces accept.
