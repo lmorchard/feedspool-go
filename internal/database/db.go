@@ -1,19 +1,30 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/sirupsen/logrus"
-	_ "modernc.org/sqlite" // pure-Go sqlite driver, no CGO
+	modernsqlite "modernc.org/sqlite" // pure-Go sqlite driver, no CGO
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 //go:embed schema.sql
 var schemaSQL string
+
+const (
+	sqliteBusyTimeout       = 5 * time.Second
+	sqliteBusyTimeoutPragma = "PRAGMA busy_timeout = 5000"
+	sqliteRetryInterval     = 25 * time.Millisecond
+)
 
 // DB wraps a database connection with methods for feed operations.
 type DB struct {
@@ -33,15 +44,29 @@ func New(dbPath string) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+	conn.SetMaxOpenConns(1)
+	conn.SetMaxIdleConns(1)
+
+	if _, err := conn.Exec(sqliteBusyTimeoutPragma); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
+	}
 
 	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
-	if _, err := conn.Exec("PRAGMA journal_mode = WAL"); err != nil {
+	var journalMode string
+	if err := conn.QueryRow("PRAGMA journal_mode").Scan(&journalMode); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("failed to set journal mode: %w", err)
+		return nil, fmt.Errorf("failed to read journal mode: %w", err)
+	}
+	if !strings.EqualFold(journalMode, "wal") {
+		if err := enableWAL(conn, &journalMode); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("failed to set journal mode: %w", err)
+		}
 	}
 
 	if _, err := conn.Exec("PRAGMA synchronous = NORMAL"); err != nil {
@@ -49,11 +74,40 @@ func New(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to set synchronous mode: %w", err)
 	}
 
-	conn.SetMaxOpenConns(1)
-	conn.SetMaxIdleConns(1)
-
 	logrus.Debug("Database connection established")
 	return &DB{conn: conn}, nil
+}
+
+func enableWAL(conn *sql.DB, journalMode *string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), sqliteBusyTimeout)
+	defer cancel()
+	return retrySQLiteBusy(ctx, func() error {
+		return conn.QueryRowContext(ctx, "PRAGMA journal_mode = WAL").Scan(journalMode)
+	})
+}
+
+func retrySQLiteBusy(ctx context.Context, operation func() error) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := operation()
+		if err == nil || !isSQLiteBusy(err) {
+			return err
+		}
+		timer := time.NewTimer(sqliteRetryInterval)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func isSQLiteBusy(err error) bool {
+	var sqliteErr *modernsqlite.Error
+	return errors.As(err, &sqliteErr) && sqliteErr.Code()&0xff == sqlite3.SQLITE_BUSY
 }
 
 // InitSchema initializes the database schema.
@@ -91,8 +145,7 @@ func (db *DB) IsInitialized() error {
 
 	// Run any pending migrations for existing databases
 	if err := db.RunMigrations(); err != nil {
-		logrus.Warnf("Failed to run migrations: %v", err)
-		// Don't fail here - the database is still usable even if migrations fail
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	return nil
