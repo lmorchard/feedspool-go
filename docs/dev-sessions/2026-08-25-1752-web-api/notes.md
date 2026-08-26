@@ -124,11 +124,33 @@ new one.
 
 | Item | Where |
 | --- | --- |
+| Annotation filtering by kind, `actor` uniqueness, CLI/API charset asymmetry | [#62](https://github.com/lmorchard/feedspool-go/issues/62) |
 | FTS5 search — ranking, body matching | [#58](https://github.com/lmorchard/feedspool-go/issues/58) |
 | Drop `GetItems`' in-memory filter and sort | [#60](https://github.com/lmorchard/feedspool-go/issues/60) |
 | CORS | Nothing needs it; same-origin covers the site |
 | Bulk annotation *removal* | No use case; would force DELETE-with-body |
 | Raising `SetMaxOpenConns(1)` | Would change fetcher contention as a side effect |
+
+## Annotations: what I learned building on them
+
+Worth reading #41 before touching them again — it states intent the code does not.
+
+- They exist so **agents can keep tool-side state** ("I processed this"), because a
+  cursor alone forces the agent to remember its position and that breaks across
+  sessions and machines.
+- The table is generic on purpose: `kind` + optional `value` + optional `actor`.
+  Flag-style kinds (`seen`) leave `value` NULL and mean true by presence;
+  value-bearing kinds (`tag`) allow several rows per item.
+- **The renderer and `serve` ignore them, deliberately.** #41: no badges, no
+  counters, "the newspaper invariant from the README stays intact." Do not drift
+  into changing that as a side effect of something else.
+- Everything queryable is hardcoded to `kind = 'seen'` in three places. Any other
+  kind is writable but not findable at scale. `idx_item_annotations_kind` exists
+  and no query uses it — the schema anticipated the gap before the code did.
+- Migration 10 here made uniqueness `(feed_url, item_guid, kind, COALESCE(value,''))`
+  with **no `actor`**, which diverges from #41. Unreachable today because every
+  writer passes `actor = NULL`, but the API is the first surface that can set it.
+  All captured in #62.
 
 ## If you pick this up cold
 
