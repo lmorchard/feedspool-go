@@ -189,9 +189,18 @@ func itemPageConditions(page *ItemPage) (conditions []string, args []interface{}
 		conditions = append(conditions, "i.archived = ?")
 		args = append(args, *page.Archived)
 	}
+	// Since is exclusive and Until is inclusive, matching
+	// itemInDiscoveryWindow, which is what `feedspool items --since/--until`
+	// enforces. Exclusive Since is also what makes polling work: a client that
+	// sends back max(discovered_at) gets only what arrived after, instead of
+	// the whole boundary batch again on every poll.
+	//
+	// Unlike buildItemsQuery these are the final word -- there is no Go-side
+	// pass afterward -- so the comparison has to be exact rather than
+	// permissive. Rows whose date SQLite cannot parse are still kept.
 	if !page.Since.IsZero() {
 		conditions = append(conditions, fmt.Sprintf(
-			"(%[1]s IS NULL OR %[1]s >= julianday(?))", aliasedDiscoveryTimeExpression,
+			"(%[1]s IS NULL OR %[1]s > julianday(?))", aliasedDiscoveryTimeExpression,
 		))
 		args = append(args, page.Since.Format(time.RFC3339Nano))
 	}
@@ -365,6 +374,59 @@ func (db *DB) GetItemByHashID(id string) (*Item, error) {
 	}
 
 	return db.getItemByKey(matchedFeedURL, matchedGUID)
+}
+
+// GetItemsByHashIDs resolves many derived IDs in a single pass.
+//
+// The per-ID GetItemByHashID scans the whole key set, so resolving a batch one
+// ID at a time is O(batch x rows) -- a 500-ID bulk annotate against 100k items
+// is minutes of scanning, and with SetMaxOpenConns(1) it blocks every other
+// request for the duration. This does one scan regardless of batch size.
+//
+// IDs that match nothing are simply absent from the result.
+func (db *DB) GetItemsByHashIDs(hashIDs []string) (map[string]*Item, error) {
+	wanted := make(map[string]bool, len(hashIDs))
+	for _, id := range hashIDs {
+		wanted[id] = true
+	}
+
+	rows, err := db.conn.Query(`SELECT feed_url, guid FROM items`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan items for ids: %w", err)
+	}
+	defer rows.Close()
+
+	keys := make(map[string][2]string, len(hashIDs))
+	for rows.Next() {
+		var feedURL, guid string
+		if err := rows.Scan(&feedURL, &guid); err != nil {
+			return nil, fmt.Errorf("failed to scan item key: %w", err)
+		}
+		if id := ItemHashID(feedURL, guid); wanted[id] {
+			keys[id] = [2]string{feedURL, guid}
+			if len(keys) == len(wanted) {
+				break
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over item keys: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close item key rows: %w", err)
+	}
+
+	items := make(map[string]*Item, len(keys))
+	for id, key := range keys {
+		item, err := db.getItemByKey(key[0], key[1])
+		if err != nil {
+			return nil, err
+		}
+		if item != nil {
+			items[id] = item
+		}
+	}
+	return items, nil
 }
 
 func (db *DB) getItemByKey(feedURL, guid string) (*Item, error) {

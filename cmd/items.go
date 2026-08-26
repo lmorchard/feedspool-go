@@ -183,13 +183,9 @@ func outputItemsInFormat(format string, items []*database.Item, compact bool) er
 		if compact {
 			outputs := make([]compactItemOutput, 0, len(items))
 			for _, item := range items {
-				discoveredAt := item.PublishedDate
-				if item.FirstSeen.Valid && !item.FirstSeen.Time.IsZero() {
-					discoveredAt = item.FirstSeen.Time
-				}
 				outputs = append(outputs, compactItemOutput{
 					FeedURL: item.FeedURL, GUID: item.GUID, Title: item.Title, Link: item.Link,
-					PublishedDate: item.PublishedDate, DiscoveredAt: discoveredAt,
+					PublishedDate: item.PublishedDate, DiscoveredAt: item.DiscoveredAt(),
 				})
 			}
 			return encoder.Encode(outputs)

@@ -223,7 +223,7 @@ func TestBulkAnnotate(t *testing.T) {
 		t.Fatal("setup failed")
 	}
 
-	body := fmt.Sprintf(`{"item_ids":[%q,%q,"ffffffffffffffff"],"kind":"seen"}`, first, second)
+	body := fmt.Sprintf(`{"item_ids":[%q,%q,%q],"kind":"seen"}`, first, second, unknownItemID)
 	status, payload := h.do(t, http.MethodPost, "/api/v1/annotations", jsonType, body)
 	if status != http.StatusOK {
 		t.Fatalf("status = %d: %s", status, payload)
@@ -237,7 +237,7 @@ func TestBulkAnnotate(t *testing.T) {
 		t.Errorf("already_present = %v, want 1", decoded["already_present"])
 	}
 	notFound, _ := decoded["not_found"].([]any)
-	if len(notFound) != 1 || notFound[0] != "ffffffffffffffff" {
+	if len(notFound) != 1 || notFound[0] != unknownItemID {
 		t.Errorf("not_found = %v, want the one unknown id", decoded["not_found"])
 	}
 }
@@ -248,7 +248,7 @@ func TestBulkAnnotateUnknownIDsDoNotFailTheRequest(t *testing.T) {
 	h := newTestHarness(t, "")
 	h.seed(t)
 
-	body := `{"item_ids":["ffffffffffffffff","eeeeeeeeeeeeeeee"],"kind":"seen"}`
+	body := fmt.Sprintf(`{"item_ids":[%q,"eeeeeeeeeeeeeeee"],"kind":"seen"}`, unknownItemID)
 	status, payload := h.do(t, http.MethodPost, "/api/v1/annotations", jsonType, body)
 	if status != http.StatusOK {
 		t.Fatalf("status = %d, want 200: %s", status, payload)
@@ -272,7 +272,7 @@ func TestBulkAnnotateRejectsEmptyAndOversizedBatches(t *testing.T) {
 	for i := range oversized {
 		oversized[i] = fmt.Sprintf("%016x", i)
 	}
-	encoded, err := json.Marshal(map[string]any{"item_ids": oversized, "kind": "seen"})
+	encoded, err := json.Marshal(map[string]any{fieldItemIDs: oversized, "kind": "seen"})
 	if err != nil {
 		t.Fatal(err)
 	}

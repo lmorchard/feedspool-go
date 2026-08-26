@@ -69,7 +69,7 @@ feedspool init
 echo "https://example.com/feed.xml" > feeds.txt
 feedspool fetch --format text --filename feeds.txt
 feedspool render --feeds feeds.txt --format text
-feedspool serve   # http://localhost:8080
+feedspool serve   # http://localhost:8889
 ```
 
 `feedspool --help` and `feedspool <subcommand> --help` show inline reference.
@@ -79,7 +79,7 @@ Serving the JSON API alongside the site, for scripts and other tools:
 
 ```bash
 feedspool serve --api --bind 127.0.0.1
-curl -s 'localhost:8080/api/v1/items?limit=5&seen=false' | jq '.data[].title'
+curl -s 'localhost:8889/api/v1/items?limit=5&seen=false' | jq '.data[].title'
 ```
 
 It is off unless you pass `--api`, and unauthenticated unless you set a token.
@@ -92,7 +92,7 @@ Building several sites from a directory of feed lists:
 mkdir opml
 # drop tech.opml, comics.opml, news.txt … in there
 feedspool build --feeds-dir ./opml
-feedspool serve   # index at http://localhost:8080 linking one site per list
+feedspool serve   # index at http://localhost:8889 linking one site per list
 ```
 
 ## Docker

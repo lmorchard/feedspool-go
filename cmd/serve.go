@@ -102,18 +102,24 @@ func runServe(_ *cobra.Command, _ []string) error {
 	// Create and start server
 	srv := server.NewServer(serveConfig, db)
 
-	// Start server in goroutine
+	// Start the server in a goroutine and report a startup failure back here
+	// rather than calling os.Exit from inside it -- exiting there would skip
+	// the deferred db.Close() and leave the WAL unmerged.
+	startupFailed := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil {
-			logrus.WithError(err).Error("Server failed to start")
-			os.Exit(1)
+			startupFailed <- err
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Wait for an interrupt signal or a server that never came up
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	select {
+	case err := <-startupFailed:
+		return err
+	case <-quit:
+	}
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)

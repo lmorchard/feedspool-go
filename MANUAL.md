@@ -51,7 +51,7 @@ feedspool init                                    # create feeds.db
 echo "https://example.com/feed.xml" > feeds.txt   # subscribe
 feedspool fetch --format text --filename feeds.txt
 feedspool render --feeds feeds.txt --format text
-feedspool serve                                   # http://localhost:8080
+feedspool serve                                   # http://localhost:8889
 ```
 
 With a `feedspool.yaml` configuring `feedlist.format` and `feedlist.filename`,
@@ -101,7 +101,7 @@ render:
   feeds_per_page: 25        # 0 disables pagination
 
 serve:
-  port: 8080
+  port: 8889
   bind: ""                  # Listen address; "" is all interfaces
   dir: ./build
   api:
@@ -123,9 +123,8 @@ purge:
   min_items_keep: 10        # Keep at least N items per feed regardless of age
 ```
 
-Note: `serve.port: 8080` is the bare CLI default. The Docker image ships with
-a generated config that uses port `8889` instead; see
-[Docker Reference](#docker-reference).
+Note: `8889` is the default port for both the bare CLI and the Docker image;
+see [Docker Reference](#docker-reference).
 
 ## Global Flags
 
@@ -559,7 +558,7 @@ Run a development HTTP server over the rendered site.
 
 | Flag | Default | Description |
 |---|---|---|
-| `--port` | `8080` | TCP port to listen on |
+| `--port` | `8889` | TCP port to listen on |
 | `--bind` | `""` | Address to listen on; `""` is all interfaces, `127.0.0.1` is this machine only |
 | `--dir` | `./build` | Directory to serve |
 | `--api` | false | Mount the JSON API at `/api/v1/` |
@@ -734,7 +733,7 @@ the collection: `?url=` on feeds, `?link=` on items.
 ### Reading items
 
 ```bash
-curl -s 'localhost:8080/api/v1/items?limit=20&seen=false' | jq '.data[].title'
+curl -s 'localhost:8889/api/v1/items?limit=20&seen=false' | jq '.data[].title'
 ```
 
 | Parameter | Values | Default |
@@ -763,7 +762,14 @@ Three of these have sharp edges worth knowing:
   `first_seen`, falling back to `published_date`. This matches
   `feedspool items --since`, and it is what you want for polling: feeds
   routinely backdate `published_date`, so a publication-date filter silently
-  misses backdated arrivals.
+  misses backdated arrivals. The `discovered_at` field on every item is
+  exactly this value, so `since = max(discovered_at)` is a correct way to ask
+  "what is new since I last looked." **`since` is exclusive and `until` is
+  inclusive**, matching `feedspool items`, which is what makes that polling
+  pattern return only new items rather than the whole boundary batch again
+  every time. Note that items are *ordered* by the opposite precedence
+  (`published_date` falling back to `first_seen`), so `discovered_at` is a
+  polling key, not a sort key.
 - **`q` matches titles only**, not body or summary — the same limitation as
   `feedspool items --search`. Deliberately identical rather than a second,
   subtly different search. Tracked in
@@ -811,7 +817,7 @@ Paging through everything:
 ```bash
 cursor=""
 while :; do
-  page=$(curl -s "localhost:8080/api/v1/items?limit=100${cursor:+&cursor=$cursor}")
+  page=$(curl -s "localhost:8889/api/v1/items?limit=100${cursor:+&cursor=$cursor}")
   echo "$page" | jq -r '.data[].link'
   cursor=$(echo "$page" | jq -r '.next_cursor // empty')
   [ -n "$cursor" ] || break
@@ -824,16 +830,16 @@ done
 # Mark one item seen. 201 if created, 200 if it was already there.
 curl -s -X POST -H 'Content-Type: application/json' \
   -d '{"kind":"seen"}' \
-  localhost:8080/api/v1/items/9f2c4a1be7d03518/annotations
+  localhost:8889/api/v1/items/9f2c4a1be7d03518/annotations
 
 # Mark a whole page seen in one call.
 curl -s -X POST -H 'Content-Type: application/json' \
   -d '{"item_ids":["9f2c...","1a4b..."],"kind":"seen"}' \
-  localhost:8080/api/v1/annotations
+  localhost:8889/api/v1/annotations
 # → {"added":12,"already_present":3,"not_found":[]}
 
 # Unmark. 204 whether or not anything matched.
-curl -s -X DELETE localhost:8080/api/v1/items/9f2c4a1be7d03518/annotations/seen
+curl -s -X DELETE localhost:8889/api/v1/items/9f2c4a1be7d03518/annotations/seen
 ```
 
 Adding is idempotent — the same annotation twice writes one row.

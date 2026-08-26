@@ -82,7 +82,7 @@ func TestAuthGatesReadsAndWrites(t *testing.T) {
 	h := newTestHarness(t, testToken)
 	h.seed(t)
 
-	for _, path := range []string{"/api/v1/items", "/api/v1/feeds", "/api/v1/status", "/api/v1/openapi.yaml"} {
+	for _, path := range []string{"/api/v1/items", "/api/v1/feeds", pathStatus, "/api/v1/openapi.yaml"} {
 		if status, _, _ := h.getWithAuth(t, path, ""); status != http.StatusUnauthorized {
 			t.Errorf("%s without a token = %d, want 401", path, status)
 		}

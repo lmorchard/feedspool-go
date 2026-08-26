@@ -17,12 +17,23 @@ import (
 // makes the field list dynamic, and omitempty cannot express "present but
 // null" versus "absent".
 
+// Timestamps are emitted with nanosecond precision, not whole seconds.
+//
+// first_seen is stored with sub-second precision (formatDatabaseTime writes
+// RFC3339Nano), so truncating to seconds would break the documented polling
+// pattern: a client sending back max(discovered_at) as an exclusive `since`
+// would hand us 19:56:20Z for a row actually discovered at 19:56:20.530695Z,
+// the comparison would not exclude it, and every poll would re-deliver the
+// whole boundary batch. Go's RFC3339Nano drops trailing zeros, so whole-second
+// values still render as plain RFC3339.
+const timestampLayout = time.RFC3339Nano
+
 // rfc3339OrNull renders a time as an RFC3339 string, or null if it is unset.
 func rfc3339OrNull(timestamp time.Time) any {
 	if timestamp.IsZero() {
 		return nil
 	}
-	return timestamp.UTC().Format(time.RFC3339)
+	return timestamp.UTC().Format(timestampLayout)
 }
 
 // nullTimeOrNull renders a nullable column. A NullTime holding the zero value
@@ -32,7 +43,7 @@ func nullTimeOrNull(value sql.NullTime) any {
 	if !value.Valid || value.Time.IsZero() {
 		return nil
 	}
-	return value.Time.UTC().Format(time.RFC3339)
+	return value.Time.UTC().Format(timestampLayout)
 }
 
 func nullStringOrNull(value sql.NullString) any {
@@ -61,8 +72,10 @@ func itemDTO(
 		"summary":        item.Summary,
 		"published_date": rfc3339OrNull(item.PublishedDate),
 		"first_seen":     nullTimeOrNull(item.FirstSeen),
-		"discovered_at":  rfc3339OrNull(item.EffectiveDate()),
-		fieldArchived:    item.Archived,
+		// Discovery time, not the ordering key -- this is the field since/until
+		// compare against, so max(discovered_at) is a valid next `since`.
+		"discovered_at": rfc3339OrNull(item.DiscoveredAt()),
+		fieldArchived:   item.Archived,
 	}
 
 	if include.has(includeContent) {
@@ -131,7 +144,7 @@ func parseAnnotationTime(raw string) any {
 	// The layouts CURRENT_TIMESTAMP and Go's writers produce.
 	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05"} {
 		if parsed, err := time.Parse(layout, raw); err == nil {
-			return parsed.UTC().Format(time.RFC3339)
+			return parsed.UTC().Format(timestampLayout)
 		}
 	}
 	return raw

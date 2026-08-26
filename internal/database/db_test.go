@@ -167,7 +167,13 @@ func TestIsInitializedReturnsMigrationFailure(t *testing.T) {
 	if _, err := db.conn.Exec("DROP TABLE items"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.conn.Exec("DELETE FROM schema_migrations WHERE version = ?", migrationVersion9); err != nil {
+	// Un-record every migration from 9 onward, not just 9. The version is read
+	// as MAX(version), so deleting one row in the middle leaves the recorded
+	// version untouched and nothing pending -- which made this test silently
+	// stop testing anything the moment migration 10 was added.
+	if _, err := db.conn.Exec(
+		"DELETE FROM schema_migrations WHERE version >= ?", migrationVersion9,
+	); err != nil {
 		t.Fatal(err)
 	}
 

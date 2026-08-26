@@ -175,15 +175,20 @@ func (s *Server) handleBulkAnnotate(w http.ResponseWriter, r *http.Request) {
 	value := optionalNullString(request.Value)
 	actor := optionalNullString(request.Actor)
 
+	// One scan for the whole batch. Resolving IDs one at a time would scan the
+	// key set once per ID, and with SetMaxOpenConns(1) that blocks every other
+	// request for the duration.
+	items, err := s.cfg.DB.GetItemsByHashIDs(request.ItemIDs)
+	if err != nil {
+		writeInternalError(w, err, "resolve items")
+		return
+	}
+
 	added, alreadyPresent := 0, 0
 	notFound := []string{}
 	for _, id := range request.ItemIDs {
-		item, err := s.cfg.DB.GetItemByHashID(id)
-		if err != nil {
-			writeInternalError(w, err, "get item")
-			return
-		}
-		if item == nil {
+		item, found := items[id]
+		if !found {
 			// A miss lands in the tally rather than failing the whole call.
 			notFound = append(notFound, id)
 			continue
@@ -269,9 +274,20 @@ func optionalNullString(value *string) sql.NullString {
 	return sql.NullString{String: *value, Valid: true}
 }
 
+// nullStringsEqual compares annotation values the way the database does.
+//
+// AnnotationExists and migration 10's unique index both compare through
+// a COALESCE, so a NULL value and an empty string are the *same*
+// annotation as far as storage is concerned. Comparing them as distinct here
+// meant that POSTing {"value":""} against an existing NULL-valued row found no
+// match on read-back and returned a 500, even though everything had worked.
 func nullStringsEqual(a, b sql.NullString) bool {
-	if a.Valid != b.Valid {
-		return false
+	return coalesceValue(a) == coalesceValue(b)
+}
+
+func coalesceValue(value sql.NullString) string {
+	if !value.Valid {
+		return ""
 	}
-	return !a.Valid || a.String == b.String
+	return value.String
 }

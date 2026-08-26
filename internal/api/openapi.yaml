@@ -178,13 +178,14 @@ paths:
         - name: since
           in: query
           description: |
-            RFC3339. Filters on discovery time (`first_seen`, falling back to
-            `published_date`), not publication date, because feeds routinely
-            backdate `published_date`.
+            RFC3339. Exclusive. Filters on discovery time (`first_seen`,
+            falling back to `published_date`), not publication date, because
+            feeds routinely backdate `published_date`. Exclusive so that
+            polling with `since = max(discovered_at)` returns only what is new.
           schema: { type: string, format: date-time }
         - name: until
           in: query
-          description: RFC3339, on discovery time.
+          description: RFC3339, on discovery time. Inclusive.
           schema: { type: string, format: date-time }
         - name: seen
           in: query
@@ -440,7 +441,13 @@ components:
         discovered_at:
           type: [string, "null"]
           format: date-time
-          description: The sort key -- published_date falling back to first_seen.
+          description: |
+            When this spool first saw the item: first_seen, falling back to
+            published_date. This is the field `since` and `until` compare
+            against, so `since = max(discovered_at)` is a correct way to poll
+            for what is new. Note this is *not* the ordering key -- ordering
+            uses published_date falling back to first_seen, the opposite
+            precedence.
         archived: { type: boolean }
         content:
           type: string

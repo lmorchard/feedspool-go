@@ -93,15 +93,21 @@ func (s *Server) Handler() http.Handler {
 	// Registering this catch-all costs us ServeMux's automatic 405: with a
 	// pattern matching every method at the prefix, a method mismatch on a real
 	// route falls through to here instead. pathProbe tells the two cases apart.
+	//
+	// It goes through requireAuth like every real route: without that, an
+	// unauthenticated client could probe which paths and methods exist by
+	// reading 404 against 405.
 	probe := pathProbe()
-	mux.HandleFunc(PathPrefix, func(w http.ResponseWriter, r *http.Request) {
-		if _, pattern := probe.Handler(r); pattern != "" {
-			writeError(w, http.StatusMethodNotAllowed, codeMethodNotAllowed,
-				"that method is not allowed on this endpoint")
-			return
-		}
-		writeError(w, http.StatusNotFound, codeNotFound, "no such endpoint")
-	})
+	mux.HandleFunc(PathPrefix, s.recoverPanic(s.requireAuth(
+		func(w http.ResponseWriter, r *http.Request) {
+			if _, pattern := probe.Handler(r); pattern != "" {
+				writeError(w, http.StatusMethodNotAllowed, codeMethodNotAllowed,
+					"that method is not allowed on this endpoint")
+				return
+			}
+			writeError(w, http.StatusNotFound, codeNotFound, "no such endpoint")
+		},
+	)))
 	return mux
 }
 
