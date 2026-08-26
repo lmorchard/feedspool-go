@@ -41,7 +41,15 @@ render:
 # HTTP server settings
 serve:
   port: 8080        # Default HTTP server port
+  bind: ""          # Listen address; "" is all interfaces, "127.0.0.1" is this machine only
   dir: "./build"    # Default directory to serve
+  api:
+    enabled: false  # Mount the JSON API at /api/v1/
+    # Bearer token required on every API request. Leave empty to disable auth.
+    # Prefer the FEEDSPOOL_API_TOKEN environment variable over writing it here.
+    # There is no --api-token flag on purpose: a token passed on the command
+    # line shows up in ps output.
+    token: ""
 
 # Purge settings
 purge:

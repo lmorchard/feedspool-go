@@ -21,7 +21,7 @@ brainstorm still stands; what follows are adaptations to code that now exists.
 | `busy_timeout` **removed from scope** | Already fixed by open PR [#59](https://github.com/lmorchard/feedspool-go/pull/59) against issue #57. Doing it here would conflict. |
 | Migration `7` → **`10`** | `main` is at `maxMigrationVersion = 9`. |
 | Added `GET /api/v1/status` | `GetSpoolStatus` and `FeedSummary` now exist with JSON tags; matching `feedspool status` is nearly free. |
-| New caveat: **legacy timestamp formats** | See "Pagination and the timestamp problem" below. This is the one place the design had to bend. |
+| Cursor carries a `date_rank` component | Keeps rows with a NULL or unparseable effective date in one deterministic block instead of scattered through the ordering. See "Pagination and the `GetItems` path". |
 
 ## Overview
 
@@ -314,32 +314,38 @@ composite matters: feeds routinely stamp many items with an identical
 timestamp, and a date-only cursor loses every row in the tie. The query uses
 SQLite row-value comparison.
 
-### Pagination and the timestamp problem
+### Pagination and the `GetItems` path
 
 `GetItems` cannot back this. When `Since` or `Until` is set it loads every
 matching row, filters and sorts in Go, then truncates — an in-memory full scan
 with no stable cursor position. The API therefore needs its own repository
 method rather than reusing it.
 
-That Go-side pass exists for a reason worth understanding before replacing it.
-`parseDatabaseTime` accepts five distinct layouts, including Go's default
-`2006-01-02 15:04:05.999999999 -0700 MST` and a bare `2006-01-02`. SQLite's
-`julianday()` understands none of those, returning NULL. The existing SQL is
-written `(expr IS NULL OR expr >= julianday(?))` — keep anything SQLite can't
-parse — and Go re-filters afterward to get the right answer.
+An earlier draft of this spec claimed stored timestamps were too inconsistent
+for SQL-side ordering. That was wrong, and the correction is worth recording.
+**Migration 9 already normalizes them**: it reads every `items.published_date`
+and `items.first_seen` through `parseDatabaseTime`, rewrites each one with
+`formatDatabaseTime` (RFC3339Nano), and then creates
+`idx_items_effective_date` and `idx_items_feed_effective_date` over
+`julianday(COALESCE(published_date, first_seen))`. On any migrated database,
+`julianday()` resolves and the ordering is indexed.
 
-So legacy rows written before `formatDatabaseTime` normalized writes to
-RFC3339Nano may be unorderable in SQL. The `date_rank` column is the concession:
-**pagination stays total and deterministic** — no row is skipped, none is
-returned twice, and the cursor always advances — but rows SQLite cannot parse
-sort as a block at the tail, ordered by `id` within it, rather than in true date
-order.
+Two small residues remain, and `date_rank` covers both cheaply:
 
-The real fix is normalizing stored timestamps in a migration, which would also
-let the CLI drop its Go-side scan. That is a separate data migration on the
-whole `items` table and does not belong in the same PR as a new API surface;
-filed as [#60](https://github.com/lmorchard/feedspool-go/issues/60). New writes are already normalized, so the affected set is
-bounded and shrinking.
+- `normalizedMigrationTime` leaves a value untouched when none of
+  `parseDatabaseTime`'s five layouts match it, so an exotic stored value can
+  still be unorderable.
+- An item with neither `published_date` nor `first_seen` has a genuinely NULL
+  effective date.
+
+`date_rank` keeps those in one deterministic block at the tail rather than
+scattered through the ordering, so **pagination stays total** — no row skipped,
+none returned twice. It costs one integer in the cursor.
+
+The Go-side filter in `GetItems` now looks vestigial given migration 9, but
+removing it is a change to CLI behavior and belongs in its own change, not
+here. Re-scoped as
+[#60](https://github.com/lmorchard/feedspool-go/issues/60).
 
 Add a new `ListItems(*ItemPage)` to `internal/database` for this. `GetItems`
 keeps its current behavior — the CLI depends on it and changing its semantics
@@ -645,7 +651,7 @@ maintain.
 | Item | Why |
 | --- | --- |
 | Ranked / full-text search | `?q=` ships in v1 as a title substring match, mirroring `--search` exactly. What is deferred is doing it *properly*: an FTS5 virtual table, a migration, index upkeep on every upsert, `bm25()` ranking, and body-content matching. Tracked in #58, which also has to solve ranking-vs-keyset-cursor. |
-| Normalizing stored timestamps | See "Pagination and the timestamp problem". A data migration over the whole `items` table; would also let the CLI drop its Go-side filter and sort. Tracked in #60. |
+| Removing `GetItems`' Go-side filter and sort | Migration 9 already normalized stored timestamps and indexed the effective-date expression, so the in-memory pass is likely vestigial. Removing it changes CLI behavior and belongs in its own change. Tracked in #60. |
 | CORS | Same-origin covers the rendered site. Nothing needs it yet. |
 | Bulk annotation removal | No real use case; would force `DELETE`-with-body or an RPC-shaped endpoint. |
 | Raising `SetMaxOpenConns` | Would change fetcher contention behavior as a side effect. |
