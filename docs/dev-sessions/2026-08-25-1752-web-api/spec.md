@@ -2,6 +2,27 @@
 
 Closes the design half of [#28](https://github.com/lmorchard/feedspool-go/issues/28).
 
+## Revision 2 — rebased onto current `main`
+
+The first draft was written against a `main` that was three commits stale.
+[#53](https://github.com/lmorchard/feedspool-go/pull/53),
+[#54](https://github.com/lmorchard/feedspool-go/pull/54), and
+[#55](https://github.com/lmorchard/feedspool-go/pull/55) had already landed, and
+two of them move things this design depends on. Every decision from the
+brainstorm still stands; what follows are adaptations to code that now exists.
+
+| Changed | Why |
+| --- | --- |
+| `q=` **is in v1** after all | `ItemFilter.Search` already ships as `instr(lower(title), lower(?))` behind `feedspool items --search`. The API exposing it is now a consistency requirement, not scope creep. #58 stays open for FTS5. |
+| `first_seen_since` **dropped** | `--since`/`--until` already filter on *discovery time*, not `published_date`. The parameter I proposed is what `since` already does. Exposing both would be two names for one behavior. |
+| Sort key is **effective date**, not `published_date` | Ordering is `COALESCE(published_date, first_seen)`. Scraped items (#55) deliberately leave `published_date` NULL, so a `published_date` cursor would mis-sort every scrape feed. |
+| Item DTO gains `discovered_at`; `published_date` is **nullable** | Same reason. `--compact` already established `discovered_at` as the name. |
+| Feed DTO gains `type`, `scrape_selector` | New columns from #55. |
+| `busy_timeout` **removed from scope** | Already fixed by open PR [#59](https://github.com/lmorchard/feedspool-go/pull/59) against issue #57. Doing it here would conflict. |
+| Migration `7` → **`10`** | `main` is at `maxMigrationVersion = 9`. |
+| Added `GET /api/v1/status` | `GetSpoolStatus` and `FeedSummary` now exist with JSON tags; matching `feedspool status` is nearly free. |
+| New caveat: **legacy timestamp formats** | See "Pagination and the timestamp problem" below. This is the one place the design had to bend. |
+
 ## Overview
 
 `feedspool serve` today is a static file server with no database handle. This
@@ -98,11 +119,19 @@ RFC3339 string. Nullable columns become nullable JSON.
   "summary": "A short summary.",
   "published_date": "2026-08-20T14:02:00Z",
   "first_seen": "2026-08-21T09:00:00Z",
+  "discovered_at": "2026-08-21T09:00:00Z",
   "archived": false
 }
 ```
 
-`first_seen` is `null` when unset.
+`published_date` and `first_seen` are both nullable. Scraped feeds (`type:
+"scrape"`) deliberately leave `published_date` unset so that `first_seen`
+controls ordering, so a client must not assume it is present.
+
+`discovered_at` is the derived sort key — `published_date` falling back to
+`first_seen`, matching `Item.EffectiveDate()` and the `discovered_at` field the
+CLI's `--compact` output already emits. It is `null` only when both underlying
+columns are unusable.
 
 ### Feed
 
@@ -118,9 +147,13 @@ RFC3339 string. Nullable columns become nullable JSON.
   "latest_item_date": "2026-08-20T14:02:00Z",
   "error_count": 0,
   "last_error": "",
-  "user_agent": ""
+  "user_agent": "",
+  "type": "rss",
+  "scrape_selector": ""
 }
 ```
+
+`type` is `rss` or `scrape`; `scrape_selector` is populated only for the latter.
 
 ### Annotation
 
@@ -171,6 +204,7 @@ the endpoint it was sent to, is a `400 invalid_parameter`.
 ```
 GET    /api/v1/                                    service root
 GET    /api/v1/openapi.yaml                        the spec, as application/yaml
+GET    /api/v1/status                              spool health, mirrors `feedspool status`
 GET    /api/v1/feeds                               list feeds
 GET    /api/v1/feeds/{feed_id}                     one feed
 GET    /api/v1/items                               list items
@@ -192,16 +226,33 @@ Service root:
 
 `feedspool_version` is `cmd.Version`, stamped at build time.
 
+`GET /api/v1/status` wraps the existing `GetSpoolStatus`:
+
+```json
+{
+  "feed_count": 142,
+  "item_count": 38217,
+  "last_fetch_time": "2026-08-25T06:00:00Z",
+  "failing_feed_count": 3,
+  "consecutive_error_count": 1
+}
+```
+
+`SpoolStatus` already carries JSON tags but marks `LastFetchTime` as `json:"-"`
+because it is a `sql.NullTime`; the DTO layer emits it as a nullable RFC3339
+string.
+
 ### Item list parameters
 
 | Parameter | Values | Default |
 | --- | --- | --- |
 | `feed_id` | 8-hex feed ID | — |
 | `feed_url` | exact feed URL | — |
+| `feed_query` | feed URL substring, case-insensitive | — |
 | `link` | exact item link | — |
-| `since` | RFC3339, on `published_date` | — |
-| `until` | RFC3339, on `published_date` | — |
-| `first_seen_since` | RFC3339, on `first_seen` | — |
+| `q` | item title substring, case-insensitive | — |
+| `since` | RFC3339, on discovery time | — |
+| `until` | RFC3339, on discovery time | — |
 | `seen` | `true` \| `false` | both |
 | `archived` | `true` \| `false` \| `any` | `false` |
 | `sort` | `newest` \| `oldest` | `newest` |
@@ -209,16 +260,19 @@ Service root:
 | `cursor` | opaque | — |
 | `include` | see above | none |
 
-`feed_id` and `feed_url` together is a `400`.
+Any two of `feed_id`, `feed_url`, and `feed_query` together is a `400`.
 
-Three of these need justification.
+**`since` and `until` filter on discovery time, not publication date.** This
+matches `feedspool items --since` exactly: discovery time is `first_seen`,
+falling back to `published_date` when `first_seen` is absent or holds the
+`0001-01-01` zero-value sentinel. It is also the semantics a polling script
+wants — feeds routinely backdate `published_date`, so "everything since my last
+poll" is only correct against discovery time.
 
-**`first_seen_since` is the correct polling primitive.** Feeds routinely backdate
-`published_date`, so "everything since my last poll" is wrong against it and
-right against `first_seen`, which is already a column on `items`. A script that
-polls on `since` will silently miss backdated arrivals. `first_seen` is
-nullable — rows where it is `NULL` are excluded whenever this filter is
-present.
+**`q` matches item titles only,** case-insensitively, by substring — identical
+to `--search`. Not body content, not summaries. Deliberately the same
+limitation as the CLI rather than a second, subtly different search; #58 will
+upgrade both at once.
 
 **`archived` defaults to `false`, which diverges from the CLI.** `feedspool
 items` includes archived rows. The API default should mean "my current feed,"
@@ -226,8 +280,9 @@ and archived means the item is no longer present upstream. The divergence is
 documented in MANUAL.md rather than quietly resolved in either direction.
 
 **`seen` is tri-state on purpose.** `database.ItemFilter` has independent `Seen`
-and `Unseen` booleans, so setting both builds a query that cannot match
-anything. One parameter makes that state unrepresentable at the API boundary.
+and `Unseen` booleans; the CLI guards the impossible combination with a runtime
+check in `validateItemsOptions`. One parameter makes the state unrepresentable
+at the API boundary instead.
 
 ### Feed list parameters
 
@@ -243,15 +298,52 @@ inside a keyset cursor for no real gain.
 
 Keyset, not offset.
 
-Items are ordered by `(published_date DESC, id DESC)` for `sort=newest` and
-ascending for `sort=oldest`. New items arrive at the head of that ordering
-constantly, so offset paging silently skips and duplicates rows mid-scan.
+Items are ordered by `(date_rank, effective_date DESC, id DESC)` for
+`sort=newest` and ascending for `sort=oldest`. New items arrive at the head of
+that ordering constantly, so offset paging silently skips and duplicates rows
+mid-scan.
 
-The cursor is a base64url-encoded, opaque composite of the sort key. For items
-that is `(published_date, id)`; for feeds it is `(url)`. The composite matters:
-feeds routinely stamp many items with an identical timestamp, and a
-date-only cursor loses every row in the tie. The query uses SQLite row-value
-comparison — `WHERE (i.published_date, i.id) < (?, ?)`.
+`effective_date` is `julianday(COALESCE(published_date, first_seen))`, the same
+expression the CLI orders by. `date_rank` is `0` when that expression is
+non-NULL and `1` when it is NULL, so unorderable rows form one deterministic
+block at the tail instead of scattering.
+
+The cursor is a base64url-encoded, opaque composite of the full sort key. For
+items that is `(date_rank, effective_date, id)`; for feeds it is `(url)`. The
+composite matters: feeds routinely stamp many items with an identical
+timestamp, and a date-only cursor loses every row in the tie. The query uses
+SQLite row-value comparison.
+
+### Pagination and the timestamp problem
+
+`GetItems` cannot back this. When `Since` or `Until` is set it loads every
+matching row, filters and sorts in Go, then truncates — an in-memory full scan
+with no stable cursor position. The API therefore needs its own repository
+method rather than reusing it.
+
+That Go-side pass exists for a reason worth understanding before replacing it.
+`parseDatabaseTime` accepts five distinct layouts, including Go's default
+`2006-01-02 15:04:05.999999999 -0700 MST` and a bare `2006-01-02`. SQLite's
+`julianday()` understands none of those, returning NULL. The existing SQL is
+written `(expr IS NULL OR expr >= julianday(?))` — keep anything SQLite can't
+parse — and Go re-filters afterward to get the right answer.
+
+So legacy rows written before `formatDatabaseTime` normalized writes to
+RFC3339Nano may be unorderable in SQL. The `date_rank` column is the concession:
+**pagination stays total and deterministic** — no row is skipped, none is
+returned twice, and the cursor always advances — but rows SQLite cannot parse
+sort as a block at the tail, ordered by `id` within it, rather than in true date
+order.
+
+The real fix is normalizing stored timestamps in a migration, which would also
+let the CLI drop its Go-side scan. That is a separate data migration on the
+whole `items` table and does not belong in the same PR as a new API surface;
+filed as [#60](https://github.com/lmorchard/feedspool-go/issues/60). New writes are already normalized, so the affected set is
+bounded and shrinking.
+
+Add a new `ListItems(*ItemPage)` to `internal/database` for this. `GetItems`
+keeps its current behavior — the CLI depends on it and changing its semantics
+as a side effect of shipping an API is the wrong trade.
 
 Clients must treat the cursor as opaque. Its internal encoding is not part of
 the v1 contract and may change.
@@ -464,7 +556,7 @@ default is the chosen posture. The warning just makes the choice visible.
 
 ## Database Changes
 
-### Migration 7 — annotation uniqueness
+### Migration 10 — annotation uniqueness
 
 `AddAnnotation` is a bare `INSERT` and `item_annotations` has no unique
 constraint, so `feedspool mark-seen <link>` twice already writes two `seen`
@@ -488,20 +580,20 @@ The migration, in one transaction:
 the CLI and API together. A new `AnnotationExists` helper backs the
 `201`-vs-`200` distinction.
 
+`main` is at `maxMigrationVersion = 9`, so this is migration 10.
 `applyMigration4WithBackfill` is the existing precedent for a transactional,
 data-touching migration; follow its shape.
 
-### `PRAGMA busy_timeout`
+### Not in scope: `busy_timeout` and `SetMaxOpenConns`
 
-`database.New` sets `journal_mode = WAL` but no `busy_timeout`. Without it, an
-API request racing a concurrent `feedspool fetch` fails immediately with
-`SQLITE_BUSY` instead of waiting. Add `PRAGMA busy_timeout = 5000`. This is a
-pure win for the CLI as well.
+The first draft added `PRAGMA busy_timeout = 5000` here. Issue #57 covers that
+exact problem and PR #59 is already open against it, so it is removed from this
+spec to avoid a conflicting change.
 
-`SetMaxOpenConns(1)` stays as it is for v1. It is a real throughput ceiling for
-a server, but the fetcher runs 32 concurrent goroutines against this connection
-setting and changing its contention behavior as a side effect of shipping an
-API is the wrong trade. Noted as a follow-up.
+`SetMaxOpenConns(1)` also stays as-is. It is a real throughput ceiling for a
+long-running server, but the fetcher runs 32 concurrent goroutines against this
+setting and changing its contention behavior as a side effect of shipping an API
+is the wrong trade. Noted as a follow-up.
 
 ## OpenAPI
 
@@ -531,7 +623,7 @@ maintain.
 - **Auth** — no token configured means open; token configured means `401`
   without and `200` with.
 - **Route/OpenAPI parity** — both directions.
-- **Migration 7** — seed duplicate annotations with distinct `created_at`,
+- **Migration 10** — seed duplicate annotations with distinct `created_at`,
   migrate, assert one row survives carrying the earliest timestamp, assert a
   repeat insert is a no-op.
 - **`internal/ids`** — golden values pinning known URLs to their current 8-hex
@@ -552,7 +644,8 @@ maintain.
 
 | Item | Why |
 | --- | --- |
-| Full-text search (`?q=`) | Doing it properly means an FTS5 virtual table, a migration, and index upkeep on every upsert. Doing it cheaply means `LIKE '%q%'`, which works at personal scale but sets a performance expectation the real fix would have to walk back. Own issue. |
+| Ranked / full-text search | `?q=` ships in v1 as a title substring match, mirroring `--search` exactly. What is deferred is doing it *properly*: an FTS5 virtual table, a migration, index upkeep on every upsert, `bm25()` ranking, and body-content matching. Tracked in #58, which also has to solve ranking-vs-keyset-cursor. |
+| Normalizing stored timestamps | See "Pagination and the timestamp problem". A data migration over the whole `items` table; would also let the CLI drop its Go-side filter and sort. Tracked in #60. |
 | CORS | Same-origin covers the rendered site. Nothing needs it yet. |
 | Bulk annotation removal | No real use case; would force `DELETE`-with-body or an RPC-shaped endpoint. |
 | Raising `SetMaxOpenConns` | Would change fetcher contention behavior as a side effect. |
