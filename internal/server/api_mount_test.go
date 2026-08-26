@@ -11,7 +11,10 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 )
 
-const testVersion = "test"
+const (
+	testVersion      = "test"
+	localhostURL8889 = "http://localhost:8889"
+)
 
 func newTestDB(t *testing.T) *database.DB {
 	t.Helper()
@@ -162,6 +165,30 @@ func TestMissingDirStillFailsWithoutAPI(t *testing.T) {
 	server.dropMissingStaticDir()
 	if err := server.validateConfig(); err == nil {
 		t.Error("validateConfig() = nil, want an error for a missing dir with the API off")
+	}
+}
+
+// The startup banner has to follow Bind. Printing localhost under
+// --bind 192.168.1.10 points the operator at an address the server is not
+// listening on, in exactly the case where they most need the real one.
+func TestDisplayURLFollowsBind(t *testing.T) {
+	tests := []struct {
+		name, bind, want string
+	}{
+		{"empty means all interfaces", "", localhostURL8889},
+		{"IPv4 wildcard", "0.0.0.0", localhostURL8889},
+		{"IPv6 wildcard", "::", localhostURL8889},
+		{"loopback", "127.0.0.1", "http://127.0.0.1:8889"},
+		{"specific LAN address", "192.168.1.10", "http://192.168.1.10:8889"},
+		{"IPv6 literal is bracketed", "::1", "http://[::1]:8889"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer(&Config{Port: 8889, Bind: tt.bind}, nil)
+			if got := server.displayURL(); got != tt.want {
+				t.Errorf("displayURL() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

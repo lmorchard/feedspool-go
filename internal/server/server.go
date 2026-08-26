@@ -87,13 +87,14 @@ func (s *Server) Start() error {
 		IdleTimeout:  idleTimeout * time.Second,
 	}
 
-	fmt.Printf("Starting HTTP server on http://localhost:%d\n", s.config.Port) //nolint:forbidigo // User-facing output
+	baseURL := s.displayURL()
+	fmt.Printf("Starting HTTP server on %s\n", baseURL) //nolint:forbidigo // User-facing output
 	if s.config.ServesStatic() {
 		fmt.Printf("Serving files from: %s\n", s.config.Dir) //nolint:forbidigo // User-facing output
 	}
 	if s.config.APIEnabled {
 		//nolint:forbidigo // User-facing output
-		fmt.Printf("Serving API at http://localhost:%d%s\n", s.config.Port, api.PathPrefix)
+		fmt.Printf("Serving API at %s%s\n", baseURL, api.PathPrefix)
 	}
 	fmt.Println("Press Ctrl+C to stop the server") //nolint:forbidigo // User-facing output
 
@@ -102,6 +103,22 @@ func (s *Server) Start() error {
 	}
 
 	return nil
+}
+
+// displayURL is the address to print at startup.
+//
+// It has to follow Bind rather than always saying "localhost": with
+// --bind 192.168.1.10, a printed localhost URL points somewhere the server is
+// not listening, which is exactly the case where the operator most needs the
+// real address. A wildcard bind still prints localhost, because that is a URL
+// that actually works from the machine reading the message.
+func (s *Server) displayURL() string {
+	host := s.config.Bind
+	switch host {
+	case "", "0.0.0.0", "::", "[::]":
+		host = "localhost"
+	}
+	return "http://" + net.JoinHostPort(host, strconv.Itoa(s.config.Port))
 }
 
 // Shutdown gracefully shuts down the server.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -243,15 +244,32 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, target any) bool {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
-			writeError(w, http.StatusRequestEntityTooLarge, codePayloadTooLarge, "request body is too large")
+		writeDecodeError(w, err)
+		return false
+	}
+
+	// Decode stops at the end of the first JSON value, so a body like
+	// `{"kind":"seen"} {"kind":"other"}` would otherwise be accepted with the
+	// second object silently ignored. Require that nothing but EOF follows.
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		if err == nil {
+			writeError(w, http.StatusBadRequest, codeInvalidParameter,
+				"request body must contain exactly one JSON object")
 			return false
 		}
-		writeError(w, http.StatusBadRequest, codeInvalidParameter, "request body is not valid JSON: "+err.Error())
+		writeDecodeError(w, err)
 		return false
 	}
 	return true
+}
+
+func writeDecodeError(w http.ResponseWriter, err error) {
+	var tooLarge *http.MaxBytesError
+	if errors.As(err, &tooLarge) {
+		writeError(w, http.StatusRequestEntityTooLarge, codePayloadTooLarge, "request body is too large")
+		return
+	}
+	writeError(w, http.StatusBadRequest, codeInvalidParameter, "request body is not valid JSON: "+err.Error())
 }
 
 func validateKind(kind string) error {

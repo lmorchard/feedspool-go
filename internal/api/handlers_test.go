@@ -473,14 +473,36 @@ func TestDiscoveredAtRoundTripsThroughSince(t *testing.T) {
 		t.Fatalf("discovered_at = %v, want a timestamp", newest["discovered_at"])
 	}
 
-	// Everything strictly after the newest item's discovery time: nothing.
-	_, payload = h.get(t, "/api/v1/items?since="+discoveredAt)
+	// since is exclusive, so nothing is strictly after the newest item.
+	_, payload = h.get(t, "/api/v1/items?since="+url.QueryEscape(discoveredAt))
 	data, _, _ = decodeCollection(t, payload)
-	for _, entry := range data {
-		if entry.(map[string]any)["id"] != newest["id"] {
-			t.Errorf("since=max(discovered_at) returned an unexpected item: %v",
-				entry.(map[string]any)["id"])
-		}
+	if len(data) != 0 {
+		t.Errorf("since=max(discovered_at) returned %d items, want 0", len(data))
+	}
+}
+
+// Go's time.Parse accepts an optional fractional-seconds component under the
+// RFC3339 layout, so the RFC3339Nano values the API emits parse back cleanly.
+// Pinned as a test because it looks like it should be a mismatch: the emit
+// layout and the parse layout are different constants, and it would be an easy
+// "fix" to widen the parser or narrow the formatter and break round-tripping.
+func TestSinceAcceptsTheTimestampsWeEmit(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	for _, stamp := range []string{
+		"2026-08-25T19:56:20Z",
+		"2026-08-25T19:56:20.5Z",
+		"2026-08-25T19:56:20.530695Z",
+		"2026-08-25T19:56:20.530695123Z",
+		"2026-08-25T19:56:20.530695+07:00",
+	} {
+		t.Run(stamp, func(t *testing.T) {
+			status, payload := h.get(t, "/api/v1/items?since="+url.QueryEscape(stamp))
+			if status != http.StatusOK {
+				t.Errorf("since=%s = %d, want 200: %s", stamp, status, payload)
+			}
+		})
 	}
 }
 

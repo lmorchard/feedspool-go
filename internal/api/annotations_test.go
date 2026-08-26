@@ -434,3 +434,49 @@ func TestBulkAnnotateHandlesDuplicateIDsInBatch(t *testing.T) {
 			decoded["added"], decoded["already_present"])
 	}
 }
+
+// Decode stops at the end of the first JSON value, so without an explicit
+// end-of-input check a body like `{...} {...}` is accepted with the second
+// object silently dropped.
+func TestAddAnnotationRejectsTrailingJSON(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	tests := []struct{ name, body string }{
+		{"second object", `{"kind":"seen"} {"kind":"other"}`},
+		{"trailing array", `{"kind":"seen"} []`},
+		{"trailing garbage", `{"kind":"seen"} not-json`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, payload := h.do(t, http.MethodPost, annotationsPath("guid-0"), jsonType, tt.body)
+			if status != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400: %s", status, payload)
+			}
+			assertErrorCode(t, payload, codeInvalidParameter)
+		})
+	}
+}
+
+// Trailing whitespace after a valid body is ordinary and must still be taken.
+func TestAddAnnotationAllowsTrailingWhitespace(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	status, payload := h.do(t, http.MethodPost, annotationsPath("guid-0"), jsonType,
+		"{\"kind\":\"seen\"}\n  \n")
+	if status != http.StatusCreated {
+		t.Errorf("status = %d, want 201: %s", status, payload)
+	}
+}
+
+func TestBulkAnnotateRejectsTrailingJSON(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seed(t)
+
+	status, payload := h.do(t, http.MethodPost, "/api/v1/annotations", jsonType,
+		`{"item_ids":["a"],"kind":"seen"} {"item_ids":["b"],"kind":"seen"}`)
+	if status != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400: %s", status, payload)
+	}
+}

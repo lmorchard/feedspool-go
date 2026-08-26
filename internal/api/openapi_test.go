@@ -92,6 +92,30 @@ func TestOpenAPICoversEveryRoute(t *testing.T) {
 	}
 }
 
+// Paths in the document are absolute and already carry the /api/v1/ prefix, so
+// a servers block naming that prefix as a base would make tooling compose
+// /api/v1/api/v1/... and generate clients that 404. The two have to stay
+// mutually exclusive.
+func TestOpenAPIDoesNotDoubleThePathPrefix(t *testing.T) {
+	document := string(openAPIDocument)
+
+	for line := range strings.SplitSeq(document, "\n") {
+		if strings.HasPrefix(line, "servers:") {
+			t.Fatalf("openapi.yaml declares a servers block while paths carry the %s prefix; "+
+				"tooling would compose the prefix twice", PathPrefix)
+		}
+	}
+
+	// And every documented path really is absolute, so dropping servers leaves
+	// them usable as-is.
+	for operation := range documentedOperations(t, document) {
+		_, path, _ := strings.Cut(operation, " ")
+		if !strings.HasPrefix(path, PathPrefix) {
+			t.Errorf("documented path %q does not start with %q", path, PathPrefix)
+		}
+	}
+}
+
 func TestOpenAPIDeclaresEveryErrorCode(t *testing.T) {
 	document := string(openAPIDocument)
 	for _, code := range []string{

@@ -17,9 +17,11 @@ info:
 
     Unknown query parameters are rejected with 400 rather than ignored, so a
     typo surfaces immediately instead of silently returning a default page.
-servers:
-  - url: /api/v1
-    description: Mounted on the serve command
+
+    Paths below are absolute on whatever host is running `feedspool serve`.
+    There is deliberately no `servers` block: the `/api/v1/` prefix is part of
+    the contract rather than a relocatable deployment detail, and declaring it
+    as a server base would make tooling compose `/api/v1/api/v1/...`.
 
 security:
   - bearerAuth: []
