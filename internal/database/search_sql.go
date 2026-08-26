@@ -59,12 +59,17 @@ func itemsSearchExpression(raw string) (string, error) {
 // negative-better, so relevance ascends; the effective-date and id tiebreaks
 // make the ordering total for rows that score alike.
 //
-// SortOldest is deliberately not implemented here and falls through to
-// newest-first: it is the caller's to produce, and GetItems' caller does it by
-// reversing the returned slice in Go. Do not pass SortOldest and expect this
-// function to honor it. A paginating caller cannot reverse -- it holds one page,
-// not the whole result -- so an API that grows an oldest-first option needs a
-// real DESC-to-ASC branch here rather than this fallthrough.
+// Newest-first and relevance are the only orderings this function emits.
+// SortOldest falls through to newest-first by design, and GetItems' caller
+// reverses the returned slice in Go to produce it.
+//
+// That arrangement is settled, not a gap waiting to be filled. sqlLimitClause
+// is appended after this ORDER BY, so "--sort oldest --limit 10" means "the ten
+// newest, reversed for display". Adding a real ascending branch here would
+// quietly redefine it as "the ten oldest" -- a change to existing sort
+// semantics with nothing to do with search. ListItems does not route date
+// ordering through here either; it builds its own ORDER BY and handles
+// ascending from ItemPage.Ascending. No caller is waiting on a branch here.
 func itemsOrderByClause(sortOrder string) string {
 	if sortOrder == SortRelevance {
 		return " ORDER BY " + itemsFTSRank + " ASC, " + aliasedEffectiveDateExpression + " DESC, i.id DESC"
