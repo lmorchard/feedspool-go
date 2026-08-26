@@ -478,7 +478,7 @@ func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, err 
 		return "", nil, err
 	}
 	if filter.Sort == SortRelevance && searchExpr == "" {
-		return "", nil, errRelevanceNeedsSearch
+		return "", nil, ErrRelevanceNeedsSearch
 	}
 
 	query = `

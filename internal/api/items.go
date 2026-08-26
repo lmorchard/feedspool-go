@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/search"
 )
 
+// Bound to the database constants rather than re-spelled, so a rename cannot
+// leave the two packages disagreeing about what "relevance" is called.
 const (
-	sortNewest = "newest"
-	sortOldest = "oldest"
+	sortNewest    = database.SortNewest
+	sortOldest    = database.SortOldest
+	sortRelevance = database.SortRelevance
 )
 
 // cursorError marks a parse failure as a cursor problem so the handler reports
@@ -39,6 +44,14 @@ func (s *Server) handleListItems(w http.ResponseWriter, r *http.Request) {
 
 	items, next, err := s.cfg.DB.ListItems(page)
 	if err != nil {
+		// A query with nothing to match, or a relevance sort with nothing to
+		// rank, is the caller's mistake rather than a database failure, so
+		// neither may fall through to a 500.
+		if errors.Is(err, search.ErrOnlyExclusions) ||
+			errors.Is(err, database.ErrRelevanceNeedsSearch) {
+			writeError(w, http.StatusBadRequest, codeInvalidParameter, err.Error())
+			return
+		}
 		writeInternalError(w, err, "list items")
 		return
 	}
@@ -88,6 +101,15 @@ func (s *Server) buildItemPage(query url.Values) (*database.ItemPage, includeSet
 		}
 	}
 
+	// A cursor from one ordering means nothing in another: a relevance cursor
+	// carries an offset, a date cursor carries a keyset position. Replaying the
+	// wrong one would silently return a wrong page rather than an error. The
+	// check lives here rather than in decodeItemCursor because this is where
+	// the requested sort is known.
+	if after != nil && after.Relevance != (filters.sort == sortRelevance) {
+		return nil, nil, cursorError{fmt.Errorf("cursor does not match %s=%s", paramSort, filters.sort)}
+	}
+
 	return &database.ItemPage{
 		FeedURL:   feedURL,
 		FeedQuery: feedQuery,
@@ -98,6 +120,7 @@ func (s *Server) buildItemPage(query url.Values) (*database.ItemPage, includeSet
 		Seen:      filters.seen,
 		Archived:  filters.archived,
 		Ascending: filters.ascending,
+		Sort:      filters.sort,
 		Limit:     limit,
 		After:     after,
 	}, include, nil
@@ -137,6 +160,10 @@ type itemFilters struct {
 	seen      *bool
 	archived  *bool
 	ascending bool
+	// sort is kept alongside ascending because relevance is not a direction:
+	// the cursor-mode check and the page's ordering both need to know which of
+	// the three orderings was requested, not just which way it runs.
+	sort string
 }
 
 func parseItemFilters(query url.Values) (itemFilters, error) {
@@ -168,9 +195,14 @@ func parseItemFilters(query url.Values) (itemFilters, error) {
 	if sort == "" {
 		sort = sortNewest
 	}
-	if sort != sortNewest && sort != sortOldest {
-		return filters, fmt.Errorf("%s must be %s or %s", paramSort, sortNewest, sortOldest)
+	if sort != sortNewest && sort != sortOldest && sort != sortRelevance {
+		return filters, fmt.Errorf("%s must be %s, %s or %s",
+			paramSort, sortNewest, sortOldest, sortRelevance)
 	}
+	if sort == sortRelevance && strings.TrimSpace(query.Get(paramQuery)) == "" {
+		return filters, fmt.Errorf("%s=%s requires %s", paramSort, sortRelevance, paramQuery)
+	}
+	filters.sort = sort
 	filters.ascending = sort == sortOldest
 
 	return filters, nil

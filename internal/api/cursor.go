@@ -13,11 +13,17 @@ import (
 // is detectable rather than silently misparsed into a wrong position.
 const cursorVersion = 1
 
+// Relevance and Offset are omitempty and cursorVersion stays 1 on purpose: the
+// decoder uses DisallowUnknownFields, and a cursor issued before relevance
+// existed decodes with both fields zero, which is exactly the date-mode cursor
+// it already was.
 type itemCursorPayload struct {
 	Version       int     `json:"v"`
 	DateRank      int     `json:"r"`
 	EffectiveDate float64 `json:"d"`
 	ID            int64   `json:"i"`
+	Relevance     bool    `json:"m,omitempty"`
+	Offset        int     `json:"o,omitempty"`
 }
 
 // encodeItemCursor renders a cursor as an opaque string. The encoding is
@@ -32,9 +38,11 @@ func encodeItemCursor(cursor *database.ItemCursor) string {
 		DateRank:      cursor.DateRank,
 		EffectiveDate: cursor.EffectiveDate,
 		ID:            cursor.ID,
+		Relevance:     cursor.Relevance,
+		Offset:        cursor.Offset,
 	})
 	if err != nil {
-		// The payload is four scalars; Marshal cannot fail on it.
+		// The payload is a handful of scalars; Marshal cannot fail on it.
 		return ""
 	}
 	return base64.RawURLEncoding.EncodeToString(payload)
@@ -68,6 +76,8 @@ func decodeItemCursor(encoded string) (*database.ItemCursor, error) {
 		DateRank:      payload.DateRank,
 		EffectiveDate: payload.EffectiveDate,
 		ID:            payload.ID,
+		Relevance:     payload.Relevance,
+		Offset:        payload.Offset,
 	}, nil
 }
 

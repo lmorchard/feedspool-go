@@ -35,10 +35,15 @@ const (
 	SortRelevance = "relevance"
 )
 
-// errRelevanceNeedsSearch guards the one combination the fragments above
+// ErrRelevanceNeedsSearch guards the one combination the fragments above
 // cannot express: bm25 reads the joined FTS table, and without a search there
 // is no join for it to read.
-var errRelevanceNeedsSearch = errors.New("sort by relevance requires a search query")
+//
+// Exported because the API has to tell it apart from a database failure. The
+// handler rejects sort=relevance with an empty q before ever reaching here,
+// but a query the parser reduces to nothing -- a bare "*" -- is non-empty and
+// gets through, and that is the caller's mistake rather than a 500.
+var ErrRelevanceNeedsSearch = errors.New("sort by relevance requires a search query")
 
 // itemsSearchExpression translates a raw search box into the FTS5 MATCH
 // expression the query binds. An empty result with a nil error means the query

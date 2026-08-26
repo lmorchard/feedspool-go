@@ -604,7 +604,7 @@ func TestGetItemsWithFeedAndSearchFilters(t *testing.T) {
 	// Punctuation is literal text, not syntax: "C++" reaches FTS5 quoted, so it
 	// matches nothing here instead of raising a query-syntax error the way a
 	// raw MATCH would.
-	literal, err := db.GetItems(&ItemFilter{Search: "C++"})
+	literal, err := db.GetItems(&ItemFilter{Search: searchPunctuationQuery})
 	if err != nil {
 		t.Fatalf("literal GetItems() error = %v", err)
 	}
@@ -856,6 +856,18 @@ const (
 	// searchFiller is unremarkable prose that pads a fixture so bm25 has a
 	// document length to normalize against.
 	searchFiller = "Assorted notes on other subjects entirely."
+
+	// searchPunctuationQuery is punctuation the parser must hand FTS5 as
+	// literal text rather than as syntax, and searchOnlyExclusion is a query
+	// with nothing left to match. Both surfaces have to treat them alike.
+	searchPunctuationQuery = "C++"
+	searchOnlyExclusion    = "-draft"
+
+	// Subtest names for the one-term-per-field cases, shared by the CLI and
+	// API versions of the same table.
+	caseTitle   = "title"
+	caseSummary = "summary"
+	caseBody    = "body"
 )
 
 // itemGUIDs renders the GUIDs of a result set in order, for comparison and for
@@ -917,9 +929,9 @@ func TestGetItemsSearchMatchesBodyAndSummary(t *testing.T) {
 	cases := []struct {
 		name, query, want string
 	}{
-		{"title", searchTitleTerm, searchTitleGUID},
-		{"summary", searchSummaryTerm, searchSummaryGUID},
-		{"body", searchBodyTerm, searchBodyGUID},
+		{caseTitle, searchTitleTerm, searchTitleGUID},
+		{caseSummary, searchSummaryTerm, searchSummaryGUID},
+		{caseBody, searchBodyTerm, searchBodyGUID},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1017,11 +1029,15 @@ func TestGetItemsSearchComposesWithFilters(t *testing.T) {
 	}
 }
 
-func TestGetItemsRelevanceRanksTitleAboveBody(t *testing.T) {
-	db := setupItemTextFixtureDB(t)
-	// The body match is both newer and repeats the term, so date order and an
-	// unweighted bm25 would each put it first. Only the column weights, which
-	// rate a title hit above a body hit, produce the wanted order.
+// seedRelevanceFixtures inserts two items that compete on relevanceTerm. The
+// body match is both newer and repeats the term, so date order and an
+// unweighted bm25 would each put it first. Only the column weights, which rate
+// a title hit above a body hit, produce the title-first order.
+//
+// Both GetItems and ListItems rank from these, which is the point: the two
+// surfaces have to agree about ranking as well as about matching.
+func seedRelevanceFixtures(t *testing.T, db *DB) {
+	t.Helper()
 	items := []*Item{
 		{
 			FeedURL: fixtureFeedURL, GUID: relevanceTitleGUID,
@@ -1043,6 +1059,11 @@ func TestGetItemsRelevanceRanksTitleAboveBody(t *testing.T) {
 			t.Fatalf("seeding %s: %v", item.GUID, err)
 		}
 	}
+}
+
+func TestGetItemsRelevanceRanksTitleAboveBody(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedRelevanceFixtures(t, db)
 
 	byDate, err := db.GetItems(&ItemFilter{Search: relevanceTerm})
 	if err != nil {
@@ -1067,7 +1088,7 @@ func TestGetItemsSearchRejectsOnlyExclusions(t *testing.T) {
 	db := setupItemTextFixtureDB(t)
 	seedSearchFieldFixtures(t, db)
 
-	got, err := db.GetItems(&ItemFilter{Search: "-draft"})
+	got, err := db.GetItems(&ItemFilter{Search: searchOnlyExclusion})
 	if !errors.Is(err, search.ErrOnlyExclusions) {
 		t.Fatalf("GetItems() error = %v, want %v", err, search.ErrOnlyExclusions)
 	}
@@ -1099,8 +1120,8 @@ func TestGetItemsEmptySearchExpressionAddsNoFilter(t *testing.T) {
 		{Search: "*", Sort: SortRelevance},
 		{Sort: SortRelevance},
 	} {
-		if _, err := db.GetItems(&filter); !errors.Is(err, errRelevanceNeedsSearch) {
-			t.Errorf("GetItems(%+v) error = %v, want %v", filter, err, errRelevanceNeedsSearch)
+		if _, err := db.GetItems(&filter); !errors.Is(err, ErrRelevanceNeedsSearch) {
+			t.Errorf("GetItems(%+v) error = %v, want %v", filter, err, ErrRelevanceNeedsSearch)
 		}
 	}
 }

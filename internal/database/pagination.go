@@ -40,6 +40,14 @@ type ItemCursor struct {
 	DateRank      int
 	EffectiveDate float64
 	ID            int64
+
+	// Relevance and Offset are used only by Sort == SortRelevance. A bm25
+	// ordering has no stable natural key -- the score depends on corpus
+	// statistics, so any write shifts every score -- and a keyset built on it
+	// would silently skip rows. Offset can only repeat or drop a row, which is
+	// the ordinary offset caveat and a strictly better failure.
+	Relevance bool
+	Offset    int
 }
 
 // ItemPage describes one page of an item query. A nil *bool means "no filter"
@@ -54,8 +62,12 @@ type ItemPage struct {
 	Seen      *bool
 	Archived  *bool
 	Ascending bool
-	Limit     int
-	After     *ItemCursor
+	// Sort is one of SortNewest, SortOldest or SortRelevance. Empty means
+	// SortNewest. Ascending carries the direction for the two date orderings;
+	// Sort exists because relevance is not a direction.
+	Sort  string
+	Limit int
+	After *ItemCursor
 }
 
 // FeedPage describes one page of a feed query, ordered by URL. URL is the
@@ -95,26 +107,18 @@ func (db *DB) ListItems(page *ItemPage) ([]*Item, *ItemCursor, error) {
 		limit = 1
 	}
 
-	conditions, args := itemPageConditions(page)
-	query := "SELECT " + itemSelectColumns + ", " + dateRankExpression + " AS date_rank, " +
-		aliasedEffectiveDateExpression + " AS effective_date\n\tFROM items i"
-	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
+	searchExpr, err := itemsSearchExpression(page.Search)
+	if err != nil {
+		return nil, nil, err
+	}
+	// The same guard buildItemsQuery carries, for the same reason: bm25 reads
+	// the joined FTS table, and without a search there is no join.
+	relevance := page.Sort == SortRelevance
+	if relevance && searchExpr == "" {
+		return nil, nil, ErrRelevanceNeedsSearch
 	}
 
-	direction := "DESC"
-	if page.Ascending {
-		direction = "ASC"
-	}
-	// date_rank always ascends so undated rows stay at the tail in both
-	// directions; only the date and id components flip.
-	//nolint:gosec // direction is one of two literals above; all values are bound
-	query += fmt.Sprintf(" ORDER BY date_rank ASC, effective_date %s, i.id %s", direction, direction)
-
-	// Fetch one extra row to learn whether another page exists without a
-	// second count query.
-	query += " LIMIT ?"
-	args = append(args, limit+1)
+	query, args, offset := buildItemPageQuery(page, searchExpr, limit)
 
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
@@ -122,6 +126,73 @@ func (db *DB) ListItems(page *ItemPage) ([]*Item, *ItemCursor, error) {
 	}
 	defer rows.Close()
 
+	items, cursors, err := scanItemPageRows(rows)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(items) <= limit {
+		return items, nil, nil
+	}
+	if relevance {
+		return items[:limit], &ItemCursor{Relevance: true, Offset: offset + limit}, nil
+	}
+	next := cursors[limit-1]
+	return items[:limit], &next, nil
+}
+
+// buildItemPageQuery assembles the page query and returns the offset it starts
+// from, which is zero for every ordering but relevance.
+func buildItemPageQuery(page *ItemPage, searchExpr string, limit int) (
+	query string, args []interface{}, offset int,
+) {
+	relevance := page.Sort == SortRelevance
+	conditions, args := itemPageConditions(page, searchExpr)
+	query = "SELECT " + itemSelectColumns + ", " + dateRankExpression + " AS date_rank, " +
+		aliasedEffectiveDateExpression + " AS effective_date\n\tFROM items i"
+	if searchExpr != "" {
+		query += itemsFTSJoin
+	}
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	if relevance {
+		// Shared with the CLI so the two surfaces cannot rank differently.
+		query += itemsOrderByClause(SortRelevance)
+	} else {
+		direction := "DESC"
+		if page.Ascending {
+			direction = "ASC"
+		}
+		// date_rank always ascends so undated rows stay at the tail in both
+		// directions; only the date and id components flip. direction is one of
+		// the two literals above; every value is bound.
+		query += fmt.Sprintf(" ORDER BY date_rank ASC, effective_date %s, i.id %s", direction, direction)
+	}
+
+	// Fetch one extra row to learn whether another page exists without a
+	// second count query.
+	query += " LIMIT ?"
+	args = append(args, limit+1)
+
+	// Relevance resumes by offset rather than by keyset, because a bm25 score
+	// is not a stable key: it moves with the corpus, so a keyset built on it
+	// would skip rows outright.
+	if relevance {
+		if page.After != nil {
+			offset = page.After.Offset
+		}
+		query += " OFFSET ?"
+		args = append(args, offset)
+	}
+	return query, args, offset
+}
+
+// scanItemPageRows reads a page's rows into items and their matching keyset
+// cursor positions. The cursors are meaningless in relevance mode, which
+// paginates by offset and ignores them.
+func scanItemPageRows(rows *sql.Rows) ([]*Item, []ItemCursor, error) {
 	items := []*Item{}
 	cursors := []ItemCursor{}
 	for rows.Next() {
@@ -144,16 +215,15 @@ func (db *DB) ListItems(page *ItemPage) ([]*Item, *ItemCursor, error) {
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("error iterating over items: %w", err)
 	}
-
-	if len(items) <= limit {
-		return items, nil, nil
-	}
-	next := cursors[limit-1]
-	return items[:limit], &next, nil
+	return items, cursors, nil
 }
 
-func itemPageConditions(page *ItemPage) (conditions []string, args []interface{}) {
-	if page.After != nil {
+// itemPageConditions builds the WHERE conditions for one page. searchExpr is
+// the already-parsed FTS5 expression, empty when the page carries no search.
+func itemPageConditions(page *ItemPage, searchExpr string) (conditions []string, args []interface{}) {
+	// Relevance paginates by an offset carried in the cursor, so there is no
+	// keyset position to filter on; the predicate is for the date orderings.
+	if page.After != nil && page.Sort != SortRelevance {
 		condition, cursorArgs := itemCursorCondition(page.After, page.Ascending)
 		conditions = append(conditions, condition)
 		args = append(args, cursorArgs...)
@@ -170,10 +240,11 @@ func itemPageConditions(page *ItemPage) (conditions []string, args []interface{}
 		conditions = append(conditions, "i.link = ?")
 		args = append(args, page.Link)
 	}
-	if page.Search != "" {
-		// Matches ItemFilter.Search exactly: title substring, case-insensitive.
-		conditions = append(conditions, "instr(lower(i.title), lower(?)) > 0")
-		args = append(args, page.Search)
+	if searchExpr != "" {
+		// The same fragment buildItemsQuery binds, so the CLI and the API
+		// cannot disagree about what a query matches.
+		conditions = append(conditions, itemsFTSMatch)
+		args = append(args, searchExpr)
 	}
 	if page.Seen != nil {
 		existence := "EXISTS"

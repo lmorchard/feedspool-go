@@ -2,9 +2,13 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/search"
 )
 
 const (
@@ -198,6 +202,32 @@ func TestListItemsPagesThroughUndatedBlock(t *testing.T) {
 	}
 }
 
+// seedRelevanceCorpus inserts count items that all match relevanceTerm, with
+// the term in the title of every other one and repeated a varying number of
+// times in the body, so the bm25 ordering is neither the insertion order nor
+// the date order.
+func seedRelevanceCorpus(t *testing.T, db *DB, count int) {
+	t.Helper()
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := range count {
+		title := fmt.Sprintf("Dispatch %03d", i)
+		if i%2 == 0 {
+			title = fmt.Sprintf("%s digest %03d", relevanceTerm, i)
+		}
+		if err := db.UpsertItem(&Item{
+			FeedURL:       fixtureFeedURL,
+			GUID:          fmt.Sprintf("relevance-%03d", i),
+			Title:         title,
+			Link:          fmt.Sprintf("https://example.com/r/%03d", i),
+			Summary:       "<p>" + searchFiller + "</p>",
+			Content:       "<div>" + strings.Repeat(relevanceTerm+" ", 1+i%3) + searchFiller + "</div>",
+			PublishedDate: base.Add(time.Duration(i) * time.Hour),
+		}); err != nil {
+			t.Fatalf("seeding relevance corpus: %v", err)
+		}
+	}
+}
+
 func TestListItemsFiltersBySearch(t *testing.T) {
 	db := setupTestDB(t)
 	seedItems(t, db, paginationTestFeed, 5)
@@ -209,6 +239,140 @@ func TestListItemsFiltersBySearch(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].GUID != "guid-003" {
 		t.Errorf("search returned %d items, want exactly guid-003", len(items))
+	}
+}
+
+// The API's search used to be a title substring. It is now the same FTS5
+// expression the CLI runs, so it reaches the summary and the body too.
+func TestListItemsSearchMatchesBodyAndSummary(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	cases := []struct {
+		name, query, want string
+	}{
+		{caseTitle, searchTitleTerm, searchTitleGUID},
+		{caseSummary, searchSummaryTerm, searchSummaryGUID},
+		{caseBody, searchBodyTerm, searchBodyGUID},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			items, _, err := db.ListItems(&ItemPage{Limit: 10, Search: tc.query})
+			if err != nil {
+				t.Fatalf("ListItems(%q) error = %v", tc.query, err)
+			}
+			if itemGUIDs(items) != tc.want {
+				t.Errorf("ListItems(%q) = [%s], want [%s]", tc.query, itemGUIDs(items), tc.want)
+			}
+		})
+	}
+	integrityCheck(t, db)
+}
+
+func TestListItemsRelevanceRanksTitleAboveBody(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedRelevanceFixtures(t, db)
+
+	byDate, _, err := db.ListItems(&ItemPage{Limit: 10, Search: relevanceTerm})
+	if err != nil {
+		t.Fatalf("ListItems() error = %v", err)
+	}
+	if want := relevanceBodyGUID + "," + relevanceTitleGUID; itemGUIDs(byDate) != want {
+		t.Fatalf("newest ListItems() = [%s], want [%s]; the fixture must rank differently by date",
+			itemGUIDs(byDate), want)
+	}
+
+	ranked, _, err := db.ListItems(&ItemPage{Limit: 10, Search: relevanceTerm, Sort: SortRelevance})
+	if err != nil {
+		t.Fatalf("relevance ListItems() error = %v", err)
+	}
+	if want := relevanceTitleGUID + "," + relevanceBodyGUID; itemGUIDs(ranked) != want {
+		t.Errorf("relevance ListItems() = [%s], want [%s]; bm25 column weights rank a title hit above a body hit",
+			itemGUIDs(ranked), want)
+	}
+}
+
+// Relevance paginates by an offset carried in the cursor rather than by a
+// keyset, because bm25 scores shift with every write and so make no stable
+// key. Absent writes, the totality property is the same: every row exactly
+// once, in the same order a single unpaged query would give.
+func TestListItemsRelevancePagesByOffsetWithoutGapsOrRepeats(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedRelevanceCorpus(t, db, 25)
+
+	oneShot, next, err := db.ListItems(&ItemPage{Limit: 100, Search: relevanceTerm, Sort: SortRelevance})
+	if err != nil {
+		t.Fatalf("ListItems() error = %v", err)
+	}
+	if next != nil {
+		t.Fatalf("unpaged ListItems() returned a cursor; the fixture is bigger than expected")
+	}
+	if len(oneShot) != 25 {
+		t.Fatalf("unpaged ListItems() = %d items, want 25", len(oneShot))
+	}
+
+	paged := drainItems(t, db, &ItemPage{Limit: 10, Search: relevanceTerm, Sort: SortRelevance})
+	if itemGUIDs(paged) != itemGUIDs(oneShot) {
+		t.Errorf("paged relevance = [%s], want the unpaged [%s]", itemGUIDs(paged), itemGUIDs(oneShot))
+	}
+}
+
+// The offset lives in the cursor, not in the caller, so a client that only
+// echoes the token back still advances.
+func TestListItemsRelevanceCursorCarriesTheOffset(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedRelevanceCorpus(t, db, 25)
+
+	page := &ItemPage{Limit: 10, Search: relevanceTerm, Sort: SortRelevance}
+	_, next, err := db.ListItems(page)
+	if err != nil {
+		t.Fatalf("ListItems() error = %v", err)
+	}
+	if next == nil {
+		t.Fatal("ListItems() returned no cursor with 25 matching items and limit 10")
+	}
+	if !next.Relevance || next.Offset != 10 {
+		t.Errorf("cursor = %+v, want Relevance true and Offset 10", *next)
+	}
+
+	page.After = next
+	_, second, err := db.ListItems(page)
+	if err != nil {
+		t.Fatalf("second ListItems() error = %v", err)
+	}
+	if second == nil || second.Offset != 20 {
+		t.Errorf("second cursor = %+v, want Offset 20", second)
+	}
+}
+
+// bm25 reads the joined FTS table, so relevance without a search has nothing
+// to rank -- the same guard buildItemsQuery carries, for the same reason.
+func TestListItemsRelevanceRequiresSearch(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	// A bare "*" is a non-empty Search that the parser reduces to the empty
+	// expression, so both spellings of "relevance with nothing to rank" fail.
+	for _, page := range []ItemPage{
+		{Limit: 10, Sort: SortRelevance},
+		{Limit: 10, Sort: SortRelevance, Search: "*"},
+	} {
+		if _, _, err := db.ListItems(&page); !errors.Is(err, ErrRelevanceNeedsSearch) {
+			t.Errorf("ListItems(%+v) error = %v, want %v", page, err, ErrRelevanceNeedsSearch)
+		}
+	}
+}
+
+func TestListItemsSearchRejectsOnlyExclusions(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	items, _, err := db.ListItems(&ItemPage{Limit: 10, Search: searchOnlyExclusion})
+	if !errors.Is(err, search.ErrOnlyExclusions) {
+		t.Fatalf("ListItems() error = %v, want %v", err, search.ErrOnlyExclusions)
+	}
+	if items != nil {
+		t.Errorf("ListItems() returned %d items alongside the error, want none", len(items))
 	}
 }
 

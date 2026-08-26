@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -311,27 +312,262 @@ func TestListItemsRejectsConflictingFeedFilters(t *testing.T) {
 	assertErrorCode(t, payload, codeInvalidParameter)
 }
 
-func TestListItemsSearchMatchesTitleOnly(t *testing.T) {
+// searchPath builds an item search URL for searchTerm, with extra appended.
+func searchPath(extra string) string {
+	return pathItems + "?q=" + searchTerm + extra
+}
+
+// relevanceSuffix is the query fragment that asks for relevance ordering.
+func relevanceSuffix() string {
+	return "&" + paramSort + "=" + database.SortRelevance
+}
+
+// seedSearchable inserts count items that all mention searchTerm -- in the
+// title for every other one, in the body otherwise -- so relevance has
+// something to rank and every item is a hit.
+func (h *testHarness) seedSearchable(t *testing.T, count int) {
+	t.Helper()
+	if err := h.db.UpsertFeed(&database.Feed{
+		URL: testFeedURL, Title: testFeedName, Type: database.FeedTypeRSS,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := range count {
+		title := fmt.Sprintf("Dispatch %02d", i)
+		if i%2 == 0 {
+			title = fmt.Sprintf("%s digest %02d", searchTerm, i)
+		}
+		if err := h.db.UpsertItem(&database.Item{
+			FeedURL:       testFeedURL,
+			GUID:          fmt.Sprintf("search-%02d", i),
+			Title:         title,
+			Link:          fmt.Sprintf("https://example.com/s/%02d", i),
+			Summary:       "<p>Assorted notes on other subjects entirely.</p>",
+			Content:       "<div>" + strings.Repeat(searchTerm+" ", 1+i%3) + "notes</div>",
+			PublishedDate: base.Add(time.Duration(i) * time.Hour),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// itemIDsFrom pulls the item ids out of a decoded collection, in order.
+func itemIDsFrom(t *testing.T, data []any) []string {
+	t.Helper()
+	out := make([]string, 0, len(data))
+	for _, entry := range data {
+		item, ok := entry.(map[string]any)
+		if !ok {
+			t.Fatalf("collection entry is not an object: %v", entry)
+		}
+		id, ok := item[fieldID].(string)
+		if !ok {
+			t.Fatalf("item carries no id: %v", item)
+		}
+		out = append(out, id)
+	}
+	return out
+}
+
+// getCollection issues a request the test expects to succeed and decodes it.
+func (h *testHarness) getCollection(t *testing.T, path string) (data []any, nextCursor string) {
+	t.Helper()
+	status, payload := h.get(t, path)
+	if status != http.StatusOK {
+		t.Fatalf("GET %s status = %d: %s", path, status, payload)
+	}
+	data, nextCursor, _ = decodeCollection(t, payload)
+	return data, nextCursor
+}
+
+// Replaces TestListItemsSearchMatchesTitleOnly. Rewritten rather than deleted:
+// the old test pinned the title-substring contract, and this one is the record
+// that the contract changed deliberately.
+func TestListItemsSearchMatchesBodyAndSummary(t *testing.T) {
 	h := newTestHarness(t, "")
 	h.seed(t)
 
-	status, payload := h.get(t, "/api/v1/items?q=Article+3")
-	if status != http.StatusOK {
-		t.Fatalf("status = %d: %s", status, payload)
+	// Each query pairs a term from one field with the digit that appears only
+	// in item 3, so only that item matches all of them.
+	for _, query := range []string{"Article+3", "body+3", "summary+3"} {
+		t.Run(query, func(t *testing.T) {
+			data, _ := h.getCollection(t, pathItems+"?q="+query)
+			if len(data) != 1 {
+				t.Fatalf("q=%s results = %d, want 1", query, len(data))
+			}
+			item, ok := data[0].(map[string]any)
+			if !ok {
+				t.Fatalf("collection entry is not an object: %v", data[0])
+			}
+			if item[fieldTitle] != "Article 3" {
+				t.Errorf("q=%s matched %v, want Article 3", query, item[fieldTitle])
+			}
+		})
 	}
-	data, _, _ := decodeCollection(t, payload)
-	if len(data) != 1 {
-		t.Fatalf("results = %d, want 1", len(data))
+}
+
+// Relevance paginates by an offset carried inside the opaque cursor. Absent
+// writes, that has to keep the same totality property the keyset cursor has:
+// every match exactly once, in the order a single unpaged request gives.
+func TestListItemsRelevancePaginatesWithoutGapsOrRepeats(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	unpaged, next := h.getCollection(t, searchPath(relevanceSuffix()+"&limit=100"))
+	if next != "" {
+		t.Fatalf("unpaged request returned a cursor with only %d matches", searchCorpusSize)
+	}
+	want := itemIDsFrom(t, unpaged)
+	if len(want) != searchCorpusSize {
+		t.Fatalf("unpaged results = %d, want %d", len(want), searchCorpusSize)
 	}
 
-	// "body 3" appears in the content but not the title, so q must not match.
-	status, payload = h.get(t, "/api/v1/items?q=body+3")
-	if status != http.StatusOK {
-		t.Fatalf("status = %d: %s", status, payload)
+	var got []string
+	cursor := ""
+	for pages := 0; ; pages++ {
+		if pages > 10 {
+			t.Fatal("relevance pagination did not terminate")
+		}
+		path := searchPath(relevanceSuffix() + "&limit=10")
+		if cursor != "" {
+			path += "&" + paramCursor + "=" + url.QueryEscape(cursor)
+		}
+		data, nextCursor := h.getCollection(t, path)
+		got = append(got, itemIDsFrom(t, data)...)
+		if nextCursor == "" {
+			break
+		}
+		cursor = nextCursor
 	}
-	data, _, _ = decodeCollection(t, payload)
-	if len(data) != 0 {
-		t.Errorf("q matched content; results = %d, want 0", len(data))
+
+	if !slices.Equal(got, want) {
+		t.Errorf("paged relevance = %v, want the unpaged order %v", got, want)
+	}
+	distinct := map[string]bool{}
+	for _, id := range got {
+		if distinct[id] {
+			t.Fatalf("item %s was returned twice across a page boundary", id)
+		}
+		distinct[id] = true
+	}
+	if len(distinct) != searchCorpusSize {
+		t.Errorf("distinct ids paged = %d, want %d", len(distinct), searchCorpusSize)
+	}
+}
+
+// A cursor from one ordering means nothing in another: a relevance cursor
+// carries an offset, a date cursor carries a keyset position. Replaying the
+// wrong one has to be an error rather than a silently wrong page.
+func TestListItemsRejectsCursorFromAnotherSort(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	_, relevanceCursor := h.getCollection(t, searchPath(relevanceSuffix()+"&limit=5"))
+	_, dateCursor := h.getCollection(t, searchPath("&limit=5"))
+	if relevanceCursor == "" || dateCursor == "" {
+		t.Fatalf("cursors = (%q, %q), want both non-empty", relevanceCursor, dateCursor)
+	}
+
+	cases := []struct{ name, path string }{
+		{
+			"relevance cursor replayed as newest",
+			searchPath("&limit=5&" + paramCursor + "=" + url.QueryEscape(relevanceCursor)),
+		},
+		{
+			"date cursor replayed as relevance",
+			searchPath(relevanceSuffix() + "&limit=5&" + paramCursor + "=" + url.QueryEscape(dateCursor)),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			status, payload := h.get(t, tc.path)
+			if status != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400: %s", status, payload)
+			}
+			assertErrorCode(t, payload, codeInvalidCursor)
+		})
+	}
+}
+
+func TestListItemsRelevanceRequiresQuery(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	status, payload := h.get(t, pathItems+"?"+paramSort+"="+database.SortRelevance)
+	if status != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400: %s", status, payload)
+	}
+	assertErrorCode(t, payload, codeInvalidParameter)
+
+	// A bare "*" is a non-empty q that the parser reduces to no expression, so
+	// it slips past the check above and leaves relevance with nothing to rank.
+	// That is still the caller's mistake, not a 500.
+	status, payload = h.get(t, pathItems+"?q=*&"+paramSort+"="+database.SortRelevance)
+	if status != http.StatusBadRequest {
+		t.Fatalf("q=* status = %d, want 400: %s", status, payload)
+	}
+	assertErrorCode(t, payload, codeInvalidParameter)
+
+	// The same sort with a query is accepted, so the rejections above are about
+	// the missing query rather than about relevance not being a known ordering.
+	if data, _ := h.getCollection(t, searchPath(relevanceSuffix())); len(data) == 0 {
+		t.Error("sort=relevance with a query returned nothing")
+	}
+}
+
+// A query with nothing to match is the user's mistake, not the server's.
+func TestListItemsOnlyExclusionsIsBadRequest(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	status, payload := h.get(t, pathItems+"?q=-draft")
+	if status != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400: %s", status, payload)
+	}
+	assertErrorCode(t, payload, codeInvalidParameter)
+}
+
+// A query does not imply relevance. This is an explicit spec decision -- a
+// feed reader's search is usually "what is new about X" -- and it keeps the
+// default path on the keyset cursor rather than quietly moving every search
+// onto offset pagination. Asserting it makes a later change to the default
+// deliberate.
+func TestListItemsDefaultsToNewestWithAQuery(t *testing.T) {
+	h := newTestHarness(t, "")
+	h.seedSearchable(t, searchCorpusSize)
+
+	data, next := h.getCollection(t, searchPath("&limit=5"))
+	if len(data) != 5 {
+		t.Fatalf("results = %d, want 5", len(data))
+	}
+
+	previous := ""
+	for _, entry := range data {
+		item, ok := entry.(map[string]any)
+		if !ok {
+			t.Fatalf("collection entry is not an object: %v", entry)
+		}
+		published, ok := item["published_date"].(string)
+		if !ok {
+			t.Fatalf("item carries no published_date: %v", item)
+		}
+		if previous != "" && published >= previous {
+			t.Errorf("published_date %s follows %s; the default ordering is not newest-first",
+				published, previous)
+		}
+		previous = published
+	}
+
+	cursor, err := decodeItemCursor(next)
+	if err != nil {
+		t.Fatalf("decodeItemCursor(%q) error = %v", next, err)
+	}
+	if cursor.Relevance || cursor.Offset != 0 {
+		t.Errorf("cursor = %+v, want a keyset cursor; a query must not imply relevance", *cursor)
+	}
+	if cursor.ID == 0 {
+		t.Errorf("cursor = %+v, want a keyset position", *cursor)
 	}
 }
 
@@ -513,7 +749,7 @@ func TestSinceAcceptsTheTimestampsWeEmit(t *testing.T) {
 // whole-second timestamps; a run against a real database caught it.
 func TestDiscoveredAtKeepsSubSecondPrecisionForPolling(t *testing.T) {
 	h := newTestHarness(t, "")
-	if err := h.db.UpsertFeed(&database.Feed{URL: testFeedURL, Title: "Feed"}); err != nil {
+	if err := h.db.UpsertFeed(&database.Feed{URL: testFeedURL, Title: testFeedName}); err != nil {
 		t.Fatal(err)
 	}
 	stamp := time.Date(2026, 8, 25, 19, 56, 20, 530695000, time.UTC)
