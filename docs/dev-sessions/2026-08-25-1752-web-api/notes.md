@@ -2,7 +2,7 @@
 
 **Issue:** [#28](https://github.com/lmorchard/feedspool-go/issues/28)
 **Branch:** `feat/28-web-api` (worktree at `.claude/worktrees/issue-28-web-api`)
-**Status:** Complete and pushed for review.
+**Status:** Complete, CI green, [PR #61](https://github.com/lmorchard/feedspool-go/pull/61) open for review.
 
 ## What shipped
 
@@ -10,7 +10,8 @@ A read/write JSON API at `/api/v1/`, mounted on `serve` behind `--api`. Eleven
 endpoints, keyset pagination, optional bearer auth, an embedded OpenAPI
 document with a drift test, and manual coverage.
 
-Eight commits, one per plan task. Every one is lint-clean and green.
+Twelve commits: one per plan task, plus a rebase revision, a review-fix
+round, and a test reorganization. Every one is lint-clean and green.
 
 ## Decisions Les made
 
