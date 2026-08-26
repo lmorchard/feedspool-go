@@ -94,6 +94,31 @@ path from a method mismatch. A unit test caught that one.
 The OpenAPI drift test earned its keep immediately: it caught
 `method_not_allowed` missing from the documented error enum.
 
+## Code review round
+
+A `/code-review high` pass plus a rerun against a real database turned up eight
+things. All fixed; details in the "Address code review findings" commit.
+
+The two that matter most, both invisible to unit tests:
+
+- **`since` was inclusive; the CLI's is exclusive.** `itemInDiscoveryWindow`
+  requires `discoveredAt.After(since)`. My SQL used `>=`. Polling with
+  `max(discovered_at)` re-delivered the whole boundary batch every time.
+- **Timestamps were emitted at whole-second precision.** Real `first_seen`
+  values carry microseconds, so the `discovered_at` a client read could not
+  round-trip back into `since`. Everything now uses RFC3339Nano.
+
+Both were found by pointing the server at a copy of the real database and
+actually running the documented polling loop. The unit tests had seeded
+whole-second timestamps, so they agreed with the bug.
+
+Also worth remembering: `discovered_at` and the sort key use **opposite**
+precedence, deliberately. `DiscoveredAt()` is `first_seen ?? published_date`
+(what `since` filters on); `EffectiveDate()` is `published_date ?? first_seen`
+(what ordering uses). I had them backwards at first, and the CLI's `--compact`
+output was already right — worth checking existing definitions before writing a
+new one.
+
 ## Left undone
 
 | Item | Where |
