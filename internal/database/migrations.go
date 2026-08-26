@@ -8,16 +8,17 @@ import (
 
 const (
 	// Migration version constants.
-	migrationVersion1   = 1 // Initial schema (handled by InitSchema)
-	migrationVersion2   = 2 // Add latest_item_date column to feeds
-	migrationVersion3   = 3 // Add url_metadata table
-	migrationVersion4   = 4 // Add first_seen column to items
-	migrationVersion5   = 5 // Add user_agent column to feeds
-	migrationVersion6   = 6 // Add item_annotations table
-	migrationVersion7   = 7 // Add discovery-time query index
-	migrationVersion8   = 8 // Add feed parser type and scrape selector
-	migrationVersion9   = 9 // Add effective-date query index
-	maxMigrationVersion = migrationVersion9
+	migrationVersion1   = 1  // Initial schema (handled by InitSchema)
+	migrationVersion2   = 2  // Add latest_item_date column to feeds
+	migrationVersion3   = 3  // Add url_metadata table
+	migrationVersion4   = 4  // Add first_seen column to items
+	migrationVersion5   = 5  // Add user_agent column to feeds
+	migrationVersion6   = 6  // Add item_annotations table
+	migrationVersion7   = 7  // Add discovery-time query index
+	migrationVersion8   = 8  // Add feed parser type and scrape selector
+	migrationVersion9   = 9  // Add effective-date query index
+	migrationVersion10  = 10 // Deduplicate annotations and enforce uniqueness
+	maxMigrationVersion = migrationVersion10
 )
 
 // getMigrations returns the database migration scripts.
@@ -68,6 +69,23 @@ func getMigrations() map[int]string {
 			CREATE INDEX IF NOT EXISTS idx_items_feed_effective_date ON items(feed_url, %[1]s);`,
 			effectiveDateExpression,
 		),
+		// COALESCE(value, '') is load-bearing: SQLite treats NULLs as distinct
+		// in a unique index, so ('feed', 'guid', 'seen', NULL) would never
+		// conflict with itself and duplicate "seen" rows would still be possible.
+		migrationVersion10: `DELETE FROM item_annotations
+		WHERE rowid NOT IN (
+			SELECT rowid FROM (
+				SELECT rowid,
+					ROW_NUMBER() OVER (
+						PARTITION BY feed_url, item_guid, kind, COALESCE(value, '')
+						ORDER BY created_at ASC, rowid ASC
+					) AS row_rank
+				FROM item_annotations
+			)
+			WHERE row_rank = 1
+		);
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_item_annotations_unique
+			ON item_annotations(feed_url, item_guid, kind, COALESCE(value, ''));`,
 	}
 }
 
@@ -151,6 +169,8 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration8()
 	case migrationVersion9:
 		return db.applyMigration9()
+	case migrationVersion10:
+		return db.applyMigration10()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -452,4 +472,16 @@ func normalizedMigrationTime(value interface{}) interface{} {
 		return value
 	}
 	return formatDatabaseTime(timestamp)
+}
+
+// applyMigration10 removes duplicate annotations and adds the uniqueness index
+// that keeps them from coming back.
+//
+// AddAnnotation was a bare INSERT against a table with no unique constraint, so
+// running "feedspool mark-seen <link>" twice wrote two rows. The dedupe keeps
+// the earliest row per group so a "first seen" reading stays honest, breaking
+// ties on rowid because CURRENT_TIMESTAMP only has one-second resolution.
+func (db *DB) applyMigration10() error {
+	migrations := getMigrations()
+	return db.ApplyMigration(migrationVersion10, migrations[migrationVersion10])
 }

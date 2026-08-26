@@ -56,3 +56,7 @@ CREATE TABLE IF NOT EXISTS item_annotations (
 
 CREATE INDEX IF NOT EXISTS idx_item_annotations_lookup ON item_annotations(feed_url, item_guid, kind);
 CREATE INDEX IF NOT EXISTS idx_item_annotations_kind   ON item_annotations(kind, created_at);
+-- COALESCE keeps NULL-valued annotations from being treated as mutually
+-- distinct, which is what makes a repeated "seen" a no-op rather than a dupe.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_item_annotations_unique
+    ON item_annotations(feed_url, item_guid, kind, COALESCE(value, ''));

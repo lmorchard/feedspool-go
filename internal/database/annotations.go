@@ -15,9 +15,13 @@ type ItemAnnotation struct {
 }
 
 func (db *DB) AddAnnotation(feedURL, itemGUID, kind string, value, actor sql.NullString) error {
+	// ON CONFLICT DO NOTHING without a target matches any unique index, which
+	// is what the COALESCE(value, '') expression index from migration 10
+	// requires -- naming a target would mean restating the expression.
 	query := `
 		INSERT INTO item_annotations (feed_url, item_guid, kind, value, actor)
 		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT DO NOTHING
 	`
 	_, err := db.conn.Exec(query, feedURL, itemGUID, kind, value, actor)
 	if err != nil {
@@ -71,4 +75,22 @@ func (db *DB) GetAnnotations(feedURL, itemGUID string) ([]ItemAnnotation, error)
 	}
 
 	return annotations, nil
+}
+
+// AnnotationExists reports whether an identical annotation is already stored.
+// The API uses it to distinguish 201-on-create from 200-on-already-present,
+// which AddAnnotation alone cannot answer now that it is idempotent.
+func (db *DB) AnnotationExists(feedURL, itemGUID, kind string, value sql.NullString) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM item_annotations
+			WHERE feed_url = ? AND item_guid = ? AND kind = ?
+				AND COALESCE(value, '') = COALESCE(?, '')
+		)
+	`
+	var exists bool
+	if err := db.conn.QueryRow(query, feedURL, itemGUID, kind, value).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check annotation: %w", err)
+	}
+	return exists, nil
 }
