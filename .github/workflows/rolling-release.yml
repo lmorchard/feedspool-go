@@ -202,12 +202,13 @@ jobs:
 
     - name: Delete existing latest tag and release
       run: |
+        # Delete the release if it exists (with --cleanup-tag to delete the tag too)
+        # We do this first so the release doesn't become an orphaned draft
+        gh release delete latest --yes --cleanup-tag || true
+        
         # Delete the tag locally and remotely if it exists
         git tag -d latest || true
         git push origin :refs/tags/latest || true
-        
-        # Delete the release if it exists
-        gh release delete latest --yes || true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
