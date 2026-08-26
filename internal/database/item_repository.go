@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -382,7 +381,7 @@ type ItemFilter struct {
 
 // GetItems retrieves items with filtering options.
 func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
-	query, args, filterTimesInGo := buildItemsQuery(filter)
+	query, args := buildItemsQuery(filter)
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get items: %w", err)
@@ -399,9 +398,6 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
 		}
-		if !itemInDiscoveryWindow(&item, filter.Since, filter.Until) {
-			continue
-		}
 		items = append(items, &item)
 	}
 
@@ -409,28 +405,15 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 		return nil, fmt.Errorf("error iterating over items: %w", err)
 	}
 
-	if filterTimesInGo {
-		sort.SliceStable(items, func(i, j int) bool {
-			return items[i].EffectiveDate().After(items[j].EffectiveDate())
-		})
-		if filter.Limit > 0 && len(items) > filter.Limit {
-			items = items[:filter.Limit]
-		}
-	}
-
 	return items, nil
 }
 
-func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, filterTimesInGo bool) {
-	filterTimesInGo = !filter.Since.IsZero() || !filter.Until.IsZero()
-	fromClause := "FROM items i"
-	if filterTimesInGo {
-		fromClause += " INDEXED BY idx_items_discovery_time"
-	}
+func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}) {
 	query = `
 		SELECT i.id, i.feed_url, i.guid, i.title, i.link, i.published_date, i.first_seen,
 			i.content, i.summary, i.archived, i.item_json
-		` + fromClause + "\n"
+		FROM items i
+	`
 	var conditions []string
 
 	if filter.Unseen {
@@ -460,38 +443,21 @@ func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, filt
 		args = append(args, filter.Search)
 	}
 	if !filter.Since.IsZero() {
-		conditions = append(conditions, fmt.Sprintf(
-			"(%[1]s IS NULL OR %[1]s >= julianday(?))", discoveryTimeExpression,
-		))
-		args = append(args, filter.Since.Format(time.RFC3339Nano))
+		conditions = append(conditions, aliasedEffectiveDateExpression+" >= julianday(?)")
+		args = append(args, formatDatabaseTime(filter.Since))
 	}
 	if !filter.Until.IsZero() {
-		conditions = append(conditions, fmt.Sprintf(
-			"(%[1]s IS NULL OR %[1]s <= julianday(?))", discoveryTimeExpression,
-		))
-		args = append(args, filter.Until.Format(time.RFC3339Nano))
+		conditions = append(conditions, aliasedEffectiveDateExpression+" <= julianday(?)")
+		args = append(args, formatDatabaseTime(filter.Until))
 	}
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
 	query += " ORDER BY " + aliasedEffectiveDateExpression + " DESC"
-	if !filterTimesInGo {
-		if filter.Limit > 0 {
-			query += sqlLimitClause
-			args = append(args, filter.Limit)
-		}
+	if filter.Limit > 0 {
+		query += sqlLimitClause
+		args = append(args, filter.Limit)
 	}
-	return query, args, filterTimesInGo
-}
-
-func itemInDiscoveryWindow(item *Item, since, until time.Time) bool {
-	discoveredAt := item.PublishedDate
-	if item.FirstSeen.Valid && !item.FirstSeen.Time.IsZero() {
-		discoveredAt = item.FirstSeen.Time
-	}
-	if !since.IsZero() && !discoveredAt.After(since) {
-		return false
-	}
-	return until.IsZero() || !discoveredAt.After(until)
+	return query, args
 }

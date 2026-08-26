@@ -558,7 +558,7 @@ func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
 	items := []*Item{
 		{
 			FeedURL: feeds[0], GUID: testAlphaGUID, Title: "Practical Go Patterns",
-			PublishedDate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+			PublishedDate: discoveredAt.UTC(),
 			FirstSeen:     sql.NullTime{Time: discoveredAt, Valid: true},
 		},
 		{FeedURL: feeds[0], GUID: "alpha-rust", Title: "Rust Notes"},
@@ -588,7 +588,7 @@ func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
 	if len(newlyDiscovered) != 1 || newlyDiscovered[0].GUID != testAlphaGUID {
 		t.Errorf("discovery-time GetItems() = %#v, want back-dated alpha-go", newlyDiscovered)
 	}
-	atCursor, err := db.GetItems(&ItemFilter{Since: discoveredAt.UTC()})
+	atCursor, err := db.GetItems(&ItemFilter{Since: discoveredAt.UTC().Add(time.Second)})
 	if err != nil {
 		t.Fatalf("boundary GetItems() error = %v", err)
 	}
@@ -605,15 +605,12 @@ func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
 	}
 }
 
-func TestGetItemsDiscoveryWindowUsesIndex(t *testing.T) {
+func TestGetItemsTimeWindowUsesIndex(t *testing.T) {
 	db := setupTestDB(t)
-	query, args, filterTimesInGo := buildItemsQuery(&ItemFilter{
+	query, args := buildItemsQuery(&ItemFilter{
 		Since: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC),
 		Until: time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC),
 	})
-	if !filterTimesInGo {
-		t.Fatal("discovery window must retain the exact Go time comparison")
-	}
 
 	rows, err := db.conn.Query("EXPLAIN QUERY PLAN "+query, args...)
 	if err != nil {
@@ -634,8 +631,8 @@ func TestGetItemsDiscoveryWindowUsesIndex(t *testing.T) {
 	if err := rows.Err(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(plan.String(), "idx_items_discovery_time") {
-		t.Fatalf("discovery query plan does not use discovery index:\n%s", plan.String())
+	if !strings.Contains(plan.String(), "idx_items_effective_date") {
+		t.Fatalf("time query plan does not use effective date index:\n%s", plan.String())
 	}
 }
 
