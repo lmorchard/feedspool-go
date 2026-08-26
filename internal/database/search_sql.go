@@ -26,7 +26,9 @@ const (
 	itemsFTSRank = "bm25(items_fts, 10.0, 4.0, 1.0)"
 )
 
-// SortNewest and friends name the orderings both surfaces accept.
+// SortNewest and friends name the orderings both surfaces accept from a user.
+// They are not all orderings itemsOrderByClause emits -- see the note there
+// about SortOldest.
 const (
 	SortNewest    = "newest"
 	SortOldest    = "oldest"
@@ -56,6 +58,13 @@ func itemsSearchExpression(raw string) (string, error) {
 // itemsOrderByClause returns the ORDER BY for an item query. bm25 scores are
 // negative-better, so relevance ascends; the effective-date and id tiebreaks
 // make the ordering total for rows that score alike.
+//
+// SortOldest is deliberately not implemented here and falls through to
+// newest-first: it is the caller's to produce, and GetItems' caller does it by
+// reversing the returned slice in Go. Do not pass SortOldest and expect this
+// function to honor it. A paginating caller cannot reverse -- it holds one page,
+// not the whole result -- so an API that grows an oldest-first option needs a
+// real DESC-to-ASC branch here rather than this fallthrough.
 func itemsOrderByClause(sortOrder string) string {
 	if sortOrder == SortRelevance {
 		return " ORDER BY " + itemsFTSRank + " ASC, " + aliasedEffectiveDateExpression + " DESC, i.id DESC"

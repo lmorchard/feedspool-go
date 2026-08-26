@@ -1075,3 +1075,42 @@ func TestGetItemsSearchRejectsOnlyExclusions(t *testing.T) {
 		t.Errorf("GetItems() returned %d items alongside the error, want none", len(got))
 	}
 }
+
+func TestGetItemsEmptySearchExpressionAddsNoFilter(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	// A bare "*" is a non-empty --search that the parser reduces to the empty
+	// expression, meaning "no search filter". The query must then carry neither
+	// the FTS join nor the MATCH, and return every row.
+	everything := sortedItemGUIDs(mustGetItems(t, db, &ItemFilter{}))
+	all, err := db.GetItems(&ItemFilter{Search: "*"})
+	if err != nil {
+		t.Fatalf("GetItems() error = %v", err)
+	}
+	if sortedItemGUIDs(all) != everything {
+		t.Errorf("GetItems(%q) = [%s], want the unfiltered [%s]", "*", sortedItemGUIDs(all), everything)
+	}
+
+	// There is correspondingly nothing to rank, and the CLI's own check cannot
+	// catch this one: --search "*" is not the empty string. Both spellings of
+	// "relevance with no ranking" have to fail here instead.
+	for _, filter := range []ItemFilter{
+		{Search: "*", Sort: SortRelevance},
+		{Sort: SortRelevance},
+	} {
+		if _, err := db.GetItems(&filter); !errors.Is(err, errRelevanceNeedsSearch) {
+			t.Errorf("GetItems(%+v) error = %v, want %v", filter, err, errRelevanceNeedsSearch)
+		}
+	}
+}
+
+// mustGetItems runs a filter the test expects to succeed.
+func mustGetItems(t *testing.T, db *DB, filter *ItemFilter) []*Item {
+	t.Helper()
+	items, err := db.GetItems(filter)
+	if err != nil {
+		t.Fatalf("GetItems(%+v) error = %v", filter, err)
+	}
+	return items
+}
