@@ -15,6 +15,7 @@ For development workflow (build, lint, test), see [CLAUDE.md](CLAUDE.md).
 - [Configuration](#configuration)
 - [Global Flags](#global-flags)
 - [Subcommand Reference](#subcommand-reference)
+- [HTTP API](#http-api)
 - [Multi-Site Directory Mode](#multi-site-directory-mode)
 - [Data Model](#data-model)
 - [SQL Recipes](#sql-recipes)
@@ -101,7 +102,11 @@ render:
 
 serve:
   port: 8080
+  bind: ""                  # Listen address; "" is all interfaces
   dir: ./build
+  api:
+    enabled: false          # Mount the JSON API at /api/v1/
+    token: ""               # Bearer token; prefer FEEDSPOOL_API_TOKEN
 
 init:
   templates_dir: ./templates
@@ -555,10 +560,22 @@ Run a development HTTP server over the rendered site.
 | Flag | Default | Description |
 |---|---|---|
 | `--port` | `8080` | TCP port to listen on |
+| `--bind` | `""` | Address to listen on; `""` is all interfaces, `127.0.0.1` is this machine only |
 | `--dir` | `./build` | Directory to serve |
+| `--api` | false | Mount the JSON API at `/api/v1/` |
 
 `PORT` env var overrides the config-file value but not an explicit `--port`
 flag. Graceful shutdown on `SIGINT`/`SIGTERM` with a 5-second timeout.
+
+With `--api`, the JSON API is served alongside the static files on the same
+port. If the directory in `--dir` does not exist, `serve --api` runs API-only
+rather than failing; without `--api` a missing directory is still an error.
+
+There is deliberately no `--api-token` flag — a token passed on the command
+line shows up in `ps` output. Set `serve.api.token` in the config file or the
+`FEEDSPOOL_API_TOKEN` environment variable.
+
+See [HTTP API](#http-api) for the endpoints.
 
 This is intended for development — front it with a real web server in
 production.
@@ -648,6 +665,220 @@ feedspool version v1.2.3
 ```json
 { "version": "v1.2.3", "commit": "abc1234", "date": "2026-05-09T12:00:00Z" }
 ```
+
+## HTTP API
+
+A read/write JSON API over the feed database, mounted at `/api/v1/` by
+`feedspool serve --api`. It is off by default.
+
+```bash
+feedspool serve --api                        # API plus the static site
+feedspool serve --api --bind 127.0.0.1       # reachable only from this machine
+```
+
+The machine-readable contract lives at `/api/v1/openapi.yaml`, served by the
+binary itself. A test fails the build if it drifts from the routes.
+
+### Authentication and exposure
+
+Authentication is **off unless you configure a token**:
+
+```yaml
+serve:
+  api:
+    enabled: true
+    token: ""     # empty means no auth
+```
+
+or `FEEDSPOOL_API_TOKEN=... feedspool serve --api`. There is no `--api-token`
+flag on purpose — a token on the command line lands in `ps` output.
+
+With a token set, every request needs `Authorization: Bearer <token>`, reads
+included.
+
+`serve` binds all interfaces by default. If the API is enabled, bound
+off-loopback, and has no token, startup logs a warning: anyone who can reach
+the port can read and annotate your feeds. Use `--bind 127.0.0.1`, set a token,
+or front it with a reverse proxy.
+
+### Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/` | API and build versions |
+| `GET` | `/api/v1/openapi.yaml` | The contract |
+| `GET` | `/api/v1/status` | Spool health, mirroring `feedspool status` |
+| `GET` | `/api/v1/feeds` | List feeds |
+| `GET` | `/api/v1/feeds/{feedID}` | One feed |
+| `GET` | `/api/v1/items` | List items |
+| `GET` | `/api/v1/items/{itemID}` | One item |
+| `GET` | `/api/v1/items/{itemID}/annotations` | An item's annotations |
+| `POST` | `/api/v1/items/{itemID}/annotations` | Add an annotation |
+| `DELETE` | `/api/v1/items/{itemID}/annotations/{kind}` | Remove annotations |
+| `POST` | `/api/v1/annotations` | Add one annotation to many items |
+
+### Identifiers
+
+IDs are derived from natural keys rather than stored, so they survive a
+`purge`-then-refetch cycle that would reassign `items.id`:
+
+- **Feed ID** — first 8 hex characters of `sha256(feed_url)`. The same value
+  the renderer uses for `feeds/<id>.html`, so an API resource and its static
+  page line up.
+- **Item ID** — first 16 hex characters of `sha256(feed_url + "\n" + guid)`.
+
+Every payload carries the underlying `feed_url` and `guid`, so nothing forces
+you to reimplement the hash. To look something up by its natural key, filter
+the collection: `?url=` on feeds, `?link=` on items.
+
+### Reading items
+
+```bash
+curl -s 'localhost:8080/api/v1/items?limit=20&seen=false' | jq '.data[].title'
+```
+
+| Parameter | Values | Default |
+|---|---|---|
+| `feed_id` | 8-hex feed ID | — |
+| `feed_url` | exact feed URL | — |
+| `feed_query` | feed URL substring, case-insensitive | — |
+| `link` | exact item link | — |
+| `q` | item **title** substring, case-insensitive | — |
+| `since` / `until` | RFC3339, on discovery time | — |
+| `seen` | `true` \| `false` | both |
+| `archived` | `true` \| `false` \| `any` | `false` |
+| `sort` | `newest` \| `oldest` | `newest` |
+| `limit` | 1–200 | 50 |
+| `cursor` | opaque continuation token | — |
+| `include` | `content`, `raw`, `metadata`, `annotations` | none |
+
+`feed_id`, `feed_url`, and `feed_query` are mutually exclusive.
+
+Three of these have sharp edges worth knowing:
+
+- **`archived` defaults to `false`, which differs from `feedspool items`**,
+  where archived rows are included. The API default means "my current feed."
+  Pass `archived=any` to match the CLI.
+- **`since` and `until` filter on discovery time**, not publication date —
+  `first_seen`, falling back to `published_date`. This matches
+  `feedspool items --since`, and it is what you want for polling: feeds
+  routinely backdate `published_date`, so a publication-date filter silently
+  misses backdated arrivals.
+- **`q` matches titles only**, not body or summary — the same limitation as
+  `feedspool items --search`. Deliberately identical rather than a second,
+  subtly different search. Tracked in
+  [#58](https://github.com/lmorchard/feedspool-go/issues/58).
+
+**Unknown parameters are rejected with a 400** rather than ignored, so
+`?limitt=10` tells you about the typo instead of quietly returning the default
+page.
+
+### The `include` parameter
+
+Heavy fields are opt-in, because a 50-item page carrying full article HTML runs
+to megabytes:
+
+| Value | Adds | Where |
+|---|---|---|
+| `content` | the full item body | items |
+| `raw` | the raw parsed source blob | items, feeds |
+| `metadata` | the unfurl record for the item's link | items |
+| `annotations` | the item's annotations | items |
+| `counts` | `item_count`, `unseen_count` | feeds |
+
+`GET /api/v1/items/{id}` defaults to `content,annotations`; passing `include`
+replaces that default rather than adding to it. Everything else defaults to
+none.
+
+### Pagination
+
+Collections are keyset-paginated, not offset-paginated. Items arrive at the
+head of the ordering continuously, and offsets would skip and duplicate rows
+mid-scan.
+
+```json
+{ "data": [ ... ], "next_cursor": "eyJ2IjoxLCJyIjow...", "limit": 50 }
+```
+
+`next_cursor` is `null` when the result set is exhausted. Treat it as opaque —
+its encoding is explicitly outside the compatibility promise.
+
+There is no `total`: it costs a second full scan and is stale by the time you
+read it.
+
+Paging through everything:
+
+```bash
+cursor=""
+while :; do
+  page=$(curl -s "localhost:8080/api/v1/items?limit=100${cursor:+&cursor=$cursor}")
+  echo "$page" | jq -r '.data[].link'
+  cursor=$(echo "$page" | jq -r '.next_cursor // empty')
+  [ -n "$cursor" ] || break
+done
+```
+
+### Annotations
+
+```bash
+# Mark one item seen. 201 if created, 200 if it was already there.
+curl -s -X POST -H 'Content-Type: application/json' \
+  -d '{"kind":"seen"}' \
+  localhost:8080/api/v1/items/9f2c4a1be7d03518/annotations
+
+# Mark a whole page seen in one call.
+curl -s -X POST -H 'Content-Type: application/json' \
+  -d '{"item_ids":["9f2c...","1a4b..."],"kind":"seen"}' \
+  localhost:8080/api/v1/annotations
+# → {"added":12,"already_present":3,"not_found":[]}
+
+# Unmark. 204 whether or not anything matched.
+curl -s -X DELETE localhost:8080/api/v1/items/9f2c4a1be7d03518/annotations/seen
+```
+
+Adding is idempotent — the same annotation twice writes one row.
+
+`DELETE` mirrors the CLI exactly: with no `?value=`, it removes rows whose
+value is NULL; with `?value=x`, only rows matching `x`. It does not remove
+every row of a kind regardless of value.
+
+Bulk is **add only**. Marking a screenful seen is the common operation;
+unmarking a screenful is not. Unknown item IDs land in `not_found` rather than
+failing the whole request. Cap is 500 IDs per call.
+
+**Annotation kinds written through the API must match
+`^[A-Za-z0-9_.:-]{1,64}$`.** `{kind}` is a path segment in the `DELETE` route,
+and a kind containing a slash is not reliably addressable. The CLI is not
+restricted, so a kind created by `feedspool annotate` outside that set is
+readable through the API but has to be removed with `feedspool unannotate`.
+
+### Errors
+
+```json
+{"error": {"code": "invalid_cursor", "message": "cursor is not valid base64url"}}
+```
+
+| Code | Status |
+|---|---|
+| `invalid_parameter` | 400 |
+| `invalid_cursor` | 400 |
+| `unauthorized` | 401 |
+| `not_found` | 404 |
+| `method_not_allowed` | 405 |
+| `payload_too_large` | 413 |
+| `unsupported_media_type` | 415 |
+| `internal_error` | 500 |
+
+`internal_error` messages are generic; the detail goes to the server log.
+
+### Compatibility
+
+The version lives in the path. Within `v1`, changes are **additive only**: new
+fields, new optional parameters, new endpoints, new error codes, new `include`
+values. Removing or renaming a field, changing a type, or changing a
+parameter's default requires `v2`.
+
+The cursor encoding is explicitly excluded — it may change within v1.
 
 ## Multi-Site Directory Mode
 

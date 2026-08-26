@@ -75,6 +75,17 @@ feedspool serve   # http://localhost:8080
 `feedspool --help` and `feedspool <subcommand> --help` show inline reference.
 For everything beyond the basics, see [MANUAL.md](MANUAL.md).
 
+Serving the JSON API alongside the site, for scripts and other tools:
+
+```bash
+feedspool serve --api --bind 127.0.0.1
+curl -s 'localhost:8080/api/v1/items?limit=5&seen=false' | jq '.data[].title'
+```
+
+It is off unless you pass `--api`, and unauthenticated unless you set a token.
+See [HTTP API](MANUAL.md#http-api) for endpoints, pagination, and the
+compatibility rule.
+
 Building several sites from a directory of feed lists:
 
 ```bash
@@ -171,7 +182,6 @@ make lint
 - [ ] switchable named theme directories
 - [ ] Merge OPML / text lists of feeds with de-dupe
 - [ ] support feed tags and/or folders?
-- [ ] implement a simple REST API server to access feeds data
 - [ ] add per feed fetch history log table - e.g. to detect failed feeds that should be removed
 - [ ] Support using a feed list at a URL - e.g. might be cool to source a feed list from linkding or such
 - [ ] add file watcher to rebuild and re-render site on changes to templates or assets?
