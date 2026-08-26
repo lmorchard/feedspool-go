@@ -391,7 +391,7 @@ row, e.g. after a tokenizer change"). Progress to logrus at info level.
 - [ ] **Step 1: Write the failing tests**
 
 The maintenance matrix is the important one — an external-content index fails
-*silently*, so every case asserts `('integrity-check')` afterward.
+*silently*, so every case asserts `('integrity-check', 1)` afterward. **The argument is load-bearing:** the bare `('integrity-check')` only checks the index's internal consistency and passes happily on an index that has drifted from its content table. Only the `1` argument reads `item_text` back and reports `SQLITE_CORRUPT`. Verified against the `sqlite3` CLI during Phase 2.
 
 ```go
 // integrityCheck fails the test if the FTS index disagrees with item_text.
@@ -399,7 +399,7 @@ The maintenance matrix is the important one — an external-content index fails
 // that catches a missing trigger.
 func integrityCheck(t *testing.T, db *DB) {
 	t.Helper()
-	if _, err := db.conn.Exec(`INSERT INTO items_fts(items_fts) VALUES('integrity-check')`); err != nil {
+	if _, err := db.conn.Exec(`INSERT INTO items_fts(items_fts, rank) VALUES('integrity-check', 1)`); err != nil {
 		t.Fatalf("fts integrity-check failed: %v", err)
 	}
 }
@@ -496,7 +496,7 @@ Run: `go test ./internal/database/ -run 'ItemText|Backfill|Reindex|Migration' -v
 **Verification — manual:**
 - [ ] Copy a real feed database, run the built binary against it, and watch
       migration 11 apply. Note the wall-clock time and the item count.
-- [ ] `sqlite3 <copy> "INSERT INTO items_fts(items_fts) VALUES('integrity-check');"`
+- [ ] `sqlite3 <copy> "INSERT INTO items_fts(items_fts, rank) VALUES('integrity-check', 1);"`
       returns without error.
 - [ ] Compare `SELECT count(*) FROM items` and `SELECT count(*) FROM item_text`
       — they must be equal.
@@ -1123,7 +1123,7 @@ make build
 ./feedspool --database /tmp/fts-smoke.db items --search "<known topic>" --limit 20
 ./feedspool --database /tmp/fts-smoke.db items --search "<known topic>" --sort relevance --limit 20
 ./feedspool --database /tmp/fts-smoke.db reindex --force
-sqlite3 /tmp/fts-smoke.db "INSERT INTO items_fts(items_fts) VALUES('integrity-check');"
+sqlite3 /tmp/fts-smoke.db "INSERT INTO items_fts(items_fts, rank) VALUES('integrity-check', 1);"
 ```
 
 - [ ] **Step 3: Record findings in `notes.md`** — migration wall-clock, index

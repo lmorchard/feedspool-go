@@ -124,6 +124,31 @@ external-content `items_fts` with insert/update/delete triggers:
 This is the load-bearing fact behind the trigger-based maintenance decision: it
 means the purge and feed-delete paths need no FTS code at all.
 
+### Correction, found during Phase 2
+
+Both probes above used the bare `('integrity-check')`, and **that form is much
+weaker than it looks.** On an external-content table it verifies only the
+index's own internal consistency; it passes happily on an index that has
+drifted from its content table. Only `INSERT INTO items_fts(items_fts, rank)
+VALUES('integrity-check', 1)` reads the content table back and reports
+`SQLITE_CORRUPT` on a mismatch. Demonstrated directly:
+
+```sql
+CREATE TABLE src(id INTEGER PRIMARY KEY, body TEXT);
+CREATE VIRTUAL TABLE ft USING fts5(body, content='src', content_rowid='id');
+INSERT INTO src VALUES (1,'hello world');
+INSERT INTO ft(rowid, body) VALUES (1,'hello world');
+UPDATE src SET body = 'totally different text' WHERE id = 1;  -- index now stale
+INSERT INTO ft(ft) VALUES('integrity-check');            -- passes (!)
+INSERT INTO ft(ft, rank) VALUES('integrity-check', 1);   -- database disk image is malformed
+```
+
+This does not overturn either probe's conclusion — those rested on row counts
+and `MATCH` results, which were real observations. But the "integrity-check
+passes" line carried less weight than it appeared to, and the argument is now
+mandatory everywhere in the test suite. It is exactly the silent-failure mode
+the external-content design was already flagged for.
+
 ## Release state of the v1 API
 
 `v1.0.2` was tagged 2026-08-25. The API landed on `main` in `406185c` on
