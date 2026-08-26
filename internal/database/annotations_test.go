@@ -9,7 +9,7 @@ const annotationTestFeed = "https://example.com/feed.xml"
 
 func seedFeedAndItem(t *testing.T, db *DB, feedURL, guid string) {
 	t.Helper()
-	if err := db.UpsertFeed(&Feed{URL: feedURL, Title: "Test"}); err != nil {
+	if err := db.UpsertFeed(&Feed{URL: feedURL, Title: testFeedTitle}); err != nil {
 		t.Fatalf("UpsertFeed() error = %v", err)
 	}
 	if err := db.UpsertItem(&Item{FeedURL: feedURL, GUID: guid, Title: "Item"}); err != nil {
