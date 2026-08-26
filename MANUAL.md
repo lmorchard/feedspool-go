@@ -365,11 +365,11 @@ shortcut; `--feed` instead performs a case-insensitive URL substring match.
 | Flag | Default | Description |
 |---|---|---|
 | `--feed` | (none) | Filter by feed URL substring |
-| `--search` | (none) | Filter by item title substring |
+| `--search` | (none) | Full-text search over title, summary, and body |
 | `--since` | (none) | Items first discovered after this RFC3339 timestamp |
 | `--until` | (none) | Items first discovered at or before this RFC3339 timestamp |
 | `--limit` | `0` | Maximum results (0 = all) |
-| `--sort` | `newest` | `newest` or `oldest` |
+| `--sort` | `newest` | `newest`, `oldest`, or `relevance` (requires `--search`) |
 | `--seen` | false | Only items carrying a `seen` annotation |
 | `--unseen` | false | Only items without a `seen` annotation |
 | `--mark-seen` | false | Add a `seen` annotation to returned items |
@@ -387,10 +387,37 @@ newly discovered post has an older publication date. Combined filters form the
 half-open cursor window `(since, until]`, so a saved `until` value can become
 the next run's `since` without repeating boundary items.
 
+**`--search` is a full-text search over an item's title, summary, and body,**
+indexed and ranked with SQLite's FTS5 rather than scanned as a substring. It
+was a title-only substring match early in this tool's life, but that never
+shipped in a tagged release — the `items` command itself postdates `v1.0.2` —
+so there is no released contract to preserve. It takes a small query language,
+spelled identically here and for the API's `?q=` below so the two surfaces
+never disagree about what a search matches:
+
+| Input | Meaning |
+| --- | --- |
+| `rust release` | both terms (implicit AND) |
+| `"release notes"` | phrase |
+| `-draft` | exclude |
+| `secur*` | prefix |
+
+Everything else is matched as literal text, so `C++`, `title:foo`, and `NEAR`
+are searched for rather than treated as operators. A query of nothing but
+exclusions (`-draft` on its own) exits nonzero — FTS5 cannot answer "everything
+except X", and returning zero rows would read as a bug rather than a rejected
+query.
+
+`--sort relevance` ranks results by `bm25()` — title weighted above summary
+above body — instead of discovery order, and requires `--search`. **`newest`
+stays the default sort even when `--search` is given**; a search does not by
+itself imply you want relevance order over the usual newest-first feed.
+
 ```bash
 feedspool --json items --since 2026-08-25T12:00:00Z
 feedspool --json items --compact --since 2026-08-25T12:00:00Z
 feedspool items --feed example.com --search "release notes" --limit 20
+feedspool items --search "container networking" --sort relevance --limit 20
 ```
 
 **Side effects:** Read-only unless `--mark-seen` is set.
@@ -633,6 +660,34 @@ subscription list are deleted. ON DELETE CASCADE removes their items.
 }
 ```
 
+### reindex
+
+Bring the full-text search index (`item_text` and `items_fts`, see
+[Data Model](#data-model)) up to date. Ordinary use needs no flags: fetching
+already derives and indexes text for every item it writes, so this command
+only fills in whatever is missing — freshly migrated rows, or items written
+before the index existed.
+
+**Usage:** `feedspool reindex [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--force` | false | Discard every derived row and rebuild from scratch |
+
+Use `--force` after changing how text is derived or tokenized — for example,
+if a future release changes the `porter` stemmer setting — since the stale
+rows otherwise look up to date and nothing else will invalidate them. Budget
+on the order of 30 seconds for a full rebuild on a 20,000-item spool (measured
+at 34.4s). A no-op run — nothing to do — is still slower than it looks: about
+5 seconds wall time on the same spool, nearly all of it spent scanning for
+stale rows rather than doing any work.
+
+Progress prints to stdout rather than the log, because a rebuild of a large
+spool can run for tens of seconds and the default log level would otherwise
+make it indistinguishable from a hang.
+
+**Side effects:** Writes `item_text`; `--force` also truncates it first.
+
 ### export
 
 Write all feeds currently in the database to a subscription file.
@@ -742,11 +797,11 @@ curl -s 'localhost:8889/api/v1/items?limit=20&seen=false' | jq '.data[].title'
 | `feed_url` | exact feed URL | — |
 | `feed_query` | feed URL substring, case-insensitive | — |
 | `link` | exact item link | — |
-| `q` | item **title** substring, case-insensitive | — |
+| `q` | full-text search over title, summary, and body | — |
 | `since` / `until` | RFC3339, on discovery time | — |
 | `seen` | `true` \| `false` | both |
 | `archived` | `true` \| `false` \| `any` | `false` |
-| `sort` | `newest` \| `oldest` | `newest` |
+| `sort` | `newest` \| `oldest` \| `relevance` (requires `q`) | `newest` |
 | `limit` | 1–200 | 50 |
 | `cursor` | opaque continuation token | — |
 | `include` | `content`, `raw`, `metadata`, `annotations` | none |
@@ -770,10 +825,30 @@ Three of these have sharp edges worth knowing:
   every time. Note that items are *ordered* by the opposite precedence
   (`published_date` falling back to `first_seen`), so `discovered_at` is a
   polling key, not a sort key.
-- **`q` matches titles only**, not body or summary — the same limitation as
-  `feedspool items --search`. Deliberately identical rather than a second,
-  subtly different search. Tracked in
-  [#58](https://github.com/lmorchard/feedspool-go/issues/58).
+- **`q` is a full-text search over an item's title, summary, and body,**
+  indexed and ranked with SQLite's FTS5, spelled identically to
+  `feedspool items --search` so the two surfaces never disagree about what a
+  search matches. This endpoint has never shipped in a tagged release — it
+  merged after `v1.0.2` and exists only in the `latest` dev prerelease — so
+  there was never a released substring contract to preserve; what you see here
+  is what `q` has always meant. It accepts a small query language:
+
+  | Input | Meaning |
+  | --- | --- |
+  | `rust release` | both terms (implicit AND) |
+  | `"release notes"` | phrase |
+  | `-draft` | exclude |
+  | `secur*` | prefix |
+
+  Everything else is matched as literal text, so `C++`, `title:foo`, and
+  `NEAR` are searched for rather than treated as operators. A query of nothing
+  but exclusions (`q=-draft` on its own) is a `400 invalid_parameter` — FTS5
+  cannot answer "everything except X", and an empty result set would read as a
+  bug rather than a rejected query. `sort=relevance` ranks by `bm25()` (title
+  weighted above summary above body) and requires `q`; **`newest` stays the
+  default sort even when `q` is given.** Remember that `archived` defaults to
+  `false` here — a search against this endpoint sees fewer hits than the same
+  search on `feedspool items` unless you also pass `archived=any`.
 
 **Unknown parameters are rejected with a 400** rather than ignored, so
 `?limitt=10` tells you about the typo instead of quietly returning the default
@@ -1140,6 +1215,60 @@ Unfurl results, keyed by item link URL.
 A row with `fetch_status_code` in 2xx is considered final; failures may be
 retried per `--retry-after`.
 
+### `item_text`
+
+HTML-stripped derived text for full-text search, one row per item. This is
+the canonical text both search and (per #30) any future embedding work index
+against, kept separate from `items` so the raw markup never leaks into search
+results.
+
+| Column | Type | Notes |
+|---|---|---|
+| `item_id` | INTEGER PK | FK → `items.id`, ON DELETE CASCADE |
+| `title` | TEXT | Stripped title |
+| `summary` | TEXT | Stripped summary |
+| `body` | TEXT | Stripped content, truncated at 256 KiB as a bloat guard |
+| `source_hash` | TEXT | Hash of the source columns this row was derived from |
+| `generator` | TEXT | Name of the derivation logic that produced this row |
+| `generator_version` | INTEGER | Bumped when derivation logic changes; drives staleness checks |
+| `computed_at` | DATETIME | |
+
+`feedspool fetch` keeps this table current as items are written.
+`feedspool reindex` fills in anything missing (a fresh migration, or items
+written before the index existed); `reindex --force` discards and rebuilds
+every row, which is what a change to `generator_version` calls for.
+
+### `items_fts`
+
+An external-content FTS5 virtual table indexing `item_text`, maintained by
+triggers on `item_text` rather than by application code — the triggers are
+what make deletes through `ON DELETE CASCADE` (dropping a feed, purging items)
+keep the index consistent without a code path that has to remember to update
+it.
+
+```sql
+CREATE VIRTUAL TABLE items_fts USING fts5(
+    title, summary, body,
+    content='item_text', content_rowid='item_id',
+    tokenize="porter unicode61 remove_diacritics 2"
+);
+```
+
+`porter` stemming means a search for `network` also matches `networking` and
+`networked`, and `secur*` and `security` both match `secure`. It costs a
+little precision on an exact known-item lookup, in exchange for recall on
+everything else — kept as the default. Search ranks matches with
+`bm25(items_fts, 10.0, 4.0, 1.0)`, weighting a title hit above a summary hit
+above a body hit.
+
+Upgrading an existing database runs a one-time backfill (migration 11) that
+derives text for every item already in the spool, alongside whatever earlier
+migrations also need to run. On a 19,750-item production spool, migrating from
+schema v4 to v11 took 23.5 seconds wall time end to end and grew the database
+file by about 24%; it is quiet at the default log level, so an upgrade that
+appears to hang for a few dozen seconds is this backfill running, not a
+problem. Run with `-v` to see progress.
+
 ### `schema_migrations`
 
 Internal version tracking. Current version: 4.
@@ -1158,15 +1287,25 @@ ORDER BY i.published_date DESC
 LIMIT 50;
 ```
 
-**Items mentioning a topic:**
+**Items mentioning a topic, best matches first:**
+
+The same index `feedspool items --search` and `?q=` use, queried directly.
+Note the table is joined unaliased — `MATCH` and `bm25()` need the FTS table's
+own name, not an alias:
 
 ```sql
 SELECT i.published_date, i.title, i.link
 FROM items i
-WHERE i.archived = 0
-  AND (i.title LIKE '%foo%' OR i.content LIKE '%foo%' OR i.summary LIKE '%foo%')
-ORDER BY i.published_date DESC;
+JOIN items_fts ON items_fts.rowid = i.id
+WHERE items_fts MATCH '"container networking"'
+  AND i.archived = 0
+ORDER BY bm25(items_fts, 10.0, 4.0, 1.0) ASC
+LIMIT 20;
 ```
+
+`MATCH` takes raw FTS5 syntax here, not the small query language the CLI and
+API accept — quote a phrase yourself, and `AND`/`OR`/`NOT`/`NEAR`/`col:` are
+live operators rather than literal text.
 
 **Feeds that have not produced anything recently:**
 
