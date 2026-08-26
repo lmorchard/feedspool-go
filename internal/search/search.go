@@ -82,8 +82,17 @@ func Parse(raw string) (string, error) {
 // A token that reduces to empty text after stripping -- a bare "-" or a bare
 // "*" -- contributes nothing; this is how the bare "*" case ends up as "no
 // search filter" rather than an empty pair of quotes.
+//
+// Control characters are folded to spaces before any of that, so they separate
+// terms rather than becoming part of one. U+0000 is why: SQLite reads a bound
+// MATCH operand as a NUL-terminated C string, so an embedded NUL truncates the
+// expression mid-literal and FTS5 raises "unterminated string" -- the syntax
+// error this package exists to make impossible. Folding happens up front, and
+// therefore before the emptiness check below, so a token that was nothing but
+// control characters disappears the way whitespace does instead of emitting an
+// empty "".
 func tokenize(raw string) []term {
-	runes := []rune(raw)
+	runes := foldControls([]rune(raw))
 	n := len(runes)
 
 	var terms []term
@@ -149,4 +158,20 @@ func quoteFTS5(text string) string {
 
 func isSpace(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+}
+
+// foldControls replaces every C0 control character with a space, in place.
+// Only U+0000 actually breaks FTS5 -- see tokenize -- but the C0 block is the
+// set isSpace already treats as separators for tab, newline and carriage
+// return, so folding all of it keeps one rule instead of a special case. It is
+// the whole set that can reach FTS5 unrepresented, too: []rune has already
+// replaced invalid UTF-8 with U+FFFD by the time this runs.
+func foldControls(runes []rune) []rune {
+	const firstPrintable = 0x20
+	for i, r := range runes {
+		if r < firstPrintable {
+			runes[i] = ' '
+		}
+	}
+	return runes
 }
