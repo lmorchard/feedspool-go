@@ -81,6 +81,16 @@ func countItemTextRows(t *testing.T, db *DB) int {
 	return count
 }
 
+// countArchivedItems reports how many items are flagged archived.
+func countArchivedItems(t *testing.T, db *DB) int {
+	t.Helper()
+	var count int
+	if err := db.conn.QueryRow(`SELECT COUNT(*) FROM items WHERE archived = 1`).Scan(&count); err != nil {
+		t.Fatalf("counting archived items: %v", err)
+	}
+	return count
+}
+
 // firstItemID returns the lowest item ID, which is the first seeded item.
 func firstItemID(t *testing.T, db *DB) int64 {
 	t.Helper()
@@ -172,6 +182,11 @@ func TestItemTextTriggersCoverEveryDeletePath(t *testing.T) {
 			// must be untouched.
 			if err := db.MarkItemsArchived(fixtureFeedURL, nil); err != nil {
 				t.Fatal(err)
+			}
+			// Confirm the call did something. Were MarkItemsArchived to become a
+			// no-op, "the index is unchanged" would hold for the wrong reason.
+			if got := countArchivedItems(t, db); got != seedCount {
+				t.Fatalf("%d items are archived, want %d", got, seedCount)
 			}
 		}, seedCount},
 	}
@@ -316,6 +331,130 @@ func TestMigration11BackfillsExistingItems(t *testing.T) {
 		t.Errorf("index holds %d items, want %d", got, seedCount)
 	}
 	integrityCheck(t, db)
+}
+
+// TestMigration11SchemaStageDoesNotRecordVersion pins half of the stage
+// ordering: the DDL stage on its own must never record the schema version,
+// because the version is what says "fully indexed". Re-running the full
+// migration over the schema stage 1 already created also exercises the DDL
+// idempotency an interrupted run depends on.
+//
+// The other half -- that a backfill which fails leaves the version unrecorded
+// -- is TestMigration11LeavesVersionUnrecordedWhenIndexingFails below.
+func TestMigration11SchemaStageDoesNotRecordVersion(t *testing.T) {
+	const seedCount = 2
+	db := seedSearchableItems(t, seedCount)
+	rewindPastMigration11(t, db)
+
+	// Stage 1 alone.
+	if err := db.applyMigration11Schema(); err != nil {
+		t.Fatalf("applyMigration11Schema() error = %v", err)
+	}
+	for _, name := range []string{"item_text", "items_fts"} {
+		if !tableExists(t, db, name) {
+			t.Errorf("%s does not exist after the schema stage", name)
+		}
+	}
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != migrationVersion10 {
+		t.Errorf("version = %d after the schema stage, want %d -- the DDL stage must not record it",
+			version, migrationVersion10)
+	}
+	if got := countItemTextRows(t, db); got != 0 {
+		t.Errorf("item_text has %d rows after the schema stage, want 0", got)
+	}
+
+	// The full migration over that same schema: idempotent DDL, then backfill,
+	// then the version.
+	if err := db.applyMigration11(); err != nil {
+		t.Fatalf("applyMigration11() error = %v", err)
+	}
+	version, err = db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != migrationVersion11 {
+		t.Errorf("version = %d after the full migration, want %d", version, migrationVersion11)
+	}
+	if got := countItemTextRows(t, db); got != seedCount {
+		t.Errorf("item_text has %d rows, want %d", got, seedCount)
+	}
+	if got := countIndexedItems(t, db); got != seedCount {
+		t.Errorf("index holds %d items, want %d", got, seedCount)
+	}
+	integrityCheck(t, db)
+}
+
+// TestMigration11LeavesVersionUnrecordedWhenIndexingFails is the one that
+// matters: if the backfill does not finish, the migration must not be marked
+// done, or search silently misses those items forever.
+//
+// The failure is induced without any production seam. A BEFORE INSERT trigger
+// that raises ABORT makes upsertItemTextTx fail, which is a real error arriving
+// by the real path -- no injection point, no test-only branch in the migration.
+//
+// It does not simulate a process killed mid-batch; nothing short of an actual
+// crash does. But it does cover the property that matters operationally, which
+// the schema-stage test alone cannot: a migration whose indexing stage returns
+// an error leaves the version unbumped, and the next run finishes the job.
+func TestMigration11LeavesVersionUnrecordedWhenIndexingFails(t *testing.T) {
+	const seedCount = 2
+	db := seedSearchableItems(t, seedCount)
+	rewindPastMigration11(t, db)
+
+	// The schema has to exist before the abort trigger can be attached to it.
+	if err := db.applyMigration11Schema(); err != nil {
+		t.Fatal(err)
+	}
+	execSQL(t, db, `CREATE TRIGGER item_text_abort BEFORE INSERT ON item_text
+		BEGIN SELECT RAISE(ABORT, 'induced indexing failure'); END`)
+
+	if err := db.applyMigration11(); err == nil {
+		t.Fatal("applyMigration11() succeeded, want the induced indexing failure")
+	}
+	version, err := db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version == migrationVersion11 {
+		t.Fatalf("version = %d after a failed backfill; a half-indexed database must not be marked done",
+			migrationVersion11)
+	}
+	if got := countItemTextRows(t, db); got != 0 {
+		t.Errorf("item_text has %d rows after the aborted backfill, want 0", got)
+	}
+
+	// Resuming: the next run re-applies the idempotent DDL and finishes.
+	execSQL(t, db, `DROP TRIGGER item_text_abort`)
+	if err := db.applyMigration11(); err != nil {
+		t.Fatalf("resumed applyMigration11() error = %v", err)
+	}
+	version, err = db.GetMigrationVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != migrationVersion11 {
+		t.Errorf("version = %d after the resumed migration, want %d", version, migrationVersion11)
+	}
+	if got := countIndexedItems(t, db); got != seedCount {
+		t.Errorf("index holds %d items, want %d", got, seedCount)
+	}
+	integrityCheck(t, db)
+}
+
+// tableExists reports whether a table or virtual table is present.
+func tableExists(t *testing.T, db *DB, name string) bool {
+	t.Helper()
+	var count int
+	if err := db.conn.QueryRow(
+		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?`, name,
+	).Scan(&count); err != nil {
+		t.Fatalf("checking for table %s: %v", name, err)
+	}
+	return count > 0
 }
 
 // rewindPastMigration11 drops everything migration 11 creates, leaving a

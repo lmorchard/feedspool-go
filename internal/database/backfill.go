@@ -41,6 +41,11 @@ func (db *DB) RunBackfill(gen DerivedBackfill, batchSize int, progress func(done
 	if err != nil {
 		return err
 	}
+	// Name and version together identify a run. After a version bump this line
+	// is what says whether the reindex it was supposed to force actually found
+	// anything to do.
+	logrus.Debugf("Starting %s backfill v%d: %d items outstanding, batch size %d",
+		gen.Name(), gen.Version(), total, batchSize)
 
 	var done, afterID int64
 	for {
@@ -107,7 +112,8 @@ func (db *DB) runBackfillBatch(gen DerivedBackfill, afterID int64, batchSize int
 	}
 
 	if err := gen.Recompute(tx, ids); err != nil {
-		return nil, fmt.Errorf("failed to recompute %s for %d items: %w", gen.Name(), len(ids), err)
+		return nil, fmt.Errorf("failed to recompute %s v%d for %d items: %w",
+			gen.Name(), gen.Version(), len(ids), err)
 	}
 
 	if err := tx.Commit(); err != nil {

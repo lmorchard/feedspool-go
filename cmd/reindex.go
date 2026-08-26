@@ -53,7 +53,7 @@ func runReindex(_ *cobra.Command, _ []string) error {
 	var indexed int64
 	if err := db.ReindexItemText(reindexForce, func(done, total int64) {
 		indexed = done
-		fmt.Printf("Indexed %d of %d items\n", done, total)
+		fmt.Printf("Indexed %d of %d outstanding items\n", done, total)
 	}); err != nil {
 		return err
 	}

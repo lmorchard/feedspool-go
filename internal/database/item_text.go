@@ -36,7 +36,7 @@ func (g *itemTextBackfill) NextBatch(tx *sql.Tx, afterID int64, limit int) ([]in
 		WHERE i.id > ? AND (`+itemTextStalenessCondition+`)
 		ORDER BY i.id
 		LIMIT ?`,
-		afterID, itemtext.Generator, itemtext.Version, limit,
+		afterID, g.Name(), g.Version(), limit,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query stale item text: %w", err)
@@ -65,7 +65,7 @@ func (g *itemTextBackfill) Remaining(tx *sql.Tx) (int64, error) {
 		SELECT COUNT(*)
 		FROM items i LEFT JOIN item_text t ON t.item_id = i.id
 		WHERE `+itemTextStalenessCondition,
-		itemtext.Generator, itemtext.Version,
+		g.Name(), g.Version(),
 	).Scan(&remaining); err != nil {
 		return 0, fmt.Errorf("failed to count stale item text: %w", err)
 	}
@@ -108,9 +108,12 @@ func readItemTextSources(tx *sql.Tx, ids []int64) ([]itemTextSource, error) {
 		args[i] = id
 	}
 
-	// COALESCE guards databases old enough that these columns are nullable. The
-	// current schema declares them NOT NULL DEFAULT '', but a migration that
-	// aborts on one legacy NULL title would leave the whole spool unindexed.
+	// COALESCE is here for the hand-written legacy fixtures in
+	// migrations_test.go, which declare these columns nullable. No schema
+	// feedspool has ever shipped does -- the version-1 baseline already had them
+	// NOT NULL DEFAULT '' -- so this is not guarding real databases. It stays
+	// because treating a NULL title as empty text is a better failure mode than
+	// aborting a migration and leaving a whole spool unindexed.
 	//nolint:gosec // Safe: only formatting placeholder count, not user input
 	query := fmt.Sprintf(
 		`
@@ -175,6 +178,6 @@ func (db *DB) ReindexItemText(force bool, progress func(done, total int64)) erro
 // makes a long migration on a large spool visibly alive rather than hung.
 func ItemTextProgressLogger() func(done, total int64) {
 	return func(done, total int64) {
-		logrus.Infof("Indexed %d/%d items", done, total)
+		logrus.Infof("Indexed %d/%d outstanding items", done, total)
 	}
 }
