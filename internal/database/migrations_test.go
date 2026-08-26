@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // setupTestDBForMigrations creates a database without running InitSchema
@@ -574,5 +575,77 @@ func TestApplySpecificMigrationUsesMap(t *testing.T) {
 
 	if version != 2 {
 		t.Errorf("Migration version should be 2 after applying migration 2, got %d", version)
+	}
+}
+
+func TestMigration9FiveLayouts(t *testing.T) {
+	db := setupOldDatabase(t)
+
+	// Seed feed
+	if _, err := db.conn.Exec(`INSERT INTO feeds (url, title) VALUES ('https://test.example/feed', 'Test Feed')`); err != nil {
+		t.Fatal(err)
+	}
+
+	// Seed items in each of the 5 timestamp layouts supported by parseDatabaseTime
+	const dateOnlyLayout = "2026-08-25"
+	layouts := []struct {
+		guid  string
+		pub   string
+		first string
+	}{
+		{guid: "layout1", pub: "2026-08-25T14:00:00.123456789Z", first: "2026-08-25T14:05:00.123456789Z"},
+		{guid: "layout2", pub: "2026-08-25 14:00:00.123456789 -0700 PDT", first: "2026-08-25 14:05:00.123456789 -0700 PDT"},
+		{guid: "layout3", pub: "2026-08-25 14:00:00.123456789-07:00", first: "2026-08-25 14:05:00.123456789-07:00"},
+		{guid: "layout4", pub: "2026-08-25 14:00:00.123456789", first: "2026-08-25 14:05:00.123456789"},
+		{guid: "layout5", pub: dateOnlyLayout, first: dateOnlyLayout},
+	}
+
+	for _, item := range layouts {
+		if _, err := db.conn.Exec(`
+			INSERT INTO items (feed_url, guid, published_date)
+			VALUES ('https://test.example/feed', ?, ?)
+		`, item.guid, item.pub); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Apply migrations
+	if err := db.RunMigrations(); err != nil {
+		t.Fatalf("RunMigrations() error = %v", err)
+	}
+
+	// Query migrated items and check they are formatted as RFC3339Nano and orderable by julianday() in SQL
+	rows, err := db.conn.Query(`
+		SELECT guid, published_date, julianday(published_date)
+		FROM items
+		WHERE feed_url = 'https://test.example/feed'
+		ORDER BY julianday(published_date) DESC
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var guid, pubDate string
+		var julian float64
+		if err := rows.Scan(&guid, &pubDate, &julian); err != nil {
+			t.Fatal(err)
+		}
+		// Assert pubDate parses as RFC3339Nano
+		if _, err := time.Parse(time.RFC3339Nano, pubDate); err != nil {
+			t.Errorf("item %s published_date = %q is not RFC3339Nano: %v", guid, pubDate, err)
+		}
+		if julian == 0 {
+			t.Errorf("item %s julianday(published_date) returned zero/null", guid)
+		}
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if count != len(layouts) {
+		t.Errorf("got %d migrated items, want %d", count, len(layouts))
 	}
 }
