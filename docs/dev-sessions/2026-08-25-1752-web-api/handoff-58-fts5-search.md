@@ -31,21 +31,53 @@ non-negotiable build and lint rules.
    contract you are extending is described there.
 4. **`MANUAL.md`**, the "HTTP API" section.
 
-## Do this first, before anything else
+## FTS5 availability: already verified, you can skip this
 
-**Verify FTS5 is compiled into `modernc.org/sqlite`.**
+`modernc.org/sqlite` **does** ship FTS5 under `CGO_ENABLED=0`. Confirmed
+empirically on 2026-08-26 rather than assumed:
 
-Everything in this issue depends on it, the project is `CGO_ENABLED=0`, and
-there is no fallback — `mattn/go-sqlite3` is explicitly forbidden by CLAUDE.md
-because it would break static binaries and cross-compilation.
+- SQLite 3.53.3, `PRAGMA compile_options` reports `ENABLE_FTS5`
+- `CREATE VIRTUAL TABLE ... USING fts5(...)` works
+- Term, phrase (`"1.87"`), boolean (`NOT`, `AND`) and prefix (`secur*`) queries work
+- `bm25()` ranking and `snippet()` work
+- `porter` and `unicode61` tokenizers work
+- **External-content tables work** (`content='items', content_rowid='id'`), including
+  `('rebuild')` and joining back to `items` for ranked output
 
-A ten-line program that opens an in-memory database and runs
-`CREATE VIRTUAL TABLE t USING fts5(x)` settles it.
+Verified through the project's own `database.New` — WAL, `busy_timeout`,
+`SetMaxOpenConns(1)` — not just a bare `sql.Open`.
 
-If FTS5 is **not** available, stop and report. Do not work around it. The
-alternatives — a hand-rolled inverted index, or staying on `instr()` — are
-different enough in cost and risk that they need a fresh decision, not an
-improvised one.
+### Measured cost, 25k items with article-sized bodies (~82 MB of text)
+
+| | |
+| --- | --- |
+| Backfill of the whole corpus | 3.6s |
+| Single incremental insert | ~0.5ms |
+| Ranked top-20 `bm25()` | 73ms |
+| Count of a common term | 3.5ms |
+| Prefix query (`secur*`) | 86ms |
+
+Those latencies are a **worst case**: the synthetic corpus is Zipfian, so the
+queried term appears in essentially every document. A realistic topic search
+matching a few hundred items will be far quicker. Prefix queries are the slow
+path either way — worth knowing before exposing `*` to users.
+
+### The one finding that should shape the design
+
+**Use an external-content table.** A plain `fts5` table keeps its own copy of
+the indexed text; an external-content table indexes rows that stay in `items`
+and stores only the index. Measured over the same 15k-item corpus:
+
+| | Size | vs source text |
+| --- | --- | --- |
+| Plain `fts5` | 47.1 MB | 216% |
+| External-content `fts5` | 17.7 MB | 81% |
+
+**62% smaller.** The trade is that external-content tables do not
+self-maintain — you own the `INSERT`/`DELETE` into the index on every item
+write, and a stale index fails silently rather than loudly. That is a real
+cost, but roughly tripling the database on disk to avoid it is the worse deal,
+and the maintenance is the same bookkeeping the shared substrate needs anyway.
 
 ## Coordination hazard: another agent is on #60
 
@@ -133,9 +165,9 @@ inlining them, and it stops the two features from disagreeing later.
 - **Index maintenance.** Triggers on `items` versus explicit writes in
   `UpsertItem` / `MarkItemsArchived` / the purge paths. Triggers are less code
   to forget; explicit writes are easier to reason about given
-  `SetMaxOpenConns(1)`. Decide deliberately and record why.
-- **Ranking** is `bm25()`. Confirm it is available in whatever FTS5 build you
-  find in step one.
+  `SetMaxOpenConns(1)`. Decide deliberately and record why. This matters more
+  with an external-content table, which does no maintenance of its own.
+- **Ranking** is `bm25()` — confirmed available.
 - Compose with the existing filters (`feed_id`, `since`, `seen`, `archived`) —
   search is another `WHERE` condition, not a separate query path.
 - Keep the CLI and API in step. They have diverged once already (annotation
