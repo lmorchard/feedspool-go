@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -44,12 +43,21 @@ func runReindex(_ *cobra.Command, _ []string) error {
 	}
 
 	if reindexForce {
-		logrus.Info("Discarding every derived row before rebuilding")
+		fmt.Println("Discarding all derived text before rebuilding...")
 	}
-	if err := db.ReindexItemText(reindexForce, database.ItemTextProgressLogger()); err != nil {
+	fmt.Println("Updating full-text search index...")
+
+	// Progress goes to stdout rather than logrus: a rebuild of a large spool
+	// runs for tens of seconds, and the default log level is Warn, so a command
+	// reporting at info level would be indistinguishable from one doing nothing.
+	var indexed int64
+	if err := db.ReindexItemText(reindexForce, func(done, total int64) {
+		indexed = done
+		fmt.Printf("Indexed %d of %d items\n", done, total)
+	}); err != nil {
 		return err
 	}
 
-	logrus.Info("Search index is up to date")
+	fmt.Printf("Search index is up to date (%d items indexed)\n", indexed)
 	return nil
 }
