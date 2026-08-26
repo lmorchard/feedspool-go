@@ -432,6 +432,7 @@ type ItemFilter struct {
 	FeedURL   string
 	FeedQuery string
 	Search    string
+	Sort      string
 	Limit     int
 	Since     time.Time
 	Until     time.Time
@@ -441,7 +442,10 @@ type ItemFilter struct {
 
 // GetItems retrieves items with filtering options.
 func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
-	query, args := buildItemsQuery(filter)
+	query, args, err := buildItemsQuery(filter)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := db.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get items: %w", err)
@@ -468,12 +472,23 @@ func (db *DB) GetItems(filter *ItemFilter) ([]*Item, error) {
 	return items, nil
 }
 
-func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}) {
+func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}, err error) {
+	searchExpr, err := itemsSearchExpression(filter.Search)
+	if err != nil {
+		return "", nil, err
+	}
+	if filter.Sort == SortRelevance && searchExpr == "" {
+		return "", nil, errRelevanceNeedsSearch
+	}
+
 	query = `
 		SELECT i.id, i.feed_url, i.guid, i.title, i.link, i.published_date, i.first_seen,
 			i.content, i.summary, i.archived, i.item_json
 		FROM items i
 	`
+	if searchExpr != "" {
+		query += itemsFTSJoin
+	}
 	var conditions []string
 
 	if filter.Unseen {
@@ -498,9 +513,9 @@ func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}) {
 		conditions = append(conditions, "instr(lower(i.feed_url), lower(?)) > 0")
 		args = append(args, filter.FeedQuery)
 	}
-	if filter.Search != "" {
-		conditions = append(conditions, "instr(lower(i.title), lower(?)) > 0")
-		args = append(args, filter.Search)
+	if searchExpr != "" {
+		conditions = append(conditions, itemsFTSMatch)
+		args = append(args, searchExpr)
 	}
 	if !filter.Since.IsZero() {
 		conditions = append(conditions, aliasedEffectiveDateExpression+" >= julianday(?)")
@@ -514,10 +529,10 @@ func buildItemsQuery(filter *ItemFilter) (query string, args []interface{}) {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query += " ORDER BY " + aliasedEffectiveDateExpression + " DESC"
+	query += itemsOrderByClause(filter.Sort)
 	if filter.Limit > 0 {
 		query += sqlLimitClause
 		args = append(args, filter.Limit)
 	}
-	return query, args
+	return query, args, nil
 }
