@@ -2,9 +2,14 @@ package database
 
 import (
 	"database/sql"
+	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/itemtext"
+	"github.com/lmorchard/feedspool-go/internal/search"
 )
 
 func TestUpsertAndGetItem(t *testing.T) {
@@ -543,7 +548,7 @@ func TestDeleteArchivedItems(t *testing.T) {
 	}
 }
 
-func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
+func TestGetItemsWithFeedAndSearchFilters(t *testing.T) {
 	db := setupTestDB(t)
 	discoveredAt := time.Date(2026, 8, 25, 14, 0, 0, 0, time.FixedZone("PDT", -7*60*60))
 	feeds := []string{
@@ -596,21 +601,27 @@ func TestGetItemsWithFeedAndTitleSubstringFilters(t *testing.T) {
 		t.Errorf("boundary GetItems() returned %d items, want half-open cursor window", len(atCursor))
 	}
 
-	literal, err := db.GetItems(&ItemFilter{Search: "%"})
+	// Punctuation is literal text, not syntax: "C++" reaches FTS5 quoted, so it
+	// matches nothing here instead of raising a query-syntax error the way a
+	// raw MATCH would.
+	literal, err := db.GetItems(&ItemFilter{Search: searchPunctuationQuery})
 	if err != nil {
 		t.Fatalf("literal GetItems() error = %v", err)
 	}
 	if len(literal) != 0 {
-		t.Errorf("literal GetItems() returned %d wildcard matches, want 0", len(literal))
+		t.Errorf("literal GetItems() returned %d punctuation matches, want 0", len(literal))
 	}
 }
 
 func TestGetItemsTimeWindowUsesIndex(t *testing.T) {
 	db := setupTestDB(t)
-	query, args := buildItemsQuery(&ItemFilter{
+	query, args, err := buildItemsQuery(&ItemFilter{
 		Since: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC),
 		Until: time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	rows, err := db.conn.Query("EXPLAIN QUERY PLAN "+query, args...)
 	if err != nil {
@@ -665,4 +676,462 @@ func TestGetItemsEffectiveDateOrderingUsesIndex(t *testing.T) {
 	if !strings.Contains(plan.String(), "idx_items_feed_effective_date") || strings.Contains(plan.String(), "USE TEMP B-TREE") {
 		t.Fatalf("per-feed effective-date query plan does not use composite index:\n%s", plan.String())
 	}
+}
+
+// newUpsertItemTextFixture builds an item with markup in its content, ready
+// to exercise the item_text derivation UpsertItem performs.
+func newUpsertItemTextFixture(term string) *Item {
+	return &Item{
+		FeedURL:       fixtureFeedURL,
+		GUID:          fixtureGUID,
+		Title:         testItemTitle,
+		Link:          fixtureItemLink,
+		PublishedDate: time.Now().UTC().Truncate(time.Second),
+		Content:       seededItemContent(0, term),
+		Summary:       fixtureItemSummary,
+	}
+}
+
+// setupItemTextFixtureDB seeds a feed so UpsertItem's foreign key succeeds.
+func setupItemTextFixtureDB(t *testing.T) *DB {
+	t.Helper()
+	db := setupTestDB(t)
+	if err := db.UpsertFeed(&Feed{URL: fixtureFeedURL}); err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+// itemTextBody reads the derived body text for an item.
+func itemTextBody(t *testing.T, db *DB, itemID int64) string {
+	t.Helper()
+	var body string
+	if err := db.conn.QueryRow(
+		`SELECT body FROM item_text WHERE item_id = ?`, itemID,
+	).Scan(&body); err != nil {
+		t.Fatalf("reading item_text body for item %d: %v", itemID, err)
+	}
+	return body
+}
+
+func TestUpsertItemIndexesNewItem(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("db.UpsertItem() error = %v", err)
+	}
+
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored == nil {
+		t.Fatal("db.GetItem() returned nil after upsert")
+	}
+
+	want := itemtext.Derive(item.Title, item.Summary, item.Content, itemtext.DefaultOptions()).Body
+	if got := itemTextBody(t, db, stored.ID); got != want {
+		t.Errorf("item_text body = %q, want %q", got, want)
+	}
+
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Errorf("body term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
+func TestUpsertItemSkipsDerivationWhenUnchanged(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("no item_text row after first upsert")
+	}
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+	after, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("item_text row disappeared after second upsert")
+	}
+
+	if after != before {
+		t.Errorf("computed_at moved from %q to %q; unchanged content should skip derivation", before, after)
+	}
+}
+
+func TestUpsertItemReindexesChangedContent(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	if got := countMatching(t, db, seedBodyTerm); got != 1 {
+		t.Fatalf("initial body term matches %d items, want 1", got)
+	}
+
+	item.Content = seededItemContent(0, replacementBodyTerm)
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+
+	if got := countMatching(t, db, seedBodyTerm); got != 0 {
+		t.Errorf("retired body term still matches %d items, want 0", got)
+	}
+	if got := countMatching(t, db, replacementBodyTerm); got != 1 {
+		t.Errorf("new body term matches %d items, want 1", got)
+	}
+	integrityCheck(t, db)
+}
+
+func TestUpsertItemReindexesOnVersionBump(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	item := newUpsertItemTextFixture(seedBodyTerm)
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("first db.UpsertItem() error = %v", err)
+	}
+	stored, err := db.GetItem(item.FeedURL, item.GUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	execSQL(t, db, `UPDATE item_text SET generator_version = ? WHERE item_id = ?`, itemtext.Version-1, stored.ID)
+	before, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("no item_text row after hand-setting generator_version")
+	}
+
+	if err := db.UpsertItem(item); err != nil {
+		t.Fatalf("second db.UpsertItem() error = %v", err)
+	}
+
+	after, ok := itemTextComputedAt(t, db)[stored.ID]
+	if !ok {
+		t.Fatal("item_text row disappeared after second upsert")
+	}
+	if after == before {
+		t.Errorf("computed_at unchanged at %q; a version bump should force recompute despite a matching hash", before)
+	}
+
+	var version int
+	if err := db.conn.QueryRow(
+		`SELECT generator_version FROM item_text WHERE item_id = ?`, stored.ID,
+	).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if version != itemtext.Version {
+		t.Errorf("generator_version = %d, want %d", version, itemtext.Version)
+	}
+}
+
+const (
+	// searchTitleTerm, searchSummaryTerm and searchBodyTerm each appear in
+	// exactly one field of exactly one fixture item. The summary and body terms
+	// are the ones title-substring search could never reach.
+	searchTitleTerm   = "chronicle"
+	searchSummaryTerm = replacementBodyTerm
+	searchBodyTerm    = seedBodyTerm
+
+	searchTitleGUID   = "search-title"
+	searchSummaryGUID = "search-summary"
+	searchBodyGUID    = "search-body"
+
+	// relevanceTerm is the query the ranking fixtures compete on.
+	relevanceTerm      = "kubernetes"
+	relevanceTitleGUID = "relevance-title"
+	relevanceBodyGUID  = "relevance-body"
+
+	// searchFiller is unremarkable prose that pads a fixture so bm25 has a
+	// document length to normalize against.
+	searchFiller = "Assorted notes on other subjects entirely."
+
+	// searchPunctuationQuery is punctuation the parser must hand FTS5 as
+	// literal text rather than as syntax, and searchOnlyExclusion is a query
+	// with nothing left to match. Both surfaces have to treat them alike.
+	searchPunctuationQuery = "C++"
+	searchOnlyExclusion    = "-draft"
+
+	// Subtest names for the one-term-per-field cases, shared by the CLI and
+	// API versions of the same table.
+	caseTitle   = "title"
+	caseSummary = "summary"
+	caseBody    = "body"
+)
+
+// itemGUIDs renders the GUIDs of a result set in order, for comparison and for
+// readable failure messages.
+func itemGUIDs(items []*Item) string {
+	guids := make([]string, 0, len(items))
+	for _, item := range items {
+		guids = append(guids, item.GUID)
+	}
+	return strings.Join(guids, ",")
+}
+
+// sortedItemGUIDs renders result GUIDs order-independently, for assertions
+// about which rows matched rather than how they were ranked.
+func sortedItemGUIDs(items []*Item) string {
+	guids := make([]string, 0, len(items))
+	for _, item := range items {
+		guids = append(guids, item.GUID)
+	}
+	slices.Sort(guids)
+	return strings.Join(guids, ",")
+}
+
+// seedSearchFieldFixtures inserts one item per searchable field, each carrying
+// its distinguishing term in that field alone.
+func seedSearchFieldFixtures(t *testing.T, db *DB) {
+	t.Helper()
+	items := []*Item{
+		{
+			FeedURL: fixtureFeedURL, GUID: searchTitleGUID,
+			Title:   "A " + searchTitleTerm + " of small events",
+			Summary: "<p>" + searchFiller + "</p>",
+			Content: "<div>" + searchFiller + "</div>",
+		},
+		{
+			FeedURL: fixtureFeedURL, GUID: searchSummaryGUID,
+			Title:   "Second item",
+			Summary: "<p>A " + searchSummaryTerm + " passes overhead.</p>",
+			Content: "<div>" + searchFiller + "</div>",
+		},
+		{
+			FeedURL: fixtureFeedURL, GUID: searchBodyGUID,
+			Title:   "Third item",
+			Summary: "<p>" + searchFiller + "</p>",
+			Content: "<div>The " + searchBodyTerm + " is moored in the hangar.</div>",
+		},
+	}
+	for _, item := range items {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatalf("seeding %s: %v", item.GUID, err)
+		}
+	}
+}
+
+func TestGetItemsSearchMatchesBodyAndSummary(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	cases := []struct {
+		name, query, want string
+	}{
+		{caseTitle, searchTitleTerm, searchTitleGUID},
+		{caseSummary, searchSummaryTerm, searchSummaryGUID},
+		{caseBody, searchBodyTerm, searchBodyGUID},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := db.GetItems(&ItemFilter{Search: tc.query})
+			if err != nil {
+				t.Fatalf("GetItems(%q) error = %v", tc.query, err)
+			}
+			if itemGUIDs(got) != tc.want {
+				t.Errorf("GetItems(%q) = [%s], want [%s]", tc.query, itemGUIDs(got), tc.want)
+			}
+		})
+	}
+	integrityCheck(t, db)
+}
+
+func TestGetItemsSearchComposesWithFilters(t *testing.T) {
+	const (
+		alphaOldGUID    = "alpha-old"
+		alphaRecentGUID = "alpha-recent"
+		betaRecentGUID  = "beta-recent"
+	)
+	db := setupTestDB(t)
+	for _, feedURL := range []string{testAlphaFeedURL, testBetaFeedURL} {
+		if err := db.UpsertFeed(&Feed{URL: feedURL}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	matching := "<div>The " + searchBodyTerm + " is moored in the hangar.</div>"
+	items := []*Item{
+		{
+			FeedURL: testAlphaFeedURL, GUID: alphaOldGUID, Title: "Alpha old",
+			Content: matching, PublishedDate: time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			FeedURL: testAlphaFeedURL, GUID: alphaRecentGUID, Title: "Alpha recent",
+			Content: matching, PublishedDate: time.Date(2026, 8, 20, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			FeedURL: testBetaFeedURL, GUID: betaRecentGUID, Title: "Beta recent",
+			Content: matching, PublishedDate: time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			FeedURL: testBetaFeedURL, GUID: "beta-other", Title: "Beta other",
+			Content:       "<div>" + searchFiller + "</div>",
+			PublishedDate: time.Date(2026, 8, 22, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	for _, item := range items {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatalf("seeding %s: %v", item.GUID, err)
+		}
+	}
+	if err := db.AddAnnotation(
+		testAlphaFeedURL, alphaRecentGUID, "seen", sql.NullString{}, sql.NullString{},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	window := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name   string
+		filter ItemFilter
+		want   string
+	}{
+		{
+			"feed url",
+			ItemFilter{Search: searchBodyTerm, FeedURL: testAlphaFeedURL},
+			alphaOldGUID + "," + alphaRecentGUID,
+		},
+		{
+			"time window",
+			ItemFilter{Search: searchBodyTerm, Since: window, Until: window.AddDate(0, 1, 0)},
+			alphaRecentGUID + "," + betaRecentGUID,
+		},
+		{"seen", ItemFilter{Search: searchBodyTerm, Seen: true}, alphaRecentGUID},
+		{
+			"unseen",
+			ItemFilter{Search: searchBodyTerm, Unseen: true},
+			alphaOldGUID + "," + betaRecentGUID,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			filter := tc.filter
+			got, err := db.GetItems(&filter)
+			if err != nil {
+				t.Fatalf("GetItems() error = %v", err)
+			}
+			if sortedItemGUIDs(got) != tc.want {
+				t.Errorf("GetItems() = [%s], want [%s]; search must intersect the other filters, not replace them",
+					sortedItemGUIDs(got), tc.want)
+			}
+		})
+	}
+}
+
+// seedRelevanceFixtures inserts two items that compete on relevanceTerm. The
+// body match is both newer and repeats the term, so date order and an
+// unweighted bm25 would each put it first. Only the column weights, which rate
+// a title hit above a body hit, produce the title-first order.
+//
+// Both GetItems and ListItems rank from these, which is the point: the two
+// surfaces have to agree about ranking as well as about matching.
+func seedRelevanceFixtures(t *testing.T, db *DB) {
+	t.Helper()
+	items := []*Item{
+		{
+			FeedURL: fixtureFeedURL, GUID: relevanceTitleGUID,
+			Title:         "Notes on " + relevanceTerm,
+			Summary:       "<p>" + searchFiller + "</p>",
+			Content:       "<div>" + searchFiller + "</div>",
+			PublishedDate: time.Date(2026, 8, 20, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			FeedURL: fixtureFeedURL, GUID: relevanceBodyGUID,
+			Title:         "Weekly links",
+			Summary:       "<p>" + searchFiller + "</p>",
+			Content:       "<div>" + strings.Repeat(relevanceTerm+" ", 8) + "</div>",
+			PublishedDate: time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	for _, item := range items {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatalf("seeding %s: %v", item.GUID, err)
+		}
+	}
+}
+
+func TestGetItemsRelevanceRanksTitleAboveBody(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedRelevanceFixtures(t, db)
+
+	byDate, err := db.GetItems(&ItemFilter{Search: relevanceTerm})
+	if err != nil {
+		t.Fatalf("GetItems() error = %v", err)
+	}
+	if want := relevanceBodyGUID + "," + relevanceTitleGUID; itemGUIDs(byDate) != want {
+		t.Fatalf("default GetItems() = [%s], want [%s]; the fixture must rank differently by date",
+			itemGUIDs(byDate), want)
+	}
+
+	ranked, err := db.GetItems(&ItemFilter{Search: relevanceTerm, Sort: SortRelevance})
+	if err != nil {
+		t.Fatalf("relevance GetItems() error = %v", err)
+	}
+	if want := relevanceTitleGUID + "," + relevanceBodyGUID; itemGUIDs(ranked) != want {
+		t.Errorf("relevance GetItems() = [%s], want [%s]; bm25 column weights rank a title hit above a body hit",
+			itemGUIDs(ranked), want)
+	}
+}
+
+func TestGetItemsSearchRejectsOnlyExclusions(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	got, err := db.GetItems(&ItemFilter{Search: searchOnlyExclusion})
+	if !errors.Is(err, search.ErrOnlyExclusions) {
+		t.Fatalf("GetItems() error = %v, want %v", err, search.ErrOnlyExclusions)
+	}
+	if got != nil {
+		t.Errorf("GetItems() returned %d items alongside the error, want none", len(got))
+	}
+}
+
+func TestGetItemsEmptySearchExpressionAddsNoFilter(t *testing.T) {
+	db := setupItemTextFixtureDB(t)
+	seedSearchFieldFixtures(t, db)
+
+	// A bare "*" is a non-empty --search that the parser reduces to the empty
+	// expression, meaning "no search filter". The query must then carry neither
+	// the FTS join nor the MATCH, and return every row.
+	everything := sortedItemGUIDs(mustGetItems(t, db, &ItemFilter{}))
+	all, err := db.GetItems(&ItemFilter{Search: "*"})
+	if err != nil {
+		t.Fatalf("GetItems() error = %v", err)
+	}
+	if sortedItemGUIDs(all) != everything {
+		t.Errorf("GetItems(%q) = [%s], want the unfiltered [%s]", "*", sortedItemGUIDs(all), everything)
+	}
+
+	// There is correspondingly nothing to rank, and the CLI's own check cannot
+	// catch this one: --search "*" is not the empty string. Both spellings of
+	// "relevance with no ranking" have to fail here instead.
+	for _, filter := range []ItemFilter{
+		{Search: "*", Sort: SortRelevance},
+		{Sort: SortRelevance},
+	} {
+		if _, err := db.GetItems(&filter); !errors.Is(err, ErrRelevanceNeedsSearch) {
+			t.Errorf("GetItems(%+v) error = %v, want %v", filter, err, ErrRelevanceNeedsSearch)
+		}
+	}
+}
+
+// mustGetItems runs a filter the test expects to succeed.
+func mustGetItems(t *testing.T, db *DB, filter *ItemFilter) []*Item {
+	t.Helper()
+	items, err := db.GetItems(filter)
+	if err != nil {
+		t.Fatalf("GetItems(%+v) error = %v", filter, err)
+	}
+	return items
 }

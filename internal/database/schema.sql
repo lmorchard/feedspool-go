@@ -60,3 +60,45 @@ CREATE INDEX IF NOT EXISTS idx_item_annotations_kind   ON item_annotations(kind,
 -- distinct, which is what makes a repeated "seen" a no-op rather than a dupe.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_item_annotations_unique
     ON item_annotations(feed_url, item_guid, kind, COALESCE(value, ''));
+
+-- Derived, HTML-free text for each item, plus the bookkeeping that says which
+-- generator produced it. Go owns inserts and updates here, because stripping
+-- HTML is Go code; the triggers below own the search index. This DDL is
+-- deliberately duplicated in migration 11 -- the same arrangement item_annotations
+-- has with migration 6 -- so fresh and migrated databases converge on it.
+CREATE TABLE IF NOT EXISTS item_text (
+    item_id           INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+    title             TEXT NOT NULL DEFAULT '',
+    summary           TEXT NOT NULL DEFAULT '',
+    body              TEXT NOT NULL DEFAULT '',
+    source_hash       TEXT NOT NULL,
+    generator         TEXT NOT NULL,
+    generator_version INTEGER NOT NULL,
+    computed_at       DATETIME NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_item_text_generator
+    ON item_text(generator, generator_version);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
+    title, summary, body,
+    content='item_text', content_rowid='item_id',
+    tokenize="porter unicode61 remove_diacritics 2"
+);
+
+-- An external-content index stores no column values of its own, so a 'delete'
+-- command has to carry the OLD ones: by the time the update trigger runs,
+-- item_text already holds the new text and the old terms are unrecoverable.
+CREATE TRIGGER IF NOT EXISTS item_text_ai AFTER INSERT ON item_text BEGIN
+    INSERT INTO items_fts(rowid, title, summary, body)
+    VALUES (new.item_id, new.title, new.summary, new.body);
+END;
+CREATE TRIGGER IF NOT EXISTS item_text_ad AFTER DELETE ON item_text BEGIN
+    INSERT INTO items_fts(items_fts, rowid, title, summary, body)
+    VALUES ('delete', old.item_id, old.title, old.summary, old.body);
+END;
+CREATE TRIGGER IF NOT EXISTS item_text_au AFTER UPDATE ON item_text BEGIN
+    INSERT INTO items_fts(items_fts, rowid, title, summary, body)
+    VALUES ('delete', old.item_id, old.title, old.summary, old.body);
+    INSERT INTO items_fts(rowid, title, summary, body)
+    VALUES (new.item_id, new.title, new.summary, new.body);
+END;

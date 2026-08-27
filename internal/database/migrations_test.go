@@ -36,6 +36,10 @@ func setupTestDBForMigrations(t *testing.T) (db *DB, tempDir string) {
 }
 
 // setupOldDatabase creates a database with the old schema (without latest_item_date column).
+//
+// items keeps its id column: every schema feedspool has ever shipped has had
+// one, including the version-1 baseline this fixture stands in for, and the
+// item repository selects it everywhere. Migration 11 keys derived text off it.
 func setupOldDatabase(t *testing.T) *DB {
 	t.Helper()
 
@@ -54,6 +58,7 @@ func setupOldDatabase(t *testing.T) *DB {
 		);
 		
 		CREATE TABLE items (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			feed_url TEXT,
 			guid TEXT,
 			title TEXT,
@@ -63,7 +68,7 @@ func setupOldDatabase(t *testing.T) *DB {
 			summary TEXT,
 			archived BOOLEAN DEFAULT FALSE,
 			item_json TEXT,
-			PRIMARY KEY (feed_url, guid),
+			UNIQUE (feed_url, guid),
 			FOREIGN KEY (feed_url) REFERENCES feeds(url) ON DELETE CASCADE
 		);
 		
@@ -400,6 +405,7 @@ func TestRunMigrationsWithExistingColumn(t *testing.T) {
 		);
 		
 		CREATE TABLE items (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			feed_url TEXT,
 			guid TEXT,
 			title TEXT,
@@ -409,7 +415,7 @@ func TestRunMigrationsWithExistingColumn(t *testing.T) {
 			summary TEXT,
 			archived BOOLEAN DEFAULT FALSE,
 			item_json TEXT,
-			PRIMARY KEY (feed_url, guid),
+			UNIQUE (feed_url, guid),
 			FOREIGN KEY (feed_url) REFERENCES feeds(url) ON DELETE CASCADE
 		);
 	`

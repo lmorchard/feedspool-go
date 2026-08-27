@@ -174,9 +174,15 @@ paths:
         - name: q
           in: query
           description: |
-            Case-insensitive substring match on the item title only -- not body
-            or summary. Identical to `feedspool items --search`.
-          schema: { type: string }
+            Full-text search over the item title, summary and body. Terms are
+            ANDed; `"quoted phrases"`, `-exclusions` and `prefix*` are
+            supported; everything else is matched literally. Identical to
+            `feedspool items --search`.
+
+            At most 2048 characters; longer queries are rejected with
+            `400 invalid_parameter`. A query of nothing but exclusions is
+            rejected the same way.
+          schema: { type: string, maxLength: 2048 }
         - name: since
           in: query
           description: |
@@ -199,7 +205,11 @@ paths:
           schema: { type: string, enum: ["true", "false", "any"], default: "false" }
         - name: sort
           in: query
-          schema: { type: string, enum: [newest, oldest], default: newest }
+          description: |
+            `relevance` requires `q` and is the only ordering that does not use
+            a keyset cursor; its cursors are not interchangeable with the
+            others.
+          schema: { type: string, enum: [newest, oldest, relevance], default: newest }
         - name: limit
           in: query
           schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
