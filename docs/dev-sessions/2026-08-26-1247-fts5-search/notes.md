@@ -154,6 +154,48 @@ above says "migrating from schema v4 to v11," which made the stale line read
 as a contradiction rather than as staleness. The final review pass corrected
 it to 11.
 
+## Two follow-up candidates, with the reasoning that produced them
+
+Recorded here because the working notes that held them do not survive the
+session.
+
+**`reindex --force` empties the index before refilling it.** The `DELETE FROM
+item_text` commits on its own, then the backfill runs in batches, so an
+interruption in between leaves search returning nothing until someone re-runs
+the command. That window is documented in `MANUAL.md`, in `reindex --help`, and
+in the `--force` flag description rather than closed, and the reasoning is worth
+keeping: folding the delete into the first batch would need a new pre-batch hook
+on the shared `RunBackfill` path that #30 is expected to implement against, and
+it would still put a full-table delete plus every triggered FTS delete into one
+transaction — which is the exact thing the batching exists to avoid.
+
+The better fix, deferred rather than rejected: mark the rows stale
+(`UPDATE item_text SET generator_version = -1`) instead of deleting them. The
+backfill's staleness predicate already treats a version mismatch as work to do,
+so every row gets re-derived, and the index is never empty at any point. It
+needs a think about what a `-1` sentinel means to a second generator before
+being worth doing.
+
+**Migration 11 is quiet at the default log level.** It is on logrus like the
+other ten migrations, so a first run after upgrading prints nothing for ~24s on
+a 20k-item spool — and because `IsInitialized` runs migrations, the command that
+pays that cost is usually an incidental `feedspool status` or a cron
+`feedspool fetch`, not something the user chose to run. The other migrations are
+fast enough that their silence is invisible; this is the first one where it is
+not. `MANUAL.md` documents the one-time cost as a stopgap. The real fix is to
+thread a progress callback through `RunMigrations`, which is a change to shared
+migration machinery and deserves its own issue rather than being smuggled in
+here.
+
+## A grammar edge worth knowing
+
+Control characters in a search query fold to whitespace, which is what stops a
+NUL byte from becoming an FTS5 syntax error and a 500. One consequence: in
+adversarial input like `-<NUL>draft`, the fold separates the `-` from the term,
+so the exclusion marker is dropped and `draft` becomes a positive term instead.
+No error, no crash, and no realistic query looks like that — but it is the one
+place folding changes meaning rather than just spelling.
+
 ## For whoever picks this up next
 
 - The feature is done and reviewed through phase 6; this phase is
