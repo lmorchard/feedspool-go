@@ -75,15 +75,11 @@ func init() {
 func runPurge(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	// Run list-based cleanup if format/filename provided or configured
 	if shouldRunListCleanup(cfg) {

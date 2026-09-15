@@ -1285,11 +1285,25 @@ above a body hit.
 
 Upgrading an existing database runs a one-time backfill (migration 11) that
 derives text for every item already in the spool, alongside whatever earlier
-migrations also need to run. On a 19,750-item production spool, migrating from
-schema v4 to v11 took 23.5 seconds wall time end to end and grew the database
-file by about 24%; it is quiet at the default log level, so an upgrade that
-appears to hang for a few dozen seconds is this backfill running, not a
-problem. Run with `-v` to see progress.
+migrations also need to run. On a 32,622-item production spool, migrating from
+schema v4 to v11 took 33 seconds wall time end to end and grew the database
+file by about 24%.
+
+Any command can trigger that upgrade, because the check that a database is
+usable is also what applies pending migrations — so the command that pays for
+it is usually an incidental `status` or a cron `fetch` rather than something
+you chose to run. Each migration announces itself first and the backfill
+reports as it goes:
+
+```
+Migrating database to schema version 10: deduplicate annotations and enforce uniqueness...
+Migrating database to schema version 11: derive item text and build the full-text search index...
+  500 of 32622 items
+  1000 of 32622 items
+```
+
+That output goes to **stderr**, not stdout, so it never contaminates
+`--format json` piped into `jq`.
 
 ### `schema_migrations`
 

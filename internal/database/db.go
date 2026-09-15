@@ -28,7 +28,8 @@ const (
 
 // DB wraps a database connection with methods for feed operations.
 type DB struct {
-	conn *sql.DB
+	conn              *sql.DB
+	migrationProgress MigrationProgress
 }
 
 // New creates a new database connection and initializes it.
@@ -172,18 +173,27 @@ func (db *DB) GetConnection() *sql.DB {
 	return db.conn
 }
 
+// rollbackUnlessDone rolls back a transaction unless it has already finished.
+//
+// A deferred rollback that runs after a successful commit returns
+// sql.ErrTxDone, which is the expected outcome and not worth a warning. Four of
+// those were the entire visible output of a real upgrade at the default log
+// level -- alarming in exactly the moment a user is paying closest attention.
+// Guarding on a "committed" bool at each call site works too, until one call
+// site forgets, which is what happened here.
+func rollbackUnlessDone(tx *sql.Tx, what string) {
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		logrus.WithError(err).Warnf("Failed to roll back %s", what)
+	}
+}
+
 // ApplyMigration applies a database migration.
 func (db *DB) ApplyMigration(version int, migrationSQL string) error {
 	tx, err := db.conn.Begin()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			// Only log rollback errors if they're not transaction already committed
-			logrus.WithError(rollbackErr).Warn("Failed to rollback transaction")
-		}
-	}()
+	defer rollbackUnlessDone(tx, fmt.Sprintf("migration %d", version))
 
 	if _, err := tx.Exec(migrationSQL); err != nil {
 		return fmt.Errorf("failed to apply migration %d: %w", version, err)

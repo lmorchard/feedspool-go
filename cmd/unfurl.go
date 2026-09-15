@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -57,15 +56,11 @@ func init() {
 func runUnfurl(_ *cobra.Command, args []string) error {
 	cfg := GetConfig()
 
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	// Create HTTP client
 	httpClient := httpclient.NewClient(&httpclient.Config{

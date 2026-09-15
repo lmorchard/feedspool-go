@@ -74,11 +74,7 @@ func (db *DB) backfillRemaining(gen DerivedBackfill) (int64, error) {
 		return 0, fmt.Errorf("failed to begin %s backfill count: %w", gen.Name(), err)
 	}
 	// Read-only, so it is always rolled back rather than committed.
-	defer func() {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			logrus.WithError(rollbackErr).Warn("Failed to roll back backfill count transaction")
-		}
-	}()
+	defer rollbackUnlessDone(tx, "backfill count transaction")
 
 	remaining, err := gen.Remaining(tx)
 	if err != nil {
@@ -94,14 +90,7 @@ func (db *DB) runBackfillBatch(gen DerivedBackfill, afterID int64, batchSize int
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin %s backfill batch: %w", gen.Name(), err)
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to roll back backfill batch")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "backfill batch")
 
 	ids, err := gen.NextBatch(tx, afterID, batchSize)
 	if err != nil {
@@ -119,6 +108,5 @@ func (db *DB) runBackfillBatch(gen DerivedBackfill, afterID int64, batchSize int
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit %s backfill batch: %w", gen.Name(), err)
 	}
-	committed = true
 	return ids, nil
 }

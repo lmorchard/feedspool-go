@@ -34,6 +34,11 @@ type WorkflowConfig struct {
 	SiteTitle string
 	Database  string
 	Clean     bool
+	// MigrationProgress reports any migration this run triggers. The renderer
+	// opens its own connection, so without it "render" is the one user-facing
+	// command that would still migrate in silence. nil is silent, which is
+	// what tests and library callers want.
+	MigrationProgress database.MigrationProgress
 	// Quiet suppresses per-site progress output (the "Rendering feeds
 	// from...", "Found N feeds...", "Open .../index.html..." lines).
 	// Directory-mode callers that print their own summary set this so a
@@ -84,6 +89,8 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	}
 	defer db.Close()
 
+	// Set before IsInitialized, which is the call that migrates.
+	db.SetMigrationProgress(config.MigrationProgress)
 	if err := db.IsInitialized(); err != nil {
 		return nil, fmt.Errorf("database not initialized: %w", err)
 	}

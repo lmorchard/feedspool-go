@@ -60,15 +60,11 @@ func runItem(args []string) error {
 		return err
 	}
 	cfg := GetConfig()
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	output, err := getItemOutput(db, selector)
 	if err != nil {
