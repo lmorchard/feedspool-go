@@ -44,7 +44,7 @@ func newItemTextRebuild(opts itemtext.Options) *itemTextBackfill {
 // workCondition returns the WHERE fragment selecting items that still need
 // work, with the arguments it binds. A rebuild's predicate is a constant: every
 // item needs work by definition, so there is nothing to compare against.
-func (g *itemTextBackfill) workCondition() (string, []any) {
+func (g *itemTextBackfill) workCondition() (condition string, args []any) {
 	if g.rederiveAll {
 		return "TRUE", nil
 	}
@@ -59,15 +59,16 @@ func (g *itemTextBackfill) NextBatch(tx *sql.Tx, afterID int64, limit int) ([]in
 	condition, conditionArgs := g.workCondition()
 	args := append([]any{afterID}, conditionArgs...)
 	args = append(args, limit)
-	rows, err := tx.Query(
-		`
+	// condition is whichever of two package constants workCondition returned,
+	// so the concatenation below cannot carry anything a caller supplied.
+	//nolint:gosec // Safe: condition is a package constant, not user input
+	query := `
 		SELECT i.id
 		FROM items i LEFT JOIN item_text t ON t.item_id = i.id
-		WHERE i.id > ? AND (`+condition+`)
+		WHERE i.id > ? AND (` + condition + `)
 		ORDER BY i.id
-		LIMIT ?`,
-		args...,
-	)
+		LIMIT ?`
+	rows, err := tx.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query stale item text: %w", err)
 	}
