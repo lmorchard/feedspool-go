@@ -35,7 +35,7 @@ GOLANGCI_LINT_VERSION := v2.13.1
 #
 #   - locally, exporting GOTOOLCHAIN here puts every `go` invocation under make
 #     on the pinned version;
-#   - in CI, the workflow installs this exact version, read back out through
+#   - in CI, each workflow installs this exact version, read back out through
 #     `make print-go-version`.
 #
 # CI reads it rather than relying on actions/setup-go@v5, which resolves
