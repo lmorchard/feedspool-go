@@ -2,6 +2,11 @@ module github.com/lmorchard/feedspool-go
 
 go 1.25.0
 
+// Pinned so that local tooling and CI agree, and read by both. See
+// GO_TOOLCHAIN in the Makefile for why this cannot float, what consumes it,
+// and what has to move with it.
+toolchain go1.26.8
+
 require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/andybalholm/cascadia v1.1.0

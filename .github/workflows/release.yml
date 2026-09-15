@@ -40,10 +40,21 @@ jobs:
       with:
         fetch-depth: 0
 
+    # Same pin the Makefile exports as GOTOOLCHAIN, read from go.mod. Installing
+    # it directly matters more here than in ci.yml: setup-go resolves
+    # `go-version-file` from the `go` directive rather than `toolchain`, so the
+    # old spelling had every leg of the matrix download the pinned toolchain on
+    # top of the one it had just installed. `make build` was already on the
+    # right Go either way, via GOTOOLCHAIN.
+    - name: Determine Go version
+      id: go_version
+      shell: bash
+      run: echo "version=$(make print-go-version | sed 's/^go//')" >> "$GITHUB_OUTPUT"
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version-file: go.mod
+        go-version: ${{ steps.go_version.outputs.version }}
 
     - name: Set version variables
       shell: bash
