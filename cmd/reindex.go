@@ -17,14 +17,13 @@ search index up to date. Ordinary use needs no flags: fetching maintains the
 index, and this command only fills in what is missing.
 
 Use --force after changing how text is derived or tokenized, or after running
-an older feedspool against this database. It discards every derived row and
-rebuilds from the items themselves, which takes as long as the original
+an older feedspool against this database. It re-derives every item rather than
+only the ones missing or stale text, which takes as long as the original
 migration did.
 
---force clears the index before the rebuild starts, and the rebuild commits in
-batches, so an interrupted --force leaves search returning nothing until it is
-run again. A plain reindex has no such window: it only fills in what is
-missing.`,
+--force rewrites rows in place rather than clearing them first, so search keeps
+answering for the whole run. An interruption leaves the rows already rebuilt in
+their rebuilt state; re-running starts over rather than resuming.`,
 	Example: `  feedspool reindex
   feedspool reindex --force`,
 	Args: cobra.NoArgs,
@@ -33,7 +32,7 @@ missing.`,
 
 func init() {
 	reindexCmd.Flags().BoolVar(&reindexForce, "force", false,
-		"Discard and rebuild every derived row; search returns nothing if interrupted")
+		"Re-derive every item, not just the ones missing or stale text")
 	rootCmd.AddCommand(reindexCmd)
 }
 
@@ -49,7 +48,7 @@ func runReindex(_ *cobra.Command, _ []string) error {
 	}
 
 	if reindexForce {
-		fmt.Println("Discarding all derived text before rebuilding...")
+		fmt.Println("Re-deriving text for every item...")
 	}
 	fmt.Println("Updating full-text search index...")
 
