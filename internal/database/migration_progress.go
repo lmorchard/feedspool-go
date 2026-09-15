@@ -26,7 +26,7 @@ func (db *DB) SetMigrationProgress(progress MigrationProgress) {
 // announceMigration reports a migration that is about to run.
 func (db *DB) announceMigration(version int) {
 	if db.migrationProgress != nil {
-		db.migrationProgress.Applying(version, migrationDescriptions[version])
+		db.migrationProgress.Applying(version, migrationDescriptions()[version])
 	}
 }
 
