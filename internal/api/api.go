@@ -25,6 +25,13 @@ const (
 	maxFeedLimit     = 500
 )
 
+// maxQueryLength caps q. No search box comes close; the cap is here because
+// net/http's default request-line limit otherwise admits a flat AND chain of
+// roughly 200,000 terms, FTS5 puts no depth limit on that shape, and the
+// database pool is one connection wide -- so a single such request would hold
+// up every other caller for as long as it ran.
+const maxQueryLength = 2048
+
 // Config is everything the API needs from its host.
 type Config struct {
 	DB *database.DB

@@ -330,4 +330,16 @@ func TestAnnotationDTOPassesThroughUnparseableTimestamp(t *testing.T) {
 	}
 }
 
+// The decoder range-checks DateRank; Offset needs the same treatment. A
+// negative offset is not a position SQLite can honor -- it clamps to zero --
+// so accepting one hands the caller a cursor that never advances.
+func TestDecodeItemCursorRejectsNegativeOffset(t *testing.T) {
+	for _, offset := range []int{-1, -9007199254740991} {
+		encoded := encodeItemCursor(&database.ItemCursor{Relevance: true, Offset: offset})
+		if got, err := decodeItemCursor(encoded); err == nil {
+			t.Errorf("decodeItemCursor(offset %d) = %+v, want an error", offset, got)
+		}
+	}
+}
+
 func boolPtr(value bool) *bool { return &value }

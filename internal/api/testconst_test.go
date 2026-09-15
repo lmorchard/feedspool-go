@@ -9,6 +9,7 @@ const (
 	testFeedURL2 = "https://other.example.org/rss"
 	jsonType     = "application/json"
 	testVersion  = "test"
+	testFeedName = "Feed"
 
 	kindSeen  = "seen"
 	kindTag   = "tag"
@@ -25,7 +26,13 @@ const (
 	unknownItemID = "ffffffffffffffff"
 	fieldItemIDs  = "item_ids"
 	pathStatus    = "/api/v1/status"
+	pathItems     = "/api/v1/items"
 	fieldKindKey  = "kind"
+
+	// searchTerm appears in every item seedSearchable inserts, and
+	// searchCorpusSize is how many of them there are.
+	searchTerm       = "kubernetes"
+	searchCorpusSize = 25
 )
 
 // jsonBody marshals a request body for tests that build one dynamically.

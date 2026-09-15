@@ -36,6 +36,7 @@ timestamps. Invalid flags and conflicting filters exit non-zero.`,
   feedspool --json items --feed example.com
   feedspool --json items --compact --since 2026-08-25T12:00:00Z
   feedspool items --search "release notes" --limit 20
+  feedspool items --search "container networking" --sort relevance
   feedspool items https://example.com/feed.xml`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runItems,
@@ -43,7 +44,7 @@ timestamps. Invalid flags and conflicting filters exit non-zero.`,
 
 func init() {
 	itemsCmd.Flags().StringVar(&itemsFormat, "format", formatTable, "Output format (table|json|csv)")
-	itemsCmd.Flags().StringVar(&itemsSort, "sort", "newest", "Sort order (newest|oldest)")
+	itemsCmd.Flags().StringVar(&itemsSort, "sort", sortNewest, "Sort order (newest|oldest|relevance)")
 	itemsCmd.Flags().IntVar(&itemsLimit, "limit", 0, "Maximum items to return (0 for all)")
 	itemsCmd.Flags().StringVar(&itemsSince, "since", "", "Filter items discovered after time (RFC3339)")
 	itemsCmd.Flags().StringVar(&itemsUntil, "until", "", "Filter items discovered until time (RFC3339)")
@@ -51,7 +52,7 @@ func init() {
 	itemsCmd.Flags().BoolVar(&itemsSeen, "seen", false, "Filter to items with a seen annotation")
 	itemsCmd.Flags().BoolVar(&itemsMarkSeen, "mark-seen", false, "Mark all returned items as seen")
 	itemsCmd.Flags().StringVar(&itemsFeed, "feed", "", "Filter by feed URL substring")
-	itemsCmd.Flags().StringVar(&itemsSearch, "search", "", "Filter by item title substring")
+	itemsCmd.Flags().StringVar(&itemsSearch, "search", "", "Full-text search over title, summary and body")
 	itemsCmd.Flags().BoolVar(&itemsCompact, "compact", false, "Emit a compact JSON manifest")
 	rootCmd.AddCommand(itemsCmd)
 }
@@ -86,6 +87,7 @@ func runItems(_ *cobra.Command, args []string) error {
 		FeedURL:   feedURL,
 		FeedQuery: itemsFeed,
 		Search:    itemsSearch,
+		Sort:      itemsSort,
 		Limit:     itemsLimit,
 		Since:     since,
 		Until:     until,
@@ -98,6 +100,8 @@ func runItems(_ *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Only the oldest-first ordering is produced by reversing; relevance arrives
+	// already ranked best-first, and reversing it would surface the worst match.
 	if itemsSort == sortOldest {
 		reverseItemsList(items)
 	}
@@ -126,8 +130,11 @@ func validateItemsOptions(args []string) error {
 	if itemsSeen && itemsUnseen {
 		return fmt.Errorf("--seen cannot be combined with --unseen")
 	}
-	if itemsSort != sortNewest && itemsSort != sortOldest {
+	if itemsSort != sortNewest && itemsSort != sortOldest && itemsSort != sortRelevance {
 		return fmt.Errorf("unknown sort order: %s", itemsSort)
+	}
+	if itemsSort == sortRelevance && itemsSearch == "" {
+		return fmt.Errorf("--sort relevance requires --search")
 	}
 	return nil
 }
