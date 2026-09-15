@@ -672,7 +672,7 @@ before the index existed.
 
 | Flag | Default | Description |
 |---|---|---|
-| `--force` | false | Discard every derived row and rebuild from scratch |
+| `--force` | false | Re-derive every item, not just the ones missing or stale text |
 
 Use `--force` for either of two reasons:
 
@@ -687,11 +687,13 @@ Use `--force` for either of two reasons:
   are picked up by a plain `reindex` — they have no derived row at all — but
   items it *updated* are only repaired by `--force`.
 
-Note that `--force` clears the derived text before the rebuild begins, and the
-rebuild commits in batches, so an interrupted `--force` leaves search returning
-nothing at all until it is run again. A plain `reindex` has no such window: it
-only fills in what is missing, so an interruption leaves the index partially
-built rather than empty.
+`--force` rewrites rows in place rather than clearing them first, in the same
+committed batches as any other backfill, so search keeps answering for the
+whole run — each item goes from stale to fresh inside one transaction, and
+there is no point at which the index is empty. An interruption leaves the rows
+already rebuilt in their rebuilt state; re-running starts over from the
+beginning rather than resuming, which costs a repeat of the work done so far
+but never correctness.
 
 Budget on the order of 30 seconds for a full rebuild on a 20,000-item spool
 (measured at 34.4s). A no-op run — nothing to do — is still slower than it looks: about
@@ -702,7 +704,8 @@ Progress prints to stdout rather than the log, because a rebuild of a large
 spool can run for tens of seconds and the default log level would otherwise
 make it indistinguishable from a hang.
 
-**Side effects:** Writes `item_text`; `--force` also truncates it first.
+**Side effects:** Writes `item_text`; `--force` rewrites every row rather than
+only the stale ones.
 
 ### export
 
@@ -1254,8 +1257,8 @@ results.
 
 `feedspool fetch` keeps this table current as items are written.
 `feedspool reindex` fills in anything missing (a fresh migration, or items
-written before the index existed); `reindex --force` discards and rebuilds
-every row, which is what a change to `generator_version` calls for.
+written before the index existed); `reindex --force` re-derives every row,
+which is what a change to `generator_version` calls for.
 
 ### `items_fts`
 

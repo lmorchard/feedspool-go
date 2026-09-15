@@ -21,27 +21,54 @@ import (
 const itemTextStalenessCondition = `t.item_id IS NULL OR t.generator <> ? OR t.generator_version <> ?`
 
 // itemTextBackfill derives HTML-free search text for items that lack it.
-type itemTextBackfill struct{ opts itemtext.Options }
+// rederiveAll widens that to every item, which is what a forced rebuild needs.
+type itemTextBackfill struct {
+	opts        itemtext.Options
+	rederiveAll bool
+}
 
 // newItemTextBackfill returns the generator that maintains item_text.
 func newItemTextBackfill(opts itemtext.Options) *itemTextBackfill {
 	return &itemTextBackfill{opts: opts}
 }
 
+// newItemTextRebuild returns a generator that treats every item as needing
+// work, which is what "reindex --force" runs. It re-derives rows that are
+// already at the current generator version -- the case the staleness predicate
+// deliberately skips, and the only way to recover text a rolled-back binary or
+// a changed tokenizer left wrong.
+func newItemTextRebuild(opts itemtext.Options) *itemTextBackfill {
+	return &itemTextBackfill{opts: opts, rederiveAll: true}
+}
+
+// workCondition returns the WHERE fragment selecting items that still need
+// work, with the arguments it binds. A rebuild's predicate is a constant: every
+// item needs work by definition, so there is nothing to compare against.
+func (g *itemTextBackfill) workCondition() (condition string, args []any) {
+	if g.rederiveAll {
+		return "TRUE", nil
+	}
+	return itemTextStalenessCondition, []any{g.Name(), g.Version()}
+}
+
 func (g *itemTextBackfill) Name() string { return itemtext.Generator }
 func (g *itemTextBackfill) Version() int { return itemtext.Version }
 
-// NextBatch returns the next stale item IDs in ascending order.
+// NextBatch returns the next item IDs needing work, in ascending order.
 func (g *itemTextBackfill) NextBatch(tx *sql.Tx, afterID int64, limit int) ([]int64, error) {
-	rows, err := tx.Query(
-		`
+	condition, conditionArgs := g.workCondition()
+	args := append([]any{afterID}, conditionArgs...)
+	args = append(args, limit)
+	// condition is whichever of two package constants workCondition returned,
+	// so the concatenation below cannot carry anything a caller supplied.
+	//nolint:gosec // Safe: condition is a package constant, not user input
+	query := `
 		SELECT i.id
 		FROM items i LEFT JOIN item_text t ON t.item_id = i.id
-		WHERE i.id > ? AND (`+itemTextStalenessCondition+`)
+		WHERE i.id > ? AND (` + condition + `)
 		ORDER BY i.id
-		LIMIT ?`,
-		afterID, g.Name(), g.Version(), limit,
-	)
+		LIMIT ?`
+	rows, err := tx.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query stale item text: %w", err)
 	}
@@ -61,15 +88,16 @@ func (g *itemTextBackfill) NextBatch(tx *sql.Tx, afterID int64, limit int) ([]in
 	return ids, nil
 }
 
-// Remaining counts the items whose derived text is still stale.
+// Remaining counts the items this generator still has work for.
 func (g *itemTextBackfill) Remaining(tx *sql.Tx) (int64, error) {
+	condition, args := g.workCondition()
 	var remaining int64
 	if err := tx.QueryRow(
 		`
 		SELECT COUNT(*)
 		FROM items i LEFT JOIN item_text t ON t.item_id = i.id
-		WHERE `+itemTextStalenessCondition,
-		g.Name(), g.Version(),
+		WHERE `+condition,
+		args...,
 	).Scan(&remaining); err != nil {
 		return 0, fmt.Errorf("failed to count stale item text: %w", err)
 	}
@@ -167,15 +195,26 @@ func upsertItemTextTx(tx *sql.Tx, itemID int64, text itemtext.Text, sourceHash s
 }
 
 // ReindexItemText brings the derived text and search index up to date. force
-// discards every derived row first, which the triggers turn into a full index
-// clear, so a tokenizer change can be applied without a schema migration.
+// re-derives every item rather than only the stale ones, so a changed tokenizer
+// or a rolled-back binary can be recovered from without a schema migration.
+//
+// force overwrites rows in place, in the same committed batches as any other
+// backfill, and never deletes. That is what keeps search answering throughout:
+// an item's entry is replaced within one transaction, so the index goes from
+// complete-and-stale to complete-and-fresh with no window in between. Interrupt
+// it and the rows already rebuilt stay rebuilt; the run simply starts over.
 func (db *DB) ReindexItemText(force bool, progress func(done, total int64)) error {
+	return db.reindexItemText(force, defaultBackfillBatchSize, progress)
+}
+
+// reindexItemText is ReindexItemText with the batch size exposed, which is what
+// lets a test observe the state of the index between committed batches.
+func (db *DB) reindexItemText(force bool, batchSize int, progress func(done, total int64)) error {
+	generator := newItemTextBackfill(itemtext.DefaultOptions())
 	if force {
-		if _, err := db.conn.Exec(`DELETE FROM item_text`); err != nil {
-			return fmt.Errorf("failed to discard derived item text: %w", err)
-		}
+		generator = newItemTextRebuild(itemtext.DefaultOptions())
 	}
-	return db.RunBackfill(newItemTextBackfill(itemtext.DefaultOptions()), defaultBackfillBatchSize, progress)
+	return db.RunBackfill(generator, batchSize, progress)
 }
 
 // ItemTextProgressLogger reports backfill progress at info level, which is what

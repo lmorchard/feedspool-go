@@ -309,6 +309,71 @@ func TestReindexItemTextForceRebuilds(t *testing.T) {
 	integrityCheck(t, db)
 }
 
+// A forced rebuild must never leave search answering nothing. The point of
+// --force is a recoverable operation, and the first implementation deleted
+// every derived row up front and refilled in committed batches -- so an
+// interruption anywhere in the middle left the index empty until someone ran
+// the command again.
+//
+// The batch size is a parameter here because the window is only observable
+// between batches: progress fires after each commit, and a single-batch run
+// would have nothing to sample.
+func TestForcedReindexKeepsTheIndexPopulated(t *testing.T) {
+	const (
+		seedCount = 5
+		batchSize = 2
+	)
+	db := seedIndexedItems(t, seedCount)
+
+	lowest, batches := seedCount, 0
+	if err := db.reindexItemText(true, batchSize, func(_, total int64) {
+		batches++
+		if indexed := countIndexedItems(t, db); indexed < lowest {
+			lowest = indexed
+		}
+		if total != seedCount {
+			t.Errorf("forced rebuild reported %d items outstanding, want %d", total, seedCount)
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Without more than one batch the assertion below is vacuous.
+	if batches < 2 {
+		t.Fatalf("rebuild committed %d batches, want at least 2 to observe the window", batches)
+	}
+	if lowest != seedCount {
+		t.Errorf("index fell to %d items mid-rebuild, want %d throughout", lowest, seedCount)
+	}
+	integrityCheck(t, db)
+}
+
+// The two predicates have to stay distinguishable. A rebuild selects every
+// item; an ordinary reindex selects only what is missing or stale, and on an
+// up-to-date spool that is nothing at all. If the rebuild's predicate ever
+// leaked into the ordinary path, every fetch would re-derive the whole spool
+// and nothing would fail loudly enough to notice.
+func TestOrdinaryReindexFindsNoWorkOnAnIndexedSpool(t *testing.T) {
+	const seedCount = 5
+	db := seedIndexedItems(t, seedCount)
+
+	stale, err := db.backfillRemaining(newItemTextBackfill(itemtext.DefaultOptions()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale != 0 {
+		t.Errorf("ordinary reindex found %d items outstanding on an indexed spool, want 0", stale)
+	}
+
+	all, err := db.backfillRemaining(newItemTextRebuild(itemtext.DefaultOptions()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if all != seedCount {
+		t.Errorf("rebuild found %d items outstanding, want %d", all, seedCount)
+	}
+}
+
 // The live write path and itemTextStalenessCondition have to agree on what
 // "current" means. The predicate treats a row written by a different generator
 // as stale even at a matching version; UpsertItem has to as well, or a row left
