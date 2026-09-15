@@ -202,6 +202,8 @@ func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.Workflo
 		Format:          cfg.FeedList.Format,
 		Database:        cfg.Database,
 		Clean:           cfg.Render.DefaultClean,
+
+		MigrationProgress: migrationReporter{},
 	}
 
 	// Override with command line flags if provided

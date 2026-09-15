@@ -22,6 +22,21 @@ const (
 	maxMigrationVersion = migrationVersion11
 )
 
+// migrationDescriptions names what each migration does, for the announcement a
+// user sees before it runs. Keep in step with the version constants above.
+var migrationDescriptions = map[int]string{
+	migrationVersion2:  "add latest_item_date to feeds",
+	migrationVersion3:  "add the url_metadata table",
+	migrationVersion4:  "add first_seen to items and backfill it",
+	migrationVersion5:  "add user_agent to feeds",
+	migrationVersion6:  "add the item_annotations table",
+	migrationVersion7:  "add the discovery-time query index",
+	migrationVersion8:  "add feed parser type and scrape selector",
+	migrationVersion9:  "normalize item timestamps and add the effective-date indexes",
+	migrationVersion10: "deduplicate annotations and enforce uniqueness",
+	migrationVersion11: "derive item text and build the full-text search index",
+}
+
 // getMigrations returns the database migration scripts.
 func getMigrations() map[int]string {
 	return map[int]string{
@@ -179,6 +194,7 @@ func (db *DB) RunMigrations() error {
 	for version := currentVersion + 1; version <= maxMigrationVersion; version++ {
 		if _, exists := migrations[version]; exists {
 			logrus.Infof("Applying migration %d", version)
+			db.announceMigration(version)
 			if err := db.applySpecificMigration(version); err != nil {
 				return err
 			}
@@ -301,14 +317,7 @@ func (db *DB) applyMigration4WithBackfill() error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to rollback transaction")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "the first_seen backfill")
 
 	// Add the column
 	migrations := getMigrations()
@@ -354,7 +363,6 @@ func (db *DB) applyMigration4WithBackfill() error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit migration: %w", err)
 	}
-	committed = true
 	return nil
 }
 
@@ -405,14 +413,7 @@ func (db *DB) applyMigration8() error {
 	if err != nil {
 		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion8, err)
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "migration 8")
 
 	columns := []struct {
 		name string
@@ -440,7 +441,6 @@ func (db *DB) applyMigration8() error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit migration %d: %w", migrationVersion8, err)
 	}
-	committed = true
 	return nil
 }
 
@@ -450,14 +450,7 @@ func (db *DB) applyMigration9() error {
 	if err != nil {
 		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion9, err)
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "migration 9")
 
 	type itemTimestamps struct {
 		rowID         int64
@@ -505,7 +498,6 @@ func (db *DB) applyMigration9() error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit migration %d: %w", migrationVersion9, err)
 	}
-	committed = true
 	return nil
 }
 
@@ -547,7 +539,7 @@ func (db *DB) applyMigration11() error {
 	}
 
 	logrus.Info("Building the full-text search index; this may take a while on a large spool")
-	if err := db.ReindexItemText(false, ItemTextProgressLogger()); err != nil {
+	if err := db.ReindexItemText(false, db.migrationBackfillProgress()); err != nil {
 		return fmt.Errorf("failed to build the full-text search index: %w", err)
 	}
 
@@ -575,14 +567,7 @@ func (db *DB) applyMigration11Schema() error {
 	if err != nil {
 		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion11, err)
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to rollback migration")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "migration 11's schema stage")
 
 	if _, err := tx.Exec(getMigrations()[migrationVersion11]); err != nil {
 		return fmt.Errorf("failed to create the item text schema: %w", err)
@@ -590,6 +575,5 @@ func (db *DB) applyMigration11Schema() error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit migration %d schema: %w", migrationVersion11, err)
 	}
-	committed = true
 	return nil
 }

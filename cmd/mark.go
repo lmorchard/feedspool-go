@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/spf13/cobra"
 )
 
@@ -34,15 +33,11 @@ func init() {
 
 func markItemSeenStatus(link string, seen bool) error {
 	cfg := GetConfig()
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	// Find the item by link to get feed_url and guid
 	var feedURL, guid string

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -86,15 +85,11 @@ func runServe(_ *cobra.Command, _ []string) error {
 	var db *database.DB
 	if serveConfig.APIEnabled {
 		var err error
-		db, err = database.New(cfg.Database)
+		db, err = openDatabase(cfg.Database)
 		if err != nil {
-			return fmt.Errorf("failed to connect to database: %w", err)
-		}
-		defer db.Close()
-
-		if err := db.IsInitialized(); err != nil {
 			return err
 		}
+		defer db.Close()
 	}
 
 	warnIfAPIIsOpen(serveConfig)

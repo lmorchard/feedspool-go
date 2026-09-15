@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/spf13/cobra"
 )
 
@@ -38,14 +37,11 @@ func init() {
 
 func runReindex(_ *cobra.Command, _ []string) error {
 	cfg := GetConfig()
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	if reindexForce {
 		fmt.Println("Re-deriving text for every item...")

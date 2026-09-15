@@ -63,14 +63,7 @@ func (db *DB) UpsertItem(item *Item) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin item upsert: %w", err)
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				logrus.WithError(rollbackErr).Warn("Failed to roll back item upsert")
-			}
-		}
-	}()
+	defer rollbackUnlessDone(tx, "item upsert")
 
 	var id int64
 	err = tx.QueryRow(upsertItemQuery,
@@ -87,7 +80,6 @@ func (db *DB) UpsertItem(item *Item) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit item upsert: %w", err)
 	}
-	committed = true
 
 	logrus.Debugf("Upserted item: %s - %s", item.FeedURL, item.GUID)
 	return nil

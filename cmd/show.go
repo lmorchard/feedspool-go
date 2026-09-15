@@ -53,15 +53,11 @@ func runShow(_ *cobra.Command, args []string) error {
 	feedURL := args[0]
 	cfg := GetConfig()
 
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	since, until, err := parseDateFilters()
 	if err != nil {

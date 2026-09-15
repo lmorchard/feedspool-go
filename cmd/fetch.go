@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
-	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/fetcher"
 	"github.com/lmorchard/feedspool-go/internal/sitegroup"
 	"github.com/sirupsen/logrus"
@@ -107,15 +106,11 @@ func runFetch(_ *cobra.Command, args []string) error {
 	// Determine final withUnfurl value: CLI flag takes precedence over config
 	withUnfurl := cfg.Fetch.WithUnfurl || fetchWithUnfurl
 
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	// Create orchestrator
 	orchestrator := fetcher.NewOrchestrator(db, cfg)

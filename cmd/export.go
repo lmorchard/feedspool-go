@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/spf13/cobra"
 )
@@ -50,15 +49,11 @@ func runExport(_ *cobra.Command, args []string) error {
 	}
 
 	// Connect to database
-	db, err := database.New(cfg.Database)
+	db, err := openDatabase(cfg.Database)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-	defer db.Close()
-
-	if err := db.IsInitialized(); err != nil {
 		return err
 	}
+	defer db.Close()
 
 	// Get all feeds from database
 	feeds, err := db.GetAllFeeds()
