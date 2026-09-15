@@ -30,10 +30,20 @@ export CGO_ENABLED = 0
 GOLANGCI_LINT_VERSION := v2.13.1
 
 # The Go toolchain is pinned by the `toolchain` directive in go.mod, which is
-# the single source of truth: actions/setup-go reads it from `go-version-file`
-# in preference to the `go` directive, and exporting GOTOOLCHAIN here makes
-# every local `go` invocation under make use that same one. Neither side gets
-# whatever Go happens to be on PATH.
+# the single source of truth. Two separate mechanisms consume it, and neither
+# side ends up on whatever Go happens to be on PATH:
+#
+#   - locally, exporting GOTOOLCHAIN here puts every `go` invocation under make
+#     on the pinned version;
+#   - in CI, the workflow installs this exact version, read back out through
+#     `make print-go-version`.
+#
+# CI reads it rather than relying on actions/setup-go@v5, which resolves
+# `go-version-file: go.mod` from the `go` directive and not the `toolchain`
+# one. Without that step CI installs 1.25.0 and then downloads the pinned
+# toolchain on top of it on every run -- correct, because GOTOOLCHAIN=auto
+# honours the directive, but a download per job and a mechanism easy to
+# mistake for setup-go doing the work.
 #
 # It has to be pinned because golangci-lint carries a type checker that only
 # understands the Go releases it was built against. The pinned v2.13.1 run

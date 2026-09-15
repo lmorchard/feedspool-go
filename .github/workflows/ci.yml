@@ -27,11 +27,21 @@ jobs:
       if: steps.skip_check.outputs.skip != 'true'
       uses: actions/checkout@v4
 
+    # Read the pin out of go.mod so CI installs exactly the Go that `make lint`
+    # runs on. setup-go@v5 resolves `go-version-file: go.mod` from the `go`
+    # directive rather than the `toolchain` one, so that route installs 1.25.0
+    # and leaves GOTOOLCHAIN=auto to download the pinned toolchain on every
+    # job. This lands on it directly instead.
+    - name: Determine Go version
+      id: go_version
+      if: steps.skip_check.outputs.skip != 'true'
+      run: echo "version=$(make print-go-version | sed 's/^go//')" >> "$GITHUB_OUTPUT"
+
     - name: Set up Go
       if: steps.skip_check.outputs.skip != 'true'
       uses: actions/setup-go@v5
       with:
-        go-version-file: go.mod
+        go-version: ${{ steps.go_version.outputs.version }}
 
     # setup-go above reads the `toolchain` directive from go.mod in preference to
     # the `go` directive, so this should already hold. Asserting it means that if
