@@ -33,6 +33,15 @@ jobs:
       with:
         go-version-file: go.mod
 
+    # setup-go above reads the `toolchain` directive from go.mod in preference to
+    # the `go` directive, so this should already hold. Asserting it means that if
+    # that ever stops being true, CI says so in one line instead of quietly
+    # linting against a different stdlib than `make lint` does -- which is the
+    # failure #67 was.
+    - name: Verify the Go toolchain matches the pin
+      if: steps.skip_check.outputs.skip != 'true'
+      run: make check-toolchain
+
     - name: Download dependencies
       if: steps.skip_check.outputs.skip != 'true'
       run: go mod download
