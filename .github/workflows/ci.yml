@@ -43,11 +43,10 @@ jobs:
       with:
         go-version: ${{ steps.go_version.outputs.version }}
 
-    # setup-go above reads the `toolchain` directive from go.mod in preference to
-    # the `go` directive, so this should already hold. Asserting it means that if
-    # that ever stops being true, CI says so in one line instead of quietly
-    # linting against a different stdlib than `make lint` does -- which is the
-    # failure #67 was.
+    # The step above installs the pin explicitly, so this should always hold.
+    # Asserting it anyway means a broken pin says so in one named step, instead
+    # of CI quietly linting against a different stdlib than `make lint` does --
+    # which is the failure #67 was.
     - name: Verify the Go toolchain matches the pin
       if: steps.skip_check.outputs.skip != 'true'
       run: make check-toolchain
@@ -63,12 +62,27 @@ jobs:
       if: steps.skip_check.outputs.skip != 'true'
       run: echo "version=$(make print-golangci-lint-version)" >> "$GITHUB_OUTPUT"
 
+    # Cache the linter binary rather than rebuilding it on every run. The key
+    # carries both pins, because the binary is a product of both: bumping either
+    # GOLANGCI_LINT_VERSION or the Go toolchain has to yield a fresh binary
+    # rather than reuse one built against the other version. That is the #67
+    # mismatch in cache form, and an exact key with no restore-keys is what
+    # keeps it from being restored across a bump.
+    - name: Cache the golangci-lint binary
+      if: steps.skip_check.outputs.skip != 'true'
+      uses: actions/cache@v4
+      with:
+        path: bin
+        key: golangci-lint-${{ runner.os }}-${{ steps.lint_version.outputs.version }}-go${{ steps.go_version.outputs.version }}
+
+    # `make lint` rather than golangci-lint-action: the action fetches a
+    # prebuilt binary while `make lint` builds one from source with the pinned
+    # toolchain, which was the last remaining difference between what CI checks
+    # and what you can reproduce locally. Same target, same pins, same
+    # provenance, same flags -- and `make lint` prints both versions it used.
     - name: Run golangci-lint
       if: steps.skip_check.outputs.skip != 'true'
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: ${{ steps.lint_version.outputs.version }}
-        args: --timeout=5m
+      run: make lint
 
     - name: Run tests
       if: steps.skip_check.outputs.skip != 'true'
