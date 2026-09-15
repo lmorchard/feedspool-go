@@ -220,7 +220,7 @@ func TestItemTextUpdateRetiresStaleTerms(t *testing.T) {
 		`UPDATE items SET content = ? WHERE id = ?`,
 		seededItemContent(0, replacementBodyTerm), firstItemID(t, db),
 	)
-	// Phase 3 owns the live write path; here a version rewind is what makes the
+	// UpsertItem owns the live write path; here a version rewind is what makes the
 	// backfill recompute the row, which drives item_text through an UPDATE.
 	execSQL(t, db, `UPDATE item_text SET generator_version = generator_version - 1`)
 	if err := db.ReindexItemText(false, nil); err != nil {

@@ -8,10 +8,10 @@ import (
 )
 
 // These three constants are the single source of truth for what a search
-// matches and how it ranks. buildItemsQuery (the CLI) builds from them today
-// and itemPageConditions (the API) will too, at which point a structural test
-// asserts the two surfaces cannot drift. The predecessor to this file was a
-// duplicated instr() expression in two places held in step only by a comment.
+// matches and how it ranks. Both surfaces build from them -- buildItemsQuery
+// for the CLI, itemPageConditions for the API -- and TestSearchSurfacesAgree
+// asserts the two cannot drift. The predecessor to this file was a duplicated
+// instr() expression in two places held in step only by a comment.
 //
 // The table is joined unaliased on purpose. MATCH and bm25() do not take a
 // table so much as the FTS table's hidden column, which is named after the

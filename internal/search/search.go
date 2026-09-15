@@ -5,8 +5,9 @@
 // reasonable query into a syntax error. Parse instead treats every term as
 // literal text, quoting it so FTS5 matches it verbatim.
 //
-// The package is pure -- no I/O, no database -- and has no callers yet.
-// Phase 5 wires it into the CLI, and phase 6 into the API.
+// The package is pure -- no I/O, no database. internal/database calls Parse
+// for both search surfaces, the CLI's and the API's; internal/api imports the
+// sentinel errors below to turn a rejected query into a 400 rather than a 500.
 package search
 
 import (

@@ -1,9 +1,11 @@
 // Package itemtext derives the canonical text that represents a feed item:
 // title, summary, and body with HTML stripped, entities decoded, whitespace
 // collapsed, and each field truncated to a byte cap. It is pure and has no
-// database dependency. Phase-2 indexing feeds its output into SQLite FTS5;
-// issue #30's embedder is intended to call Derive with a smaller truncation
-// cap for its own token limits.
+// database dependency. internal/database calls Derive to maintain the
+// item_text table -- on every item write, and in bulk from the backfill that
+// migration 11 and "feedspool reindex" run -- and SQLite FTS5 indexes that
+// table. Issue #30's embedder is intended to call Derive with a smaller
+// truncation cap for its own token limits.
 package itemtext
 
 import (
