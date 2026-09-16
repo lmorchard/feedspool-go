@@ -178,25 +178,66 @@ than hand-writing an equivalent `COALESCE`. Reusing the constant is what makes
 the index apply; an equivalent-but-differently-spelled expression silently
 falls back to a full scan.
 
-## 5. Corpus and scale
+## 5. Corpus and scale — measured, not projected
 
-Per `docs/dev-sessions/2026-08-26-1247-fts5-search/notes.md`, #58's smoke test
-ran against a **pristine copy of a real 19,750-item production spool**
-(478 MB → 593 MB, +24%, after migrations 5–11).
+Real spool at `data/feeds-backup.db` (551 MB), copied to
+`/tmp/feedspool-issue30/spool.db` and measured 2026-09-15. **The original was
+never opened** — opening it would run migrations against it. Work on a copy.
 
-Projected embedding storage on that corpus, if fully backfilled:
+**460 feeds, 34,613 items** (larger than the 19,750-item corpus #58 used).
+Migrating the copy to schema 12 and backfilling all 34,613 `item_text` rows
+took **17.6 s** wall.
 
-| Model | Per item | 19,750 items |
+### Window sizes — the numbers the design turns on
+
+| window | items | p50 tokens | p90 | p99 | max |
+|---|---|---|---|---|---|
+| last 1d | **919** | 100 | 786 | 2,955 | 11,727 |
+| last 2d | **1,898** | 99 | 762 | 3,844 | 14,426 |
+| last 3d | **2,548** | 94 | 694 | 3,621 | 14,426 |
+| last 7d | 6,275 | 90 | 694 | 4,195 | 14,426 |
+
+(Token estimates are stripped-text chars / 4. A 2-day window is ~2.3 MB of
+stripped text, ~587k tokens.)
+
+**Real items are much smaller than expected.** The median is ~100 tokens — the
+307-token sample used for the throughput benchmark in §2 was atypically long,
+so real-world throughput should beat those numbers rather than match them.
+
+### Context-window overflow in a 2-day window
+
+| context | items over | share |
 |---|---|---|
-| nomic (768 × f32) | 3,072 B | ~61 MB |
-| qwen3 (1024 × f32) | 4,096 B | ~81 MB |
-| Both retained | 7,168 B | **~142 MB** (+24% on 593 MB) |
+| 256 tok | 379 / 1,898 | 20.0% |
+| **2,048 tok** | **44 / 1,898** | **2.3%** |
+| 8,192 tok | 5 / 1,898 | 0.3% |
+| 32,768 tok | 0 / 1,898 | 0.0% |
 
-With a 1–3 day window the working set is a few hundred to a few thousand
-vectors, so **the "no vector index under `CGO_ENABLED=0`" constraint from the
-August notes stops being a constraint at all.** A full-scan dot product over a
-few thousand 768-dim vectors is sub-millisecond. ANN indexing would not start
-paying for itself until millions of vectors.
+**Actionable:** Ollama's model card caps `nomic-embed-text` at 2K context
+unless `num_ctx` is set, so the default would silently truncate ~2.3% of a
+run. Set `num_ctx: 8192` explicitly (nomic's true native window) and the
+overflow drops to 0.3%. qwen3's 32K window covers everything.
+
+### Storage, recomputed on the real corpus
+
+| Model | Per item | 34,613 items |
+|---|---|---|
+| nomic (768 × f32) | 3,072 B | ~106 MB |
+| qwen3 (1024 × f32) | 4,096 B | ~142 MB |
+| Both retained | 7,168 B | **~248 MB** (+45% on 551 MB) |
+
+A 2-day window alone is only ~5.8 MB for nomic — the +45% figure is the
+worst case of a *full* corpus backfill in both models, not normal operation.
+
+**The vector-index question is emphatically closed.** A dot product over a
+2-day window is 1,898 × 768 ≈ 1.5M multiply-adds — microseconds in scalar Go.
+The "no vector index under `CGO_ENABLED=0`" constraint from the August notes
+never binds at this scale; ANN indexing would not pay for itself until
+millions of vectors.
+
+Embedding a 2-day window: 1,898 items at the §2 throughput floor (36 items/s
+for nomic on *longer* inputs) is under a minute; a full-corpus backfill of
+34,613 items is roughly 7–16 minutes depending on model. Both acceptable.
 
 **Perf note inherited from #58:** `reindex` with nothing to do took 5.07 s
 wall / 0.6 s CPU on that corpus — I/O-bound on the staleness scan, not doing
@@ -244,16 +285,27 @@ please move to a C backend."* That model has a **256-token context window**:
 | nomic-embed-text | 768 | 8192 | 62.3 |
 | qwen3-embedding:0.6b | 1024 | 32K | 70.7 |
 
-The benchmark item above was ~307 tokens, and it was a modest one — so the
-pure-Go path would truncate the majority of real feed items before the
-embedder sees them.
+**Correction to an earlier draft of this section.** It claimed the 256-token
+window "would truncate the majority of real feed items." The corpus
+measurements in §5 say otherwise: the median real item is ~100 tokens, and
+only **20%** of a 2-day window exceeds 256 tokens. The claim was extrapolated
+from a 307-token benchmark sample that turned out to be atypically long. The
+truncation argument is real but much weaker than stated.
 
-**The decisive argument is experimental, not technical.** The one genuinely
-open risk in #30 is whether clustering quality is good enough to be worth a
-`topics` command. Running that experiment on a 256-token model means a bad
-result teaches us nothing: we could not distinguish "clustering is the wrong
-idea" from "we fed it the first two paragraphs of everything." Bad embeddings
-can sink good clustering.
+What survives the correction:
+
+- 20% truncation is not nothing, and it is **biased toward the longest, most
+  substantive items** — plausibly the most topically distinctive ones, which is
+  the worst place to lose signal when the goal is clustering.
+- **The quality gap is the stronger argument and is untouched:** MTEB ~56 vs
+  70.7, and 384 dimensions against 1024.
+- The model-acquisition subsystem still has to be built either way.
+
+**The framing is experimental, not technical.** The one genuinely open risk in
+#30 is whether clustering quality justifies a `topics` command. Answering that
+on the weakest available model risks a result that teaches us nothing — we
+could not distinguish "clustering is the wrong idea" from "the embeddings were
+too weak to cluster." Bad embeddings can sink good clustering.
 
 Two things make deferring cheap rather than lossy:
 

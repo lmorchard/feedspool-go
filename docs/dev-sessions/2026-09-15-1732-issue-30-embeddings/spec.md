@@ -195,6 +195,18 @@ compared without re-embedding between runs.
   - **Why:** A template change should rewrite rows, which a version bump
     already does. A/B-ing two templates for one model is not a real need.
 
+- **Decision:** The Ollama provider sends an explicit `options.num_ctx`, and
+  the per-model defaults set it to the model's true native window (8192 for
+  nomic, 32768 for qwen3).
+  - **Why:** Measured — Ollama's `nomic-embed-text` card caps context at 2K
+    unless `num_ctx` is set, and **2.3% of a real 2-day window (44 of 1,898
+    items) exceeds 2,048 tokens** (`research.md` §5). Leaving the default in
+    place silently truncates the longest, most substantive items, which are
+    the most topically distinctive ones. Setting 8192 drops overflow to 0.3%.
+  - **Rejected:** Relying on the model's advertised native window. What the
+    model supports and what Ollama configures by default are different numbers,
+    and only the second one is in effect.
+
 - **Decision:** `embed.api_key` has no command-line flag.
   - **Why:** Follows `config.APIConfig.Token`, whose comment gives the reason:
     a token on the command line lands in `ps` output.
@@ -250,20 +262,26 @@ compared without re-embedding between runs.
   cost should not be smuggled into a fetch.
 - **Dimension truncation (Matryoshka).** Both models support it; storage at
   this scale does not justify the knob.
-- **Pruning old models' vectors.** ~142 MB fully backfilled for both models is
-  acceptable; revisit if it isn't.
+- **Pruning old models' vectors.** ~248 MB for a *full* 34,613-item corpus
+  backfill in both models (+45% on the 551 MB spool) is acceptable; normal
+  window operation is ~6 MB. Revisit only if that changes.
 - **`internal/api` / HTTP surface for embeddings or `related`.** CLI only.
 - **Hosted-provider polish** (rate-limit backoff, cost accounting, key
   rotation). The config accepts a base URL and key; tuning waits for a real
   hosted user.
 
+## Smoke-test corpus (resolved)
+
+`data/feeds-backup.db` — 551 MB, 460 feeds, **34,613 items**. **Never open the
+original**; it would be migrated in place. Copy it first
+(`/tmp/feedspool-issue30/spool.db` is the working copy already made and
+migrated to schema 12; `item_text` backfill for all 34,613 items took 17.6 s).
+
+Window sizes measured on it: 919 items in 1 day, 1,898 in 2 days, 2,548 in 3
+days. Full measurements in `research.md` §5.
+
 ## Open questions
 
-- **Where is the real 19,750-item production spool copy that #58 smoke-tested
-  against?** Needed for the bake-off and the final smoke test.
-  **Default if unanswered:** build a corpus in the worktree by fetching Les's
-  OPML for a few days, and run the smoke test against that instead, noting the
-  smaller corpus in `notes.md`.
 - **Which model wins the bake-off?** Deliberately unanswered — it is the
   experiment. **Default:** `nomic-embed-text` is the configured default
   (smallest, Apache-2.0, purpose-built `clustering:` prefix); the smoke test
