@@ -102,3 +102,28 @@ CREATE TRIGGER IF NOT EXISTS item_text_au AFTER UPDATE ON item_text BEGIN
     INSERT INTO items_fts(rowid, title, summary, body)
     VALUES (new.item_id, new.title, new.summary, new.body);
 END;
+
+-- Per-item, per-model vector embeddings. The primary key is composite because
+-- comparing two embedding models needs both answers for the same item at once,
+-- and because the models disagree on vector width (768 for nomic-embed-text,
+-- 1024 for qwen3-embedding) so one fixed-width row could not hold both.
+--
+-- vector is float32 little-endian, exactly dims*4 bytes. That byte order is a
+-- storage contract: changing it invalidates every vector already written.
+--
+-- No index over the date window here. Migration 9 already indexes
+-- julianday(COALESCE(published_date, first_seen)), and the embed work predicate
+-- reuses that expression verbatim so SQLite can use it -- an expression index
+-- only applies on a textual match.
+CREATE TABLE IF NOT EXISTS item_embeddings (
+    item_id           INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+    model_id          TEXT    NOT NULL,
+    dims              INTEGER NOT NULL,
+    vector            BLOB    NOT NULL,
+    source_hash       TEXT    NOT NULL,
+    generator_version INTEGER NOT NULL,
+    computed_at       DATETIME NOT NULL,
+    PRIMARY KEY (item_id, model_id)
+);
+CREATE INDEX IF NOT EXISTS idx_item_embeddings_model
+    ON item_embeddings(model_id, item_id);

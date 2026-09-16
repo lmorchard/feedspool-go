@@ -88,6 +88,13 @@ func initConfig() {
 	viper.SetDefault("init.templates_dir", "./templates")
 	viper.SetDefault("init.assets_dir", "./assets")
 
+	// Embedding defaults. batch_size and num_ctx are deliberately absent:
+	// unset means "use the model's own measured defaults" from internal/embed,
+	// which differ per model. embed.api_key is also absent by design -- it has
+	// no flag, and a local Ollama needs none.
+	viper.SetDefault("embed.base_url", config.DefaultEmbedBaseURL)
+	viper.SetDefault("embed.model", config.DefaultEmbedModel)
+
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {

@@ -55,7 +55,7 @@ type itemSelector struct {
 }
 
 func runItem(args []string) error {
-	selector, err := parseItemSelector(args)
+	selector, err := parseItemSelector(args, itemFeed, itemGUID)
 	if err != nil {
 		return err
 	}
@@ -78,23 +78,33 @@ func runItem(args []string) error {
 	return outputItem(format, output)
 }
 
-func parseItemSelector(args []string) (itemSelector, error) {
+// parseItemSelector validates the link / --feed+--guid combination.
+//
+// feedURL and guid are passed in rather than read from package flag variables
+// so every command selecting a single item can share this, each with its own
+// flags. `related` is the second caller.
+func parseItemSelector(args []string, feedURL, guid string) (itemSelector, error) {
 	if len(args) == 1 {
-		if itemFeed != "" || itemGUID != "" {
+		if feedURL != "" || guid != "" {
 			return itemSelector{}, fmt.Errorf("link cannot be combined with --feed or --guid")
 		}
 		return itemSelector{link: args[0]}, nil
 	}
-	if itemFeed == "" && itemGUID == "" {
+	if feedURL == "" && guid == "" {
 		return itemSelector{}, fmt.Errorf("provide a link or both --feed and --guid")
 	}
-	if itemFeed == "" || itemGUID == "" {
+	if feedURL == "" || guid == "" {
 		return itemSelector{}, fmt.Errorf("--feed and --guid must be used together")
 	}
-	return itemSelector{feedURL: itemFeed, guid: itemGUID}, nil
+	return itemSelector{feedURL: feedURL, guid: guid}, nil
 }
 
-func getItemOutput(db *database.DB, selector itemSelector) (*ItemOutput, error) {
+// resolveItem turns a selector into exactly one item, or an error naming every
+// candidate when a link matches more than one.
+//
+// Shared with `related` so the two commands cannot drift on what "ambiguous"
+// means or on how they report it.
+func resolveItem(db *database.DB, selector itemSelector) (*database.Item, error) {
 	var items []*database.Item
 	var err error
 	if selector.link != "" {
@@ -125,7 +135,14 @@ func getItemOutput(db *database.DB, selector itemSelector) (*ItemOutput, error) 
 			selector.link, strings.Join(matches, ", "),
 		)
 	}
-	item := items[0]
+	return items[0], nil
+}
+
+func getItemOutput(db *database.DB, selector itemSelector) (*ItemOutput, error) {
+	item, err := resolveItem(db, selector)
+	if err != nil {
+		return nil, err
+	}
 
 	annotations, err := db.GetAnnotations(item.FeedURL, item.GUID)
 	if err != nil {
