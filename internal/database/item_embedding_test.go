@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -21,6 +22,13 @@ func unitVectorAt(dims, hot int) []float32 {
 }
 
 // seedItem inserts a feed and one item, returning the item's row id.
+//
+// FirstSeen is set alongside PublishedDate because UpsertItem only writes
+// first_seen when the caller supplies it, and every item that reaches the
+// database for real has one -- the fetcher stamps it on discovery, and
+// migration 4 backfilled the rest. A fixture without it makes
+// COALESCE(published_date, first_seen) fall back to NULL rather than to a
+// discovery time, which is not a state real data reaches.
 func seedItem(t *testing.T, db *DB, guid string, published time.Time) int64 {
 	t.Helper()
 
@@ -37,6 +45,7 @@ func seedItem(t *testing.T, db *DB, guid string, published time.Time) int64 {
 		Title:         "Item " + guid,
 		Link:          "https://example.com/" + guid,
 		PublishedDate: published,
+		FirstSeen:     sql.NullTime{Time: published, Valid: true},
 		Content:       "content for " + guid,
 		Summary:       "summary for " + guid,
 		ItemJSON:      JSON(`{}`),

@@ -26,6 +26,14 @@ const (
 	DefaultMaxItemsPerFeed   = 50 // Render: maximum items to show per feed
 	DefaultMinItemsKeepPurge = 10 // Purge: minimum items to keep per feed
 	DefaultFeedsPerPage      = 25 // Render: feeds per page for pagination
+
+	// DefaultEmbedBaseURL points at a local Ollama. A hosted provider is the
+	// same code path with a different URL and an API key.
+	DefaultEmbedBaseURL = "http://localhost:11434"
+	// DefaultEmbedModel is nomic-embed-text: the smallest of the credible
+	// options, Apache-2.0, and the only one shipping a dedicated "clustering:"
+	// task prefix, which is what this feature is ultimately for.
+	DefaultEmbedModel = "nomic-embed-text"
 )
 
 type Config struct {
@@ -41,6 +49,7 @@ type Config struct {
 	Init     InitConfig
 	Unfurl   UnfurlConfig
 	Purge    PurgeConfig
+	Embed    EmbedConfig
 }
 
 type FeedListConfig struct {
@@ -101,6 +110,24 @@ type PurgeConfig struct {
 	MinItemsKeep int    `mapstructure:"min_items_keep"`
 }
 
+// EmbedConfig controls the embedding provider used by the embed and related
+// commands.
+//
+// Local and hosted are the same code path: a local Ollama is just a BaseURL of
+// localhost, and a hosted provider is a different BaseURL plus an APIKey.
+type EmbedConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+	Model   string `mapstructure:"model"`
+	// BatchSize and NumCtx are 0 by default, meaning "use the model's own
+	// measured defaults" from internal/embed. Set them only to override.
+	BatchSize int `mapstructure:"batch_size"`
+	NumCtx    int `mapstructure:"num_ctx"`
+	// APIKey is deliberately not exposed as a command-line flag: a token
+	// passed on the command line ends up in ps output. Config file or
+	// FEEDSPOOL_EMBED_API_KEY only. Same reasoning as APIConfig.Token above.
+	APIKey string `mapstructure:"api_key"`
+}
+
 func LoadConfig() *Config {
 	timeoutStr := viper.GetString("timeout")
 	timeout, err := time.ParseDuration(timeoutStr)
@@ -157,6 +184,14 @@ func LoadConfig() *Config {
 			SkipVacuum:   viper.GetBool("purge.skip_vacuum"),
 			MinItemsKeep: getIntWithDefault("purge.min_items_keep", 0),
 		},
+		Embed: EmbedConfig{
+			BaseURL: viper.GetString("embed.base_url"),
+			Model:   viper.GetString("embed.model"),
+			// Zero means "use the model's own default" -- see EmbedConfig.
+			BatchSize: getIntWithDefault("embed.batch_size", 0),
+			NumCtx:    getIntWithDefault("embed.num_ctx", 0),
+			APIKey:    viper.GetString("embed.api_key"),
+		},
 	}
 }
 
@@ -199,6 +234,13 @@ func GetDefault() *Config {
 		Purge: PurgeConfig{
 			MaxAge:       "30d",
 			MinItemsKeep: DefaultMinItemsKeepPurge,
+		},
+		Embed: EmbedConfig{
+			BaseURL: DefaultEmbedBaseURL,
+			Model:   DefaultEmbedModel,
+			// Zero means "use the model's own measured default".
+			BatchSize: 0,
+			NumCtx:    0,
 		},
 	}
 }

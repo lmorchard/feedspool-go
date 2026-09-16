@@ -111,6 +111,26 @@ func baseModelName(model string) string {
 	return model
 }
 
+// ItemInput assembles the text handed to the model from an item's derived
+// title, summary and body.
+//
+// This is the single definition of "what text represents this item for
+// embedding", and it deliberately reads already-derived text rather than
+// re-deriving it: internal/itemtext owns the HTML stripping and truncation, so
+// the embedder and the full-text index cannot disagree about an item's content.
+//
+// Changing this assembly changes the vector for unchanged item text, so it is
+// covered by Version above -- bump Version when this changes.
+func ItemInput(title, summary, body string) string {
+	parts := make([]string, 0, 3)
+	for _, part := range []string{title, summary, body} {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
 // normTolerance is tight on purpose. Both models measured for issue #30 return
 // vectors of norm 1.0000, so anything meaningfully off unit length means the
 // provider changed behavior rather than that floating point drifted.
