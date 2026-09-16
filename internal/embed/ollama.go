@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 )
@@ -44,13 +45,14 @@ type embedResponse struct {
 
 // OllamaProvider implements Provider against Ollama's /api/embed.
 type OllamaProvider struct {
-	client    *httpclient.Client
-	baseURL   string
-	model     string
-	apiKey    string
-	prefix    string
-	numCtx    int
-	batchSize int
+	client        *httpclient.Client
+	baseURL       string
+	model         string
+	apiKey        string
+	prefix        string
+	numCtx        int
+	batchSize     int
+	maxInputChars int
 
 	// The unit-norm assumption is checked once per provider rather than per
 	// vector: it is a property of the model, and checking 1,898 vectors per
@@ -73,14 +75,20 @@ func NewOllamaProvider(cfg Config, client *httpclient.Client) *OllamaProvider {
 		numCtx = defaults.NumCtx
 	}
 
+	// The input cap tracks whatever num_ctx ends up being, including a
+	// configured override, since it exists to keep inputs inside the context
+	// the provider was actually told to use.
+	effective := ModelDefaults{NumCtx: numCtx}
+
 	return &OllamaProvider{
-		client:    client,
-		baseURL:   strings.TrimRight(cfg.BaseURL, "/"),
-		model:     cfg.Model,
-		apiKey:    cfg.APIKey,
-		prefix:    defaults.Prefix,
-		numCtx:    numCtx,
-		batchSize: batchSize,
+		client:        client,
+		baseURL:       strings.TrimRight(cfg.BaseURL, "/"),
+		model:         cfg.Model,
+		apiKey:        cfg.APIKey,
+		prefix:        defaults.Prefix,
+		numCtx:        numCtx,
+		batchSize:     batchSize,
+		maxInputChars: effective.MaxInputChars(),
 	}
 }
 
@@ -120,7 +128,7 @@ func (p *OllamaProvider) Embed(ctx context.Context, texts []string) ([][]float32
 func (p *OllamaProvider) embedBatch(ctx context.Context, texts []string) ([][]float32, error) {
 	inputs := make([]string, len(texts))
 	for i, text := range texts {
-		inputs[i] = p.prefix + text
+		inputs[i] = p.prefix + truncateRunes(text, p.maxInputChars-len(p.prefix))
 	}
 
 	body, err := json.Marshal(embedRequest{
@@ -172,6 +180,20 @@ func (p *OllamaProvider) embedBatch(ctx context.Context, texts []string) ([][]fl
 	}
 
 	return decoded.Embeddings, nil
+}
+
+// truncateRunes caps a string at maxChars without splitting a rune, so a
+// truncated input stays valid UTF-8. Mirrors itemtext's truncate, which does
+// the same for the derived text this reads.
+func truncateRunes(s string, maxChars int) string {
+	if maxChars <= 0 || len(s) <= maxChars {
+		return s
+	}
+	truncated := s[:maxChars]
+	for truncated != "" && !utf8.ValidString(truncated) {
+		truncated = truncated[:len(truncated)-1]
+	}
+	return truncated
 }
 
 // firstLine reads a bounded snippet of an error body, for a message that says

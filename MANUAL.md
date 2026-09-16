@@ -121,7 +121,18 @@ purge:
   max_age: 30d
   skip_vacuum: false        # If true, skip VACUUM after purge
   min_items_keep: 10        # Keep at least N items per feed regardless of age
+
+embed:
+  base_url: http://localhost:11434  # Ollama by default; any /api/embed provider
+  model: nomic-embed-text
+  api_key: ""               # Hosted providers only; prefer FEEDSPOOL_EMBED_API_KEY
+  batch_size: 0             # 0 = the model's own measured default
+  num_ctx: 0                # 0 = the model's own measured default
 ```
+
+`embed.batch_size` and `embed.num_ctx` default to `0`, meaning "use whatever
+this model was measured to want" — the good values differ per model, so a
+single number here would be wrong for most of them. Set them only to override.
 
 Note: `8889` is the default port for both the bare CLI and the Docker image;
 see [Docker Reference](#docker-reference).
@@ -706,6 +717,102 @@ make it indistinguishable from a hang.
 
 **Side effects:** Writes `item_text`; `--force` rewrites every row rather than
 only the stale ones.
+
+### embed
+
+Compute vector embeddings for items in a time window, so they can be compared
+by meaning rather than by shared words. Stored in `item_embeddings` (see
+[Data Model](#data-model)) and read by [`related`](#related).
+
+**Usage:** `feedspool embed [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--last` | `24h` | Embed items from this far back (`24h`, `2d`, `1w`) |
+| `--since` | — | Embed items with an effective date at or after this time (RFC3339) |
+| `--until` | now | Embed items with an effective date at or before this time (RFC3339) |
+| `--model` | `embed.model` | Model to embed with |
+| `--force` | false | Re-embed every item in the window, not just missing or stale ones |
+| `--dry-run` | false | Report the work and exit without calling the provider |
+| `--batch-size` | per model | Items per provider request |
+
+`--last` cannot be combined with `--since`/`--until`; the command exits
+non-zero rather than silently ignoring one. The flag is called `--last` and
+not `--max-age` because `--max-age` already means two different things in this
+tool — see [`fetch`](#fetch) and [`render`](#render).
+
+Items are selected by **effective date** — published date, falling back to
+`first_seen` — the same basis [`items --since/--until`](#items) uses.
+
+Embeddings derive from the same stripped text the search index uses, so an item
+with no `item_text` row cannot be embedded. The command counts those and points
+at [`reindex`](#reindex). An item is re-embedded when its text changes or when
+feedspool's embedding code changes; otherwise a second run has nothing to do.
+
+Vectors are stored per model, so two models can be compared over the same items
+without re-embedding between runs:
+
+```bash
+feedspool embed --last 2d                              # the configured default
+feedspool embed --last 2d --model qwen3-embedding:0.6b # alongside, not instead
+feedspool related <link> --model qwen3-embedding:0.6b   # compare by eye
+```
+
+This makes network calls to the configured provider, so it is deliberately
+separate from `fetch` rather than folded into it. An interrupted run resumes
+where it stopped: every batch is committed as it completes. Network calls
+happen with no database transaction open, so a long run does not block a
+concurrent `serve`.
+
+**Provider configuration** lives under `embed:` — see the
+[configuration reference](#full-configuration-reference). A local Ollama is the
+default; a hosted OpenAI-compatible endpoint is the same thing with a different
+`base_url` and an `api_key`. There is deliberately **no `--api-key` flag**: a
+token on the command line lands in `ps` output. Use the config file or
+`FEEDSPOOL_EMBED_API_KEY`.
+
+`num_ctx` is sent explicitly, because Ollama's own default is lower than the
+models support and would silently truncate the longest items. Each model also
+has an input cap derived from its context window, applied before sending:
+relying on a provider's over-length behavior is not safe, as
+`qwen3-embedding:0.6b` demonstrates by failing outright above ~2048 tokens of
+configured context.
+
+**Side effects:** Writes `item_embeddings`; makes network requests.
+
+### related
+
+Rank items by how close their embeddings are to one item's.
+
+**Usage:** `feedspool related [link] [flags]`
+
+| Flag | Default | Description |
+|---|---|---|
+| `--limit` | 10 | Maximum neighbors to return |
+| `--model` | `embed.model` | Model to compare with |
+| `--format` | table | Output format (`table`, `json`) |
+| `--feed` | — | Select the subject by exact feed URL (requires `--guid`) |
+| `--guid` | — | Select the subject by exact item GUID (requires `--feed`) |
+
+The subject is selected by link, exactly as [`item`](#item) selects one. A link
+matching more than one item exits non-zero listing each candidate; use `--feed`
+and `--guid` together to pick one. Real feeds do reuse URLs across GUIDs, so
+this is not a rare case.
+
+Only items embedded **with the same model** are candidates, so run
+[`embed`](#embed) over the window you care about first. A subject with no
+embedding for the model exits non-zero saying so.
+
+Similarity is cosine similarity, from 1.0 (identical direction) through 0
+(unrelated) to −1.0 (opposed). **Read it relatively, not absolutely.** Models
+differ in scale and none of them put unrelated text near zero: on a reference
+corpus, `nomic-embed-text` scored a median of 0.59 between *unrelated* items,
+with genuine relatedness living above roughly 0.75, while
+`qwen3-embedding:0.6b` put the same genuine matches near 0.65 and unrelated
+ones near 0.35. Compare a subject's neighbors against each other rather than
+against a fixed threshold.
+
+**Side effects:** None; read-only.
 
 ### export
 
@@ -1305,9 +1412,48 @@ Migrating database to schema version 11: derive item text and build the full-tex
 That output goes to **stderr**, not stdout, so it never contaminates
 `--format json` piped into `jq`.
 
+### `item_embeddings`
+
+One row per (item, embedding model). Written only by [`embed`](#embed) — there
+is no trigger and no live write path, unlike `item_text`.
+
+```sql
+CREATE TABLE item_embeddings (
+    item_id           INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+    model_id          TEXT    NOT NULL,   -- "nomic-embed-text"
+    dims              INTEGER NOT NULL,   -- 768 | 1024, model-dependent
+    vector            BLOB    NOT NULL,   -- float32 little-endian, dims*4 bytes
+    source_hash       TEXT    NOT NULL,   -- copied from item_text.source_hash
+    generator_version INTEGER NOT NULL,
+    computed_at       DATETIME NOT NULL,
+    PRIMARY KEY (item_id, model_id)
+);
+```
+
+The primary key is **composite** for two reasons: comparing two models needs
+both answers for the same item at once, and the models disagree on vector width
+(768 for `nomic-embed-text`, 1024 for `qwen3-embedding`), so one fixed-width row
+could not hold both. Embedding a second model adds rows rather than replacing
+them; nothing prunes them automatically.
+
+`source_hash` is copied from `item_text`, and comparing the two is how a
+revised item is noticed. `item_text` can skip that comparison because a trigger
+keeps it fresh; embeddings have no trigger, so without the hash a revised item
+would keep a stale vector indefinitely.
+
+Vectors are normalized by the model, which is why similarity is a plain dot
+product with no magnitude stored. Storage runs about 3 KB per item per model at
+768 dimensions — roughly 106 MB for a 34,600-item spool, or 248 MB with two
+models fully backfilled.
+
+Migration 12 creates this table and **does not backfill**, unlike migration 11.
+Embedding needs network access and a configured provider, and migrations run on
+any command that opens the database — a backfilling migration would turn a
+`status` into a network operation. Run [`embed`](#embed) explicitly.
+
 ### `schema_migrations`
 
-Internal version tracking. Current version: 11.
+Internal version tracking. Current version: 12.
 
 ## SQL Recipes
 

@@ -40,13 +40,54 @@ type ModelDefaults struct {
 	BatchSize int
 }
 
-// Context windows are each model's true native window, NOT what Ollama
-// defaults to. Ollama's nomic card caps context at 2K unless num_ctx is sent,
-// and 2.3% of a real 2-day window of feed items exceeds 2048 tokens -- the
-// longest and most topically distinctive ones.
+// charsPerToken is a deliberately rough characters-to-tokens estimate, used
+// only to size the input cap below. Real tokenizers vary; over-estimating the
+// token count (by assuming few characters per token) truncates more than
+// strictly necessary, which is the safe direction.
+const charsPerToken = 3
+
+// MaxInputChars is the cap applied to each item's text before it is sent.
+//
+// Truncating here rather than letting the provider handle over-length input is
+// not defensive tidiness -- it is required. Measured against Ollama 0.32.0:
+//
+//   - qwen3-embedding:0.6b with num_ctx 8192 FAILS on long inputs, returning
+//     HTTP 400 "do embedding request: EOF" (its runner dies). The threshold is
+//     not even stable: a 12,440-char item failed alone in one run while a
+//     binary search put the limit near 24,891 chars in another.
+//   - the same model with num_ctx 2048 accepts 200,000 characters happily,
+//     truncating internally.
+//   - nomic-embed-text is reliable at both settings.
+//
+// So a provider's behavior above its configured context is undocumented and
+// inconsistent, and a real corpus contains items long enough to hit it -- the
+// reference spool's largest item is ~57,000 characters. Capping the input to
+// what the context can hold makes the behavior ours, explicit and testable,
+// and costs nothing: the model cannot attend to more than num_ctx tokens
+// regardless.
+func (d ModelDefaults) MaxInputChars() int {
+	return d.NumCtx * charsPerToken
+}
+
+// Context windows are set explicitly because Ollama's own defaults are lower
+// than the models support: its nomic card caps context at 2K unless num_ctx is
+// sent, and 2.3% of a real 2-day window of feed items exceeds 2048 tokens --
+// the longest and most topically distinctive ones.
+//
+// These are not each model's maximum, they are the largest value each was
+// measured to handle reliably, and they also size MaxInputChars above.
+//
+// nomic is reliable at 8192, its true native window, which covers 99.7% of
+// items in the reference corpus.
+//
+// qwen3 advertises 32768 but is NOT reliable above 2048 on Ollama 0.32.0: at
+// num_ctx 8192 its runner dies on long inputs with HTTP 400 "do embedding
+// request: EOF", at an unstable threshold. At 2048 it is solid. So 2048 it is,
+// which truncates the ~2.3% of items longer than that rather than failing the
+// run. A reliable smaller window beats a flaky larger one.
 const (
 	nomicNumCtx = 8192
-	qwen3NumCtx = 32768
+	qwen3NumCtx = 2048
 	gemmaNumCtx = 2048
 )
 

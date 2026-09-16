@@ -575,15 +575,24 @@ The script takes a **copy** path and says so in its usage line, because it
 writes to the database.
 
 **Verification — automated:**
-- [ ] `make format` clean
-- [ ] `make lint` passes
-- [ ] `make test` passes
-- [ ] `bash -n scripts/smoke-embed.sh` parses
-- [ ] `scripts/smoke-embed.sh /tmp/feedspool-issue30/spool.db nomic-embed-text` passes all five assertions
-- [ ] `scripts/smoke-embed.sh` on a fresh copy with `qwen3-embedding:0.6b` passes all five assertions
+- [x] `make format` clean
+- [x] `make lint` passes — **0 issues** (one `gocritic emptyStringTest`, fixed)
+- [x] `make test` passes — **all 20 packages ok**
+- [x] `go test -race` on `internal/embed` and `internal/database` passes (run outside the Makefile with `CGO_ENABLED=1`, as CI does)
+- [x] `bash -n scripts/smoke-embed.sh` parses
+- [x] `scripts/smoke-embed.sh <fresh copy> nomic-embed-text 2d` — **PASS**: 1,248 embedded in 42.4s, 0 outstanding after, `Nothing to do` on re-run, `--force` re-selected 1,248, `related` ranked 10 neighbours
+- [x] `scripts/smoke-embed.sh <fresh copy> qwen3-embedding:0.6b 2d` — **PASS**: 1,236 embedded in 2m21s, same four assertions
 
 **Verification — manual:**
-- [ ] `MANUAL.md` describes `embed` and `related` accurately enough to use them without reading the source; the `num_ctx` default and its reason are documented
-- [ ] **Bake-off verdict recorded in `notes.md`:** for 5–10 sampled items, `related` output under nomic and under qwen3 side by side, with a judgement on which produces more topically coherent neighbours and whether the configured default should change
-- [ ] Record in `notes.md`: migration 12 time, full-window embed wall time and items/sec per model, on-disk growth, and idle `embed` time (compare to #58's 5.07s idle `reindex`, which the index should beat)
-- [ ] Confirm `data/feeds-backup.db` mtime is unchanged — all work went to copies
+- [x] `MANUAL.md` gains `embed` and `related` subcommand sections, the `embed:` config block, `item_embeddings` under Data Model, and `schema_migrations` bumped to 12. The `num_ctx` behaviour and the input cap are documented with their reasons.
+- [x] **Bake-off verdict recorded in `notes.md`: nomic stays the default.** Both models embedded into one database (which is what the composite key is for) and compared through `related`. On a dense topic both are excellent and near-indistinguishable; on a **sparse** topic nomic finds genuinely related items (0.74, 0.73) while qwen3 returns noise from rank one. nomic is also **3.4× faster on real items** (29.2 vs 8.7 items/s) and reliable at a 4× larger context.
+- [x] Timings recorded in `notes.md`: migration 12 at 0.62s, embed at 43.0s/2m21s, idle dry-run at 0.100s vs `reindex` 1.544s, storage ~3 KB/item/model
+- [x] `data/feeds-backup.db` mtime unchanged — every run used a copy
+
+**Three unplanned findings, all recorded in `notes.md`.**
+
+1. **`qwen3-embedding:0.6b` is unreliable above `num_ctx: 2048`** on Ollama 0.32.0 — its runner dies with HTTP 400 `do embedding request: EOF` at an *unstable* threshold. Its default is now 2048, and the provider **truncates every input** to `num_ctx * 3` chars, because relying on a provider's over-length behaviour is not safe and the spool's largest item is ~57,000 chars. Five new tests cover it. This was not in the plan and the command simply does not work on a real corpus without it.
+2. **Similarity thresholds must be relative.** Unrelated items score ~0.59 under nomic, not 0; the signal is the top 1–5%, and the scale differs per model. This is the main input to slice B and the thing most likely to be got wrong from intuition.
+3. **The benchmark that predicted qwen3 would be faster was wrong**, because it used uniform synthetic input. Ollama processes a batch at its longest member, so a mixed-length real batch behaves nothing like a uniform one.
+
+**Smoke-script bugs found by running it**, all fixed: an empty-array expansion that trips `set -u` on macOS bash 3.2; an unbounded `--since` that picked the corpus's one future-dated item as the subject; and a subject link that was ambiguous because the BBC feed carries some articles under two GUIDs. It also now distinguishes "already embedded, pass a fresh copy" from "window too small", since that is the likely mistake on a re-run.

@@ -31,7 +31,7 @@ func TestDefaultsForKnownModels(t *testing.T) {
 		// (the model's true native window) and not Ollama's 2K card default:
 		// 2.3% of a real 2-day window exceeds 2048 tokens.
 		{"nomic-embed-text", "clustering: ", 8192, 8},
-		{"qwen3-embedding", "", 32768, 64},
+		{"qwen3-embedding", "", 2048, 64},
 		{"embeddinggemma", "title: none | text: ", 2048, 32},
 	}
 	for _, tt := range tests {
