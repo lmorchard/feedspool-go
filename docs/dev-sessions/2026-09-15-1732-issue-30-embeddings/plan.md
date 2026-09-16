@@ -520,20 +520,29 @@ Exits non-zero with an actionable message when the subject has no embedding
 for the requested model, naming the `feedspool embed` command to run.
 
 **Verification — automated:**
-- [ ] `make format` clean
-- [ ] `make lint` passes
-- [ ] `make test` passes
-- [ ] `go test ./internal/database -run TestNearestItemsRanking -v` — hand-built unit vectors rank in the expected order, with an orthogonal vector scoring ~0 and an identical one ~1
-- [ ] `go test ./internal/database -run TestNearestItemsExcludesSelf -v` — the subject is absent from its own neighbours
-- [ ] `go test ./internal/database -run TestNearestItemsRespectsModel -v` — neighbours come only from the requested `model_id`
-- [ ] `go test ./internal/database -run TestNearestItemsLimit -v` — `limit` truncates after ranking, not before
-- [ ] `go test ./internal/database -run TestNearestItemsNoEmbedding -v` — a subject with no vector for the model returns a distinguishable error, not an empty list
-- [ ] `./feedspool related https://example.com/nonexistent` exits non-zero
+- [x] `make format` clean
+- [x] `make lint` passes — **0 issues** (one `nolintlint`: an unused `//nolint:gosec`, converted to a plain comment)
+- [x] `make test` passes — **all 20 packages ok**
+- [x] `TestNearestItemsRanksByDotProduct` — identical / 45° / orthogonal / opposed vectors rank in that order **and** score 1.0 / 0.7071 / 0 / −1.0. Checking the values as well as the order is what catches a sign error, which can still produce a plausible ordering
+- [x] `TestNearestItemsExcludesSelf` — the subject, which would always rank first, is absent
+- [x] `TestNearestItemsRespectsModel` — a 1024-dim qwen3 row is not a candidate for a 768-dim nomic subject
+- [x] `TestNearestItemsLimitTruncatesAfterRanking` — fixtures seeded worst-first so an early-truncating scan would keep the wrong ones; `limit 1` returns the genuine best match
+- [x] `TestNearestItemsWithoutASubjectEmbedding` — distinguishable via `IsNoEmbedding`, so the command can say "run `feedspool embed`"
+- [x] `TestNearestItemsSkipsMismatchedWidths` — a corrupt same-model row is skipped with a warning rather than failing the whole query
+- [x] `TestNearestItemsWithNoCandidates`, `...RejectsNonPositiveLimit`, `...ReturnsPopulatedItems`
 
-**Verification — manual:**
-- [ ] `./feedspool --database /tmp/feedspool-issue30/spool.db related <link from the embedded window>` returns neighbours whose titles are **recognisably on the same topic**. This is the judgement the whole slice exists to enable — a timing number cannot substitute for reading the titles.
-- [ ] Similarity scores are in a sane range (top neighbour well under 1.0 but clearly above the tail) rather than all clustered at one value, which would indicate a broken codec
-- [ ] `--json` output parses and carries the same ordering as the table
+**Verification — manual** (against the 34,613-item spool, 1,257 items embedded):
+- [x] **Topical coherence confirmed.** Subject *"OpenAI boss says world 'right to be afraid' but 'should trust' AI firms"* → all 8 neighbours specifically about AI safety/slowdown, from **eight different feeds** (Verge, Ars Technica, Techmeme ×2, pivot-to-ai, The Register, Bloomberg Law via Techmeme). Cross-feed topical clustering is the thing #30 wants, and it is visibly working.
+- [x] Similarity scores span a real range rather than clustering at one value: 0.8691 down to 0.4036 across 1,256 candidates, strictly descending throughout (verified programmatically over all 1,256)
+- [x] `--json` parses and preserves the table's ordering
+- [x] A subject with no embedding exits non-zero naming `feedspool embed`; a nonexistent link exits non-zero
+
+**Finding that matters for slice B.** The similarity distribution for one subject over 1,256 candidates: **median 0.586**, p75 0.623, p95 0.748, p99 0.815, max 0.869, min 0.404. So nomic's baseline for *unrelated* feed items is ~0.55–0.62, **not 0** — the known anisotropy of embedding models, where all vectors occupy a narrow cone. Two consequences for clustering:
+
+1. **A naive absolute threshold will not work.** "Similarity > 0.5" matches essentially everything on this corpus.
+2. **The signal lives in the top 1–5%.** `>= 0.85` gave 4 items, `>= 0.80` gave 18, `>= 0.75` gave 60.
+
+Corroborating: a niche subject (orchids/grassland) topped out at 0.7424 with genuinely ecological top-2 and drift by rank 3, while the AI subject sat at 0.87 inside a dense cluster. **Cluster density shows up in the similarity magnitude**, so slice B wants a relative or distribution-aware threshold rather than a constant.
 
 ---
 
