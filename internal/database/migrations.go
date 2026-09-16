@@ -19,7 +19,8 @@ const (
 	migrationVersion9   = 9  // Add effective-date query index
 	migrationVersion10  = 10 // Deduplicate annotations and enforce uniqueness
 	migrationVersion11  = 11 // Add derived item text and the FTS5 search index
-	maxMigrationVersion = migrationVersion11
+	migrationVersion12  = 12 // Add per-item, per-model vector embeddings
+	maxMigrationVersion = migrationVersion12
 )
 
 // migrationDescriptions names what each migration does, for the announcement a
@@ -40,6 +41,7 @@ func migrationDescriptions() map[int]string {
 		migrationVersion9:  "normalize item timestamps and add the effective-date indexes",
 		migrationVersion10: "deduplicate annotations and enforce uniqueness",
 		migrationVersion11: "derive item text and build the full-text search index",
+		migrationVersion12: "add the item_embeddings table",
 	}
 }
 
@@ -151,8 +153,47 @@ func getMigrations() map[int]string {
 			INSERT INTO items_fts(rowid, title, summary, body)
 			VALUES (new.item_id, new.title, new.summary, new.body);
 		END;`,
+
+		migrationVersion12: migration12DDL,
 	}
 }
+
+// migration12DDL lives outside getMigrations because inlining it pushed that
+// function past the funlen limit, and the explanation below is worth more than
+// the inlining.
+//
+// Identical to the tail of schema.sql, the same arrangement item_text has with
+// migration 11: a fresh database gets this from the schema, an existing one
+// from here, and both end up in the same place.
+// TestMigration12MatchesSchemaFile compares the two so they cannot drift.
+//
+// This migration creates the table and STOPS. Unlike migration 11 it must not
+// backfill: embedding needs network access and a configured provider, and
+// IsInitialized runs migrations -- so a backfilling migration 12 would turn
+// every `serve` startup into a network operation. Backfill is explicit, via
+// `feedspool embed`. TestMigration12DoesNotEmbed enforces that.
+//
+// The primary key is composite because comparing two embedding models needs
+// both answers for the same item at once, and because the models disagree on
+// vector width (768 for nomic-embed-text, 1024 for qwen3-embedding), so one
+// fixed-width row could not hold both.
+//
+// No index for the date window: migration 9 already indexes
+// julianday(COALESCE(published_date, first_seen)), and the embed work
+// predicate reuses that expression verbatim so the index applies -- an
+// expression index only applies on a textual match.
+const migration12DDL = `CREATE TABLE IF NOT EXISTS item_embeddings (
+			item_id           INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+			model_id          TEXT    NOT NULL,
+			dims              INTEGER NOT NULL,
+			vector            BLOB    NOT NULL,
+			source_hash       TEXT    NOT NULL,
+			generator_version INTEGER NOT NULL,
+			computed_at       DATETIME NOT NULL,
+			PRIMARY KEY (item_id, model_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_item_embeddings_model
+			ON item_embeddings(model_id, item_id);`
 
 // RunMigrations applies any pending database migrations.
 func (db *DB) RunMigrations() error {

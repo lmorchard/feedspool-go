@@ -630,6 +630,13 @@ func tableExists(t *testing.T, db *DB, name string) bool {
 
 // rewindPastMigration11 drops everything migration 11 creates, leaving a
 // database that looks like it was last opened by an older feedspool.
+//
+// The delete is `>= 11`, not `= 11`, and that matters: GetMigrationVersion
+// reads MAX(version), so leaving a higher row behind reports the database as
+// already migrated and RunMigrations does nothing -- migration 11 never
+// re-applies and the tests fail on a missing item_text rather than on whatever
+// they meant to assert. That was invisible while 11 was the head; migration 12
+// exposed it. Anything above 11 must go for the rewind to be real.
 func rewindPastMigration11(t *testing.T, db *DB) {
 	t.Helper()
 	for _, statement := range []string{
@@ -641,7 +648,7 @@ func rewindPastMigration11(t *testing.T, db *DB) {
 	} {
 		execSQL(t, db, statement)
 	}
-	execSQL(t, db, `DELETE FROM schema_migrations WHERE version = ?`, migrationVersion11)
+	execSQL(t, db, `DELETE FROM schema_migrations WHERE version >= ?`, migrationVersion11)
 }
 
 // itemTextComputedAt maps each derived row to its computed_at timestamp.

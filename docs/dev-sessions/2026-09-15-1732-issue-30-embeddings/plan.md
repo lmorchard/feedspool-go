@@ -201,18 +201,25 @@ Uses `ON CONFLICT(item_id, model_id) DO UPDATE SET ...`, mirroring
 `formatDatabaseTime(time.Now().UTC())`.
 
 **Verification — automated:**
-- [ ] `make format` clean
-- [ ] `make lint` passes
-- [ ] `make test` passes
-- [ ] `go test ./internal/database -run TestVector -v` — round-trip preserves values bit-for-bit; `len(blob) == dims*4`
-- [ ] `go test ./internal/database -run TestDecodeVectorRejects -v` — blob one byte short, one byte long, and empty all error
-- [ ] `go test ./internal/database -run TestItemEmbeddingTwoModels -v` — one item holds a 768-dim nomic row and a 1024-dim qwen3 row simultaneously, each readable independently
-- [ ] `go test ./internal/database -run TestItemEmbeddingUpsert -v` — re-upserting the same `(item_id, model_id)` replaces rather than duplicating
-- [ ] `go test ./internal/database -run TestMigration12 -v` — applies to a v11 database, re-applying is a no-op, `maxMigrationVersion` is 12
-- [ ] `go test ./internal/database -run TestItemEmbeddingCascade -v` — deleting the parent item removes its embedding rows
+- [x] `make format` clean — gofumpt reflowed three multi-line calls
+- [x] `make lint` passes — **0 issues** (one `funlen`: migration 12's entry pushed `getMigrations` to 106 lines against a 100 limit; fixed by lifting the DDL to a `migration12DDL` package constant, which keeps the explanation and leaves #58's migration 11 entry untouched)
+- [x] `make test` passes — **all 20 packages ok**
+- [x] `TestVectorRoundTrip` — compares `math.Float32bits`, so it is bit-for-bit rather than approximate and would catch a silent float64 detour; `TestVectorNaNAndInfRoundTrip` covers NaN/±Inf; `TestEncodeVectorLength` checks `dims*4` at 1/8/768/1024
+- [x] `TestEncodeVectorIsLittleEndian` — pins 1.0 as `00 00 80 3F`. A round-trip test alone would pass on big-endian too, and byte order is a storage contract
+- [x] `TestDecodeVectorRejectsWrongLength` — **7 subtests**: one byte short, one long, empty, dims larger than blob, dims smaller, zero dims, negative dims
+- [x] `TestItemEmbeddingTwoModelsCoexist` — one item holds a 768-dim nomic row and a 1024-dim qwen3 row at once, each read back independently, exactly 2 rows
+- [x] `TestItemEmbeddingUpsertReplacesRatherThanDuplicating` — one row survives, carrying the updated vector and hash
+- [x] `TestItemEmbeddingCascadesOnItemDelete` — deleting the item removes its embedding rows
+- [x] `TestGetItemEmbeddingMissingIsDistinguishable` / `...RejectsCorruptBlob` — absent embedding reports via `IsNoEmbedding`; a blob shorter than its `dims` column errors instead of decoding
+- [x] `TestMigration12*` — **6 tests**: present on a fresh schema, registered with a description and `maxMigrationVersion` 12, idempotent over three applications, adds no date index, does not embed, and **`TestMigration12MatchesSchemaFile` diffs the live table definition between schema.sql and the migration** so the two cannot drift
+- [x] `TestDotProduct` — 4 subtests plus a width-mismatch rejection
 
 **Verification — manual:**
-- [ ] `./feedspool --database /tmp/feedspool-issue30/spool.db status` on a fresh copy of `data/feeds-backup.db` migrates 11→12 and reports 34,613 items; note the elapsed time (expect well under the 17.6s that included the `item_text` backfill, since migration 12 does DDL only)
+- [x] Migration 11→12 on the real spool copy (680 MB, 460 feeds, **34,613 items**): **0.62s wall / 0.05s CPU**, announced as `Migrating database to schema version 12: add the item_embeddings table...`. Well under the 17.6s that included the `item_text` backfill, as expected for DDL only.
+- [x] Re-running is a no-op — **0.034s**, no migration line, file size unchanged at 680 MB
+- [x] `data/feeds-backup.db` mtime unchanged (17:42) — all work went to the copy
+
+**Unplanned fix this phase required.** `rewindPastMigration11` (`item_text_test.go:633`, from #58) deleted only `version = 11` from `schema_migrations`. `GetMigrationVersion` reads `MAX(version)` (`db.go:158`), so once 12 existed the rewind left the database reporting itself as migrated, `RunMigrations` did nothing, and six of #58's tests failed on a missing `item_text` rather than on what they meant to assert. Changed to `version >= 11` so the rewind is real. The helper was only accidentally correct while 11 was the head; a comment now says so, for migration 13.
 
 ---
 
