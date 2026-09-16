@@ -118,3 +118,27 @@ func TestCheckUnitNormToleranceIsTight(t *testing.T) {
 		t.Fatal("a vector with norm ~1.049 was accepted; the tolerance is too loose to catch an unnormalized provider")
 	}
 }
+
+// Non-finite values need an explicit check, not the tolerance test: every
+// comparison against NaN is false, so math.Abs(NaN-1) > tolerance does not
+// fire and a NaN vector would pass. It would then be stored, produce NaN
+// similarities, and finally fail at JSON encode time in `related --json`,
+// a long way from where it went wrong.
+func TestCheckUnitNormRejectsNonFinite(t *testing.T) {
+	tests := []struct {
+		name   string
+		vector []float32
+	}{
+		{"NaN component", []float32{float32(math.NaN()), 0, 0}},
+		{"NaN among real components", []float32{0.5, 0.5, float32(math.NaN())}},
+		{"positive infinity", []float32{float32(math.Inf(1)), 0, 0}},
+		{"negative infinity", []float32{float32(math.Inf(-1)), 0, 0}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := CheckUnitNorm(tt.vector); err == nil {
+				t.Fatalf("CheckUnitNorm(%v) = nil, want an error", tt.vector)
+			}
+		})
+	}
+}

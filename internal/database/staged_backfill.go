@@ -89,12 +89,20 @@ func (db *DB) RunStagedBackfill(
 			return fmt.Errorf("%s backfill stopped: %w", gen.Name(), err)
 		}
 
-		inputs, lastID, err := db.stagedReadBatch(gen, afterID, batchSize)
+		inputs, lastID, selected, err := db.stagedReadBatch(gen, afterID, batchSize)
 		if err != nil {
 			return err
 		}
-		if len(inputs) == 0 {
+		// Only an empty *selection* means the work is done. A batch that
+		// selected IDs but yielded no inputs -- a generator that legitimately
+		// dropped every row in it -- must still advance the cursor, or every
+		// later ID goes unprocessed while the run reports success.
+		if selected == 0 {
 			return nil
+		}
+		if len(inputs) == 0 {
+			afterID = lastID
+			continue
 		}
 
 		// No transaction is open here. That is the entire point of this driver.
@@ -137,13 +145,18 @@ func (db *DB) stagedRemaining(gen StagedBackfill) (int64, error) {
 }
 
 // stagedReadBatch selects a batch and reads its inputs, then releases the
-// connection before returning. An empty result means there is nothing left.
+// connection before returning.
+//
+// selected is the number of IDs NextBatch chose, reported separately from
+// len(inputs) because the caller has to tell "nothing left to do" (selected
+// zero) from "this batch yielded no work but later IDs remain" (selected
+// non-zero, inputs empty). Collapsing the two ends the run early.
 func (db *DB) stagedReadBatch(
 	gen StagedBackfill, afterID int64, batchSize int,
-) (inputs []StagedInput, lastID int64, err error) {
+) (inputs []StagedInput, lastID int64, selected int, err error) {
 	tx, err := db.conn.Begin()
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to begin %s backfill read: %w", gen.Name(), err)
+		return nil, 0, 0, fmt.Errorf("failed to begin %s backfill read: %w", gen.Name(), err)
 	}
 	// Read-only, so always rolled back. Rolling back rather than committing is
 	// also what releases the connection before Compute runs.
@@ -151,20 +164,20 @@ func (db *DB) stagedReadBatch(
 
 	ids, err := gen.NextBatch(tx, afterID, batchSize)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to select %s backfill batch: %w", gen.Name(), err)
+		return nil, 0, 0, fmt.Errorf("failed to select %s backfill batch: %w", gen.Name(), err)
 	}
 	if len(ids) == 0 {
-		return nil, 0, nil
+		return nil, 0, 0, nil
 	}
 
 	inputs, err = gen.ReadInputs(tx, ids)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to read %s backfill inputs: %w", gen.Name(), err)
+		return nil, 0, 0, fmt.Errorf("failed to read %s backfill inputs: %w", gen.Name(), err)
 	}
 
 	// The cursor advances on the IDs selected, not the inputs returned: a
 	// generator that legitimately drops an item still has to make progress.
-	return inputs, ids[len(ids)-1], nil
+	return inputs, ids[len(ids)-1], len(ids), nil
 }
 
 // stagedWriteBatch commits one batch of results.

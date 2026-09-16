@@ -15,9 +15,15 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 )
 
-// Config configures an Ollama-compatible embedding provider. A hosted
-// OpenAI-compatible endpoint is the same thing with a different BaseURL and an
-// APIKey, which is why there is only one implementation.
+// Config configures an embedding provider speaking Ollama's /api/embed wire
+// format: it posts {model, input, options} and reads back an "embeddings"
+// array.
+//
+// Any endpoint implementing that shape works by changing BaseURL, with APIKey
+// sent as a bearer token when one is needed -- so a local Ollama and a hosted
+// Ollama-compatible service are one code path. OpenAI's embeddings API is a
+// *different* shape (/v1/embeddings, returning data[].embedding) and is not
+// supported here; it would need a second request/response implementation.
 type Config struct {
 	BaseURL string
 	Model   string

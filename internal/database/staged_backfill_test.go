@@ -32,6 +32,10 @@ type fakeStagedGen struct {
 	// skipWrite leaves rows selectable after a batch, so the cursor is the only
 	// thing that can terminate the loop.
 	skipWrite bool
+	// dropInputsFor makes ReadInputs return nothing for a batch containing this
+	// item ID, standing in for a generator that legitimately filters rows out
+	// after selecting them.
+	dropInputsFor int64
 
 	computed int
 	batches  int
@@ -84,6 +88,14 @@ func (g *fakeStagedGen) NextBatch(tx *sql.Tx, afterID int64, limit int) ([]int64
 }
 
 func (g *fakeStagedGen) ReadInputs(tx *sql.Tx, ids []int64) ([]StagedInput, error) {
+	if g.dropInputsFor != 0 {
+		for _, id := range ids {
+			if id == g.dropInputsFor {
+				return nil, nil
+			}
+		}
+	}
+
 	inputs := make([]StagedInput, 0, len(ids))
 	for _, id := range ids {
 		var title string
@@ -338,6 +350,38 @@ func TestRunStagedBackfillStopsOnCanceledContext(t *testing.T) {
 	// committed, but the run must not have processed everything.
 	if got := countStagedProbeRows(t, db); got == 10 {
 		t.Error("the run completed every item despite cancellation")
+	}
+}
+
+// A batch whose ReadInputs drops every row must not end the run. The cursor
+// has to advance past it, or every later item is silently skipped while the
+// run reports success -- the failure mode is a partial backfill that looks
+// complete.
+//
+// Not reachable through the embed generator, whose NextBatch and ReadInputs
+// share one transaction over the same table, but the driver is generic and its
+// own doc comment promises this.
+func TestRunStagedBackfillAdvancesPastABatchThatYieldsNoInputs(t *testing.T) {
+	db := setupTestDB(t)
+	newStagedProbeTable(t, db)
+	seedStagedItems(t, db, 6)
+
+	// Drop the batch containing the very first item, so a driver that stops on
+	// an empty batch processes nothing at all.
+	var firstID int64
+	if err := db.conn.QueryRow(`SELECT MIN(id) FROM items`).Scan(&firstID); err != nil {
+		t.Fatal(err)
+	}
+
+	gen := &fakeStagedGen{db: db, dropInputsFor: firstID}
+	if err := db.RunStagedBackfill(context.Background(), gen, 2, nil); err != nil {
+		t.Fatalf("RunStagedBackfill: %v", err)
+	}
+
+	// Four of six: the dropped batch held two items, the rest were written.
+	if got := countStagedProbeRows(t, db); got != 4 {
+		t.Errorf("wrote %d rows, want 4 -- the run stopped at the dropped batch "+
+			"instead of advancing past it", got)
 	}
 }
 

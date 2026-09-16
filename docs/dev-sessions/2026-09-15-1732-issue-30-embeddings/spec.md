@@ -53,7 +53,8 @@ concern.
 
 ## Data model
 
-Migration 12 (`maxMigrationVersion` is currently 11) adds:
+Migration 12 — the next free number, since `maxMigrationVersion` was 11 when
+this was written — adds:
 
 ```sql
 CREATE TABLE IF NOT EXISTS item_embeddings (
@@ -202,6 +203,14 @@ compared without re-embedding between runs.
 - **Decision:** The Ollama provider sends an explicit `options.num_ctx`, and
   the per-model defaults set it to the model's true native window (8192 for
   nomic, 32768 for qwen3).
+  - **Revised during implementation:** qwen3's default is **2048**, not 32768,
+    and the provider also truncates each input to `num_ctx * 3` characters.
+    Measured against Ollama 0.32.0, qwen3-embedding:0.6b at num_ctx 8192 kills
+    its own runner on long inputs (HTTP 400, `do embedding request: EOF`) at an
+    unstable threshold, while the same model at 2048 accepts 200,000
+    characters. "The model's true native window" turned out to be the wrong
+    target: what matters is the largest window the provider handles reliably.
+    See `notes.md`.
   - **Why:** Measured — Ollama's `nomic-embed-text` card caps context at 2K
     unless `num_ctx` is set, and **2.3% of a real 2-day window (44 of 1,898
     items) exceeds 2,048 tokens** (`research.md` §5). Leaving the default in

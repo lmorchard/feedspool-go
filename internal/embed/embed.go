@@ -1,7 +1,9 @@
 // Package embed turns item text into vector embeddings.
 //
-// Local and hosted providers are the same code path: a local model is just a
-// provider whose base URL is localhost. In-process inference is deliberately
+// Local and hosted providers are the same code path, as long as the endpoint
+// speaks Ollama's /api/embed shape: a local model is just a provider whose
+// base URL is localhost. OpenAI's embeddings API has a different request and
+// response shape and is not supported. In-process inference is deliberately
 // not implemented here -- it is feasible cgo-free via hugot + GoMLX, but it
 // forces a much weaker model, and Provider is transport-agnostic so it can be
 // added later as a second implementation. See the issue #30 session notes.
@@ -191,6 +193,19 @@ func CheckUnitNorm(vector []float32) error {
 		sum += float64(component) * float64(component)
 	}
 	norm := math.Sqrt(sum)
+
+	// NaN and Inf must be rejected explicitly, before the tolerance test.
+	// Every comparison against NaN is false, so `math.Abs(NaN-1) > tolerance`
+	// does not fire and a non-finite vector would pass -- then get stored, then
+	// produce NaN similarities, and finally fail at JSON encode time in
+	// `related --json`, a long way from the cause.
+	if math.IsNaN(norm) || math.IsInf(norm, 0) {
+		return fmt.Errorf(
+			"embedding contains a non-finite value (norm %v): the model returned "+
+				"NaN or Inf, which would silently poison every similarity it takes part in", norm,
+		)
+	}
+
 	if math.Abs(norm-1) > normTolerance {
 		return fmt.Errorf(
 			"embedding is not unit length (norm %.6f): similarity assumes normalized vectors, "+

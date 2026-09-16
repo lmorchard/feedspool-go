@@ -17,9 +17,9 @@ func TestGetDefaultEmbed(t *testing.T) {
 		{"Embed.BaseURL", cfg.Embed.BaseURL, DefaultEmbedBaseURL},
 		{"Embed.Model", cfg.Embed.Model, DefaultEmbedModel},
 		// Zero means "use the model's own measured default", which differs per
-		// model -- nomic plateaus at batch 8, qwen3 keeps scaling to 64, and
-		// their context windows are 8192 and 32768. Baking one number in here
-		// would override that for every model.
+		// model -- nomic plateaus at batch 8 and handles 8192 context, while
+		// qwen3 scales to batch 64 but is only reliable at 2048 context.
+		// Baking one number in here would override that for every model.
 		{"Embed.BatchSize", cfg.Embed.BatchSize, 0},
 		{"Embed.NumCtx", cfg.Embed.NumCtx, 0},
 		{"Embed.APIKey", cfg.Embed.APIKey, ""},

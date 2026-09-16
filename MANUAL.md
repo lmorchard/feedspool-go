@@ -765,11 +765,18 @@ happen with no database transaction open, so a long run does not block a
 concurrent `serve`.
 
 **Provider configuration** lives under `embed:` — see the
-[configuration reference](#full-configuration-reference). A local Ollama is the
-default; a hosted OpenAI-compatible endpoint is the same thing with a different
-`base_url` and an `api_key`. There is deliberately **no `--api-key` flag**: a
-token on the command line lands in `ps` output. Use the config file or
-`FEEDSPOOL_EMBED_API_KEY`.
+[configuration reference](#full-configuration-reference).
+
+The provider speaks **Ollama's `/api/embed`** wire format: it posts
+`{model, input, options}` and reads back an `embeddings` array. Any endpoint
+implementing that shape works by pointing `base_url` at it, with `api_key` sent
+as a bearer token if the endpoint needs one. **OpenAI's embeddings API is a
+different shape** (`/v1/embeddings`, returning `data[].embedding`) and is *not*
+supported — pointing `base_url` at it will fail with a 404 or a decode error.
+Supporting it would mean a second wire format, which is not implemented.
+
+There is deliberately **no `--api-key` flag**: a token on the command line
+lands in `ps` output. Use the config file or `FEEDSPOOL_EMBED_API_KEY`.
 
 `num_ctx` is sent explicitly, because Ollama's own default is lower than the
 models support and would silently truncate the longest items. Each model also

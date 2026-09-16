@@ -103,17 +103,30 @@ echo "neighbours returned: $count"
 [ "$count" -gt 0 ] ||
 	{ echo "FAIL: related returned no neighbours despite an embedded window"; exit 1; }
 
-# Similarities must be in (0, 1] and strictly descending. Equal-valued or
-# ascending output would mean the ranking is not happening.
+# Two separate properties, deliberately not conflated.
+#
+# First the mathematical one: cosine similarity is in [-1, 1] and the list must
+# descend. Opposed vectors legitimately score negative -- the unit tests cover
+# -1 -- so the bound is -1, not 0. Asserting "> 0" here would reject valid
+# output.
 printf '%s' "$neighbors" | jq -e '
 	[.neighbors[].similarity] as $s
-	| ([$s[] | select(. > 1 or . <= 0)] | length == 0)
+	| ([$s[] | select(. > 1 or . < -1)] | length == 0)
 	  and ([range(0; ($s | length) - 1) | $s[.] >= $s[. + 1]] | all)
 ' >/dev/null ||
-	{ echo "FAIL: similarities are not all in (0,1] and descending"; exit 1; }
+	{ echo "FAIL: similarities are not all within [-1,1] and descending"; exit 1; }
 
 top=$(printf '%s' "$neighbors" | jq -r '.neighbors[0].similarity')
 bottom=$(printf '%s' "$neighbors" | jq -r '.neighbors[-1].similarity')
 echo "similarity range over $count neighbours: $top down to $bottom"
+
+# Then a corpus-specific sanity check, which is a heuristic rather than a law:
+# on a spool of this size the nearest neighbour of an arbitrary item is always
+# well above zero (the measured median between unrelated items is ~0.59 for
+# nomic). A top score at or below zero means the vectors are not carrying
+# meaning -- a scrambled codec or a crossed model -- even though every value
+# would still be inside [-1, 1].
+printf '%s' "$neighbors" | jq -e '.neighbors[0].similarity > 0' >/dev/null ||
+	{ echo "FAIL: top similarity is $top; on a corpus this size that means the vectors are not meaningful"; exit 1; }
 
 echo "PASS: window covered, idempotent, --force live, and related ranked $count neighbours"
