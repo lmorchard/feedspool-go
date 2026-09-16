@@ -185,8 +185,12 @@ compared without re-embedding between runs.
 - **Decision:** `vector` is float32 little-endian, exactly `dims*4` bytes,
   length-asserted on read; similarity is a plain dot product.
   - **Why:** Both models return `‖v‖ = 1.0000` (measured), so normalising or
-    storing a magnitude would be dead weight. The decoder verifies the norm on
-    first read per model, so the assumption cannot rot silently.
+    storing a magnitude would be dead weight. **The provider** verifies the
+    norm on the first vector of the first batch per instance, so the assumption
+    cannot rot silently if a provider changes. Checking at the provider rather
+    than in the decoder catches a misbehaving model at the moment it
+    misbehaves, instead of at some later read; the decoder only asserts
+    `len(blob) == dims*4`.
   - **Rejected:** float64 (double the space, no similarity gain) and
     quantisation (complexity bought for nothing at a few thousand vectors).
 
