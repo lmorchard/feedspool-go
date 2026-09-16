@@ -1,4 +1,4 @@
-.PHONY: build test clean run lint format fmt setup check-toolchain print-golangci-lint-version print-go-version
+.PHONY: build test clean run lint format fmt check setup check-toolchain print-golangci-lint-version print-go-version
 
 # Assigned with ?= so the release workflows can pass the authoritative values
 # in the environment. They already do, deriving VERSION from the pushed tag;
@@ -113,6 +113,22 @@ check-toolchain:
 lint: check-toolchain $(GOLANGCI_LINT)
 	@echo "Linting with golangci-lint $(GOLANGCI_LINT_VERSION) on $(GO_TOOLCHAIN)"
 	$(GOLANGCI_LINT) run --timeout=5m
+
+# check is the whole local pre-commit pass in one target: format, then lint,
+# then test. That order matters -- formatting after linting would leave the
+# linter's verdict describing code that no longer exists on disk.
+#
+# Note it MUTATES the tree, because `format` does. That is deliberate for a
+# local convenience target and is why CI does not use it: the workflows run
+# `make lint` directly, so nothing here can reformat code in CI and quietly
+# disagree with what was reviewed.
+#
+# Recursive $(MAKE) rather than prerequisites so the order holds under
+# `make -j`, where prerequisites would be free to run in parallel.
+check:
+	@$(MAKE) format
+	@$(MAKE) lint
+	@$(MAKE) test
 
 print-golangci-lint-version:
 	@echo $(GOLANGCI_LINT_VERSION)
