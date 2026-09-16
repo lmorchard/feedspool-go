@@ -141,11 +141,18 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
+	// --batch-size means items per provider request, so it goes to the
+	// provider. Zero leaves the model's own measured default in place.
+	providerBatch := embedBatchSize
+	if providerBatch <= 0 {
+		providerBatch = cfg.Embed.BatchSize
+	}
+
 	provider := embed.NewOllamaProvider(embed.Config{
 		BaseURL:   cfg.Embed.BaseURL,
 		Model:     model,
 		APIKey:    cfg.Embed.APIKey,
-		BatchSize: cfg.Embed.BatchSize,
+		BatchSize: providerBatch,
 		NumCtx:    cfg.Embed.NumCtx,
 		Timeout:   cfg.Timeout,
 	}, httpclient.NewClient(&httpclient.Config{Timeout: cfg.Timeout}))
@@ -158,7 +165,7 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 	var embedded int64
 	if err := db.EmbedItems(
 		context.Background(), provider, since, until,
-		embedForce, batchSizeOrConfig(cfg.Embed.BatchSize),
+		embedForce, driverBatchFor(providerBatch),
 		func(done, total int64) {
 			embedded = done
 			fmt.Printf("Embedded %d of %d items\n", done, total)
@@ -172,11 +179,20 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-// batchSizeOrConfig prefers the flag, then config, then zero -- which the
-// provider and the backfill driver each read as "use your own default".
-func batchSizeOrConfig(configured int) int {
-	if embedBatchSize > 0 {
-		return embedBatchSize
+// driverBatchFor picks how many items the backfill reads and commits per
+// batch, which is a different knob from how many go in one provider request.
+//
+// It only has to be at least the provider's batch size: the driver hands
+// Compute one batch at a time, so a driver batch smaller than the provider's
+// would cap the provider below what it was asked for. Zero means "use the
+// driver's own default", which is what an unset --batch-size gets.
+func driverBatchFor(providerBatch int) int {
+	if providerBatch > defaultDriverBatch {
+		return providerBatch
 	}
-	return configured
+	return 0
 }
+
+// defaultDriverBatch mirrors database.defaultStagedBatchSize. Kept here rather
+// than exported from that package because it only matters for this comparison.
+const defaultDriverBatch = 64

@@ -98,3 +98,32 @@ func TestMaxInputCharsFollowsConfiguredNumCtx(t *testing.T) {
 			p.maxInputChars, 512*charsPerToken)
 	}
 }
+
+// A pathologically small num_ctx must still truncate. truncateRunes reads a
+// non-positive cap as "no limit", so without a floor a num_ctx of 1 would send
+// whole untruncated items -- the exact failure the cap exists to prevent, and
+// the one that kills qwen3's runner.
+func TestTinyNumCtxStillTruncates(t *testing.T) {
+	f := newFakeOllama(t)
+	p := newTestProvider(t, f, Config{Model: ModelNomicEmbedText, NumCtx: 1})
+
+	long := strings.Repeat("c", 50000)
+	if _, err := p.Embed(context.Background(), []string{long}); err != nil {
+		t.Fatalf("Embed: %v", err)
+	}
+	requests, _ := f.recorded()
+	sent := requests[0].Input[0]
+
+	if len(sent) >= len(long) {
+		t.Fatalf("sent %d chars of a %d-char item; a tiny num_ctx disabled truncation",
+			len(sent), len(long))
+	}
+	if !strings.HasPrefix(sent, nomicPrefix) {
+		t.Error("the floor did not leave room for the prefix")
+	}
+	// The floor must leave something worth embedding, not just the prefix.
+	if body := strings.TrimPrefix(sent, nomicPrefix); len(body) < minInputChars {
+		t.Errorf("only %d chars of item text survived, want at least %d",
+			len(body), minInputChars)
+	}
+}

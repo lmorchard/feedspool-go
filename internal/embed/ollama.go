@@ -78,7 +78,16 @@ func NewOllamaProvider(cfg Config, client *httpclient.Client) *OllamaProvider {
 	// The input cap tracks whatever num_ctx ends up being, including a
 	// configured override, since it exists to keep inputs inside the context
 	// the provider was actually told to use.
-	effective := ModelDefaults{NumCtx: numCtx}
+	//
+	// Floored at the prefix plus minInputChars so the per-item budget can
+	// never reach zero or below. truncateRunes treats a non-positive cap as
+	// "no limit", which is the unsafe direction: a tiny configured num_ctx
+	// would otherwise send whole untruncated items, which is the failure this
+	// cap exists to prevent.
+	maxInputChars := max(
+		ModelDefaults{NumCtx: numCtx}.MaxInputChars(),
+		len(defaults.Prefix)+minInputChars,
+	)
 
 	return &OllamaProvider{
 		client:        client,
@@ -88,9 +97,13 @@ func NewOllamaProvider(cfg Config, client *httpclient.Client) *OllamaProvider {
 		prefix:        defaults.Prefix,
 		numCtx:        numCtx,
 		batchSize:     batchSize,
-		maxInputChars: effective.MaxInputChars(),
+		maxInputChars: maxInputChars,
 	}
 }
+
+// minInputChars is the smallest per-item budget the cap will ever leave after
+// the prefix. A title alone is worth embedding; nothing is not.
+const minInputChars = 64
 
 func (p *OllamaProvider) ModelID() string { return p.model }
 
