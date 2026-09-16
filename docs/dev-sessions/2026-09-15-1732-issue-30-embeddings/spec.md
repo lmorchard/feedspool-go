@@ -275,7 +275,9 @@ compared without re-embedding between runs.
 `data/feeds-backup.db` — 551 MB, 460 feeds, **34,613 items**. **Never open the
 original**; it would be migrated in place. Copy it first
 (`/tmp/feedspool-issue30/spool.db` is the working copy already made and
-migrated to schema 12; `item_text` backfill for all 34,613 items took 17.6 s).
+migrated to schema 11, the current head; `item_text` backfill for all 34,613
+items took 17.6 s). Note `/tmp` is ephemeral — re-copy from
+`data/feeds-backup.db` if the copy disappears.
 
 Window sizes measured on it: 919 items in 1 day, 1,898 in 2 days, 2,548 in 3
 days. Full measurements in `research.md` §5.

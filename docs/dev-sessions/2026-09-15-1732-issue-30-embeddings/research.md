@@ -185,8 +185,8 @@ Real spool at `data/feeds-backup.db` (551 MB), copied to
 never opened** — opening it would run migrations against it. Work on a copy.
 
 **460 feeds, 34,613 items** (larger than the 19,750-item corpus #58 used).
-Migrating the copy to schema 12 and backfilling all 34,613 `item_text` rows
-took **17.6 s** wall.
+Bringing the copy up to schema 11 (the current head) and backfilling all
+34,613 `item_text` rows took **17.6 s** wall.
 
 ### Window sizes — the numbers the design turns on
 
