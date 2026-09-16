@@ -45,25 +45,40 @@ type Provider interface {
 }
 
 // ModelDefaults are the per-model knobs measured in research.md §2 and §5.
-// Template is a fmt pattern with exactly one %s.
 type ModelDefaults struct {
-	Template  string
+	Prefix    string
 	NumCtx    int
 	BatchSize int
 }
 
 // Keyed by model name with any ":tag" stripped, so "qwen3-embedding:0.6b" and
-// "qwen3-embedding" resolve the same.
-var modelDefaults = map[string]ModelDefaults{
-	"nomic-embed-text": {Template: "clustering: %s", NumCtx: 8192, BatchSize: 8},
-	"qwen3-embedding":  {Template: "%s", NumCtx: 32768, BatchSize: 64},
-	"embeddinggemma":   {Template: "title: none | text: %s", NumCtx: 2048, BatchSize: 32},
+// "qwen3-embedding" resolve the same. A function, not a package var, following
+// the getMigrations() precedent -- gochecknoglobals flags the var form.
+func modelDefaults() map[string]ModelDefaults {
+	return map[string]ModelDefaults{
+		ModelNomicEmbedText: {Prefix: nomicPrefix, NumCtx: nomicNumCtx, BatchSize: nomicBatchSize},
+		ModelQwen3Embedding: {Prefix: "", NumCtx: qwen3NumCtx, BatchSize: qwen3BatchSize},
+		ModelEmbeddingGemma: {Prefix: gemmaPrefix, NumCtx: gemmaNumCtx, BatchSize: gemmaBatchSize},
+	}
 }
 
 // DefaultsFor falls back to a conservative unknown-model profile rather than
-// erroring, so a model we have not characterised still works.
+// erroring, so a model we have not characterized still works.
 func DefaultsFor(model string) ModelDefaults
 ```
+
+**Deviation from the original plan, applied during phase 1.** This was going to
+be `Template string`, a `fmt` pattern applied with `fmt.Sprintf(p.template, t)`.
+Two reasons it became a plain `Prefix` instead:
+
+1. `go vet`'s printf analyzer (which golangci-lint runs) flags a
+   non-constant format string, so the `Sprintf` form would have needed a
+   `//nolint` to ship.
+2. All three real templates are pure prefixes, so `p.prefix + text` is both
+   simpler and cannot misbehave on text containing `%`.
+
+The named constants (`nomicNumCtx`, `nomicPrefix`, …) exist because `mnd` flags
+bare 8192/2048 and `goconst` flags repeated literals. Values unchanged.
 
 `num_ctx` is not cosmetic: Ollama caps `nomic-embed-text` at 2K unless it is
 set, and 2.3% of a real 2-day window exceeds 2,048 tokens (`research.md` §5).
@@ -110,18 +125,19 @@ func CheckUnitNorm(v []float32) error // tolerance 1e-3
 ```
 
 **Verification — automated:**
-- [ ] `make format` clean
-- [ ] `make lint` passes
-- [ ] `make test` passes
-- [ ] `go test ./internal/embed -v` — 20 texts at batch 8 issues exactly 3 requests sized 8/8/4
-- [ ] `go test ./internal/embed -run TestTemplate -v` — captured request body shows `clustering: ` prefix for nomic, bare text for qwen3
-- [ ] `go test ./internal/embed -run TestNumCtx -v` — captured body carries `options.num_ctx` = 8192 for nomic
-- [ ] `go test ./internal/embed -run TestEmbedErrors -v` — count mismatch, ragged dims, non-200, and malformed JSON each return an error
-- [ ] `go test ./internal/embed -run TestUnitNorm -v` — a non-normalised vector is rejected
-- [ ] Empty input issues zero HTTP requests and returns an empty slice
+- [x] `make format` clean — gofumpt reflowed two long `fmt.Errorf` calls, no other changes
+- [x] `make lint` passes — **0 issues** (first run found 19: 12 `goconst`, 4 `misspell`, 2 `mnd`, 1 `gochecknoglobals`; all fixed, see the deviation note above)
+- [x] `make test` passes — **all 19 packages ok**
+- [x] `TestEmbedBatchesRequestsAndPreservesOrder` — 20 texts at batch 8 issues exactly 3 requests sized **8/8/4**, and each returned vector is one-hot at its input index, so ordering across batch seams is asserted too
+- [x] `TestEmbedAppliesModelPrefix` — captured request body shows `clustering: ` for nomic, bare text for qwen3, `title: none | text: ` for embeddinggemma
+- [x] `TestEmbedSendsNumCtx` — captured body carries `options.num_ctx` = **8192** for nomic; `TestEmbedConfigOverridesModelDefaults` confirms an explicit 4096 wins
+- [x] `TestEmbedRejectsBadResponses` — **7 subtests**: too few embeddings, too many, ragged dims, HTTP 500, malformed JSON, absent `embeddings` field, unnormalized vectors
+- [x] `TestCheckUnitNorm` — 7 subtests; plus `TestCheckUnitNormToleranceIsTight` fails a norm of ~1.049, so the tolerance cannot be widened to uselessness without a test failing
+- [x] `TestEmbedEmptyInputMakesNoRequest` — zero HTTP requests, empty slice
+- [x] `TestEmbedReadsResponsesLargerThanTheHTTPClientCap` — a 64-vector response (~800KB, past httpclient's 100KB limited-read cap) decodes, confirming `LimitResponseSize` is left unset
 
 **Verification — manual:**
-- [ ] Against real Ollama, an env-gated test (`FEEDSPOOL_EMBED_LIVE=1`, skipped otherwise so CI stays hermetic) embeds one string with each of `nomic-embed-text` and `qwen3-embedding:0.6b` and reports 768 and 1024 dims respectively
+- [x] `FEEDSPOOL_EMBED_LIVE=1 go test ./internal/embed -run TestLiveOllama -v` against real Ollama 0.32.0: **`nomic-embed-text` → 768 dims, `qwen3-embedding:0.6b` → 1024 dims, all vectors unit length.** Skipped without the env var, so CI stays hermetic and `make test` needs no model downloads.
 
 ---
 
