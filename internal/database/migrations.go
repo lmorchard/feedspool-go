@@ -20,7 +20,8 @@ const (
 	migrationVersion10  = 10 // Deduplicate annotations and enforce uniqueness
 	migrationVersion11  = 11 // Add derived item text and the FTS5 search index
 	migrationVersion12  = 12 // Add per-item, per-model vector embeddings
-	maxMigrationVersion = migrationVersion12
+	migrationVersion13  = 13 // Add topic clustering tables
+	maxMigrationVersion = migrationVersion13
 )
 
 // migrationDescriptions names what each migration does, for the announcement a
@@ -42,10 +43,13 @@ func migrationDescriptions() map[int]string {
 		migrationVersion10: "deduplicate annotations and enforce uniqueness",
 		migrationVersion11: "derive item text and build the full-text search index",
 		migrationVersion12: "add the item_embeddings table",
+		migrationVersion13: "add topic clustering tables",
 	}
 }
 
 // getMigrations returns the database migration scripts.
+//
+//nolint:funlen // It is a map of strings, length is expected
 func getMigrations() map[int]string {
 	return map[int]string{
 		// Migration 1 is handled by InitSchema, not listed here
@@ -155,6 +159,27 @@ func getMigrations() map[int]string {
 		END;`,
 
 		migrationVersion12: migration12DDL,
+		migrationVersion13: `CREATE TABLE IF NOT EXISTS topic_runs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			window_start DATETIME NOT NULL,
+			window_end DATETIME NOT NULL,
+			embed_model_id TEXT NOT NULL,
+			llm_model_id TEXT NOT NULL
+		);
+
+		CREATE TABLE IF NOT EXISTS topics (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			run_id INTEGER NOT NULL REFERENCES topic_runs(id) ON DELETE CASCADE,
+			label TEXT NOT NULL,
+			score REAL NOT NULL
+		);
+
+		CREATE TABLE IF NOT EXISTS topic_items (
+			topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+			item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+			PRIMARY KEY (topic_id, item_id)
+		);`,
 	}
 }
 

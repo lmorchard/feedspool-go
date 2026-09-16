@@ -853,6 +853,45 @@ feedspool version v1.2.3
 { "version": "v1.2.3", "commit": "abc1234", "date": "2026-05-09T12:00:00Z" }
 ```
 
+### topics
+
+Cluster embedded items in a time window into trending topics, using LLM-generated descriptive labels.
+
+**Usage:** `feedspool topics [flags]`
+
+`topics` reads previously computed vector embeddings for a given window, calculates their cosine similarities, and clusters them using single-linkage agglomerative clustering. Clusters that meet the minimum item count are sent to a configured LLM provider to receive a concise topic label based on their headlines and text snippets.
+
+The generated topics, along with their labels and item associations, are persisted as point-in-time artifacts in the database (`topic_runs`, `topics`, `topic_items`), and printed to standard output or as JSON.
+
+**Flags:**
+- `--last <duration>`: Cluster items from this far back (e.g., `24h`, `2d`, `1w`). Defaults to `1d`. Mutually exclusive with `--since`.
+- `--since <rfc3339>`: Cluster items at or after this date.
+- `--until <rfc3339>`: Cluster items at or before this date.
+- `--model <string>`: Which embedding model to read from the database (defaults to `embed.model` in configuration).
+- `--llm-model <string>`: Which LLM model to request for labeling (defaults to `topics.model` in configuration).
+- `--threshold <float>`: Cosine similarity cutoff for clustering (defaults to `0.70`). A tighter threshold (like `0.80`) will break up large generic blobs into highly specific story clusters.
+- `--min-items <int>`: Minimum items required to keep and label a cluster (defaults to `5`). Smaller clusters are discarded.
+- `--concurrency <int>`: How many simultaneous labeling requests to make to the LLM provider (defaults to `topics.concurrency` in config).
+- `--json`: Output the generated topics in JSON format.
+
+**Configuration:**
+Requires a `[topics]` block in `feedspool.yaml` with the LLM API's base URL and model name (an API key is optional). `topics` transparently supports both Ollama and OpenAI-compatible API schemas (like LiteLLM or vLLM). It detects OpenAI-compatible schemas automatically if the base URL contains `/v1` or `openai`.
+
+```yaml
+embed:
+  base_url: "http://localhost:11434"
+  model: "nomic-embed-text"
+
+topics:
+  # Examples: Ollama (http://localhost:11434) or OpenAI-compatible (http://127.0.0.1:4000/v1)
+  base_url: "http://192.168.0.199:4000/v1"
+  model: "gemini-2.5-flash"
+  api_key: "sk-..." 
+  concurrency: 5
+```
+
+**Side effects:** Writes `topic_runs`, `topics`, and `topic_items`; makes network requests to the `topics` LLM provider.
+
 ## HTTP API
 
 A read/write JSON API over the feed database, mounted at `/api/v1/` by
