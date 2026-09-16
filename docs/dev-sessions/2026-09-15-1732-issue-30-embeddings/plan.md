@@ -298,18 +298,20 @@ func TestRunStagedBackfillHoldsNoTransactionDuringCompute(t *testing.T) {
 ```
 
 **Verification — automated:**
-- [ ] `make format` clean
-- [ ] `make lint` passes
-- [ ] `make test` passes
-- [ ] `go test ./internal/database -run TestRunStagedBackfillHoldsNoTransactionDuringCompute -v` — passes
-- [ ] Same test fails when the driver is temporarily changed to pass its read transaction into `Compute` (prove the test has teeth before trusting it; revert immediately)
-- [ ] `go test ./internal/database -run TestRunStagedBackfillResumes -v` — a generator that errors mid-run leaves earlier batches committed, and a second run processes only the remainder
-- [ ] `go test ./internal/database -run TestRunStagedBackfillTerminates -v` — a generator whose `Write` is a no-op (so rows stay selectable) still terminates rather than looping
-- [ ] `go test ./internal/database -run TestRunStagedBackfillProgress -v` — `progress` is called once per committed batch with a monotonic `done`
-- [ ] `go test ./internal/database -run TestRunStagedBackfillCancel -v` — a cancelled context stops the run and returns the context error
+- [x] `make format` clean
+- [x] `make lint` passes — **0 issues**
+- [x] `make test` passes — **all 20 packages ok**
+- [x] `TestRunStagedBackfillHoldsNoTransactionDuringCompute` — passes, and `Compute` ran 3 times so batch boundaries are actually exercised
+- [x] **Proved the test has teeth.** Temporarily added a `db.conn.Begin()` held across `Compute` and re-ran: the test **failed** in 0.26s with `could not reach the database during Compute, so a transaction was open across it … context deadline exceeded` — exactly the intended diagnosis, at exactly the probe deadline. Regression reverted; `grep` confirms no trace left. An invariant test for a failure that has never occurred is worth only what its demonstrated failure mode proves.
+- [x] `TestRunStagedBackfillResumesAfterFailure` — an injected mid-batch failure leaves earlier batches committed (neither 0 nor all 10 rows), and the second run computes **only** the remainder, asserted as a count rather than just "it finished"
+- [x] `TestRunStagedBackfillTerminatesWhenWorkIsNeverCompleted` — a generator whose `Write` is a no-op (rows stay selectable forever) still terminates, and touches each of the 7 items exactly once. Guarded by a 10s watchdog so a regression fails rather than hanging CI
+- [x] `TestRunStagedBackfillReportsProgress` — exactly 3 samples for 5 items at batch 2, `total` constant at 5, `done` strictly increasing, final `done` 5
+- [x] `TestRunStagedBackfillToleratesNilProgress` — no panic, same contract `RunBackfill` has
+- [x] `TestRunStagedBackfillStopsOnCanceledContext` — returns `context.Canceled` and does not process every item
+- [x] `TestRunStagedBackfillEmptyWorkSetIsANoOp` — `Compute` never called
 
 **Verification — manual:**
-- [ ] None — this phase has no user-visible surface
+- [x] None needed — no user-visible surface. (The driver gets its real-corpus exercise in phase 4, where `embed` drives it.)
 
 ---
 
