@@ -1,11 +1,15 @@
 package renderer
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	configpkg "github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
@@ -15,17 +19,19 @@ import (
 
 // WorkflowConfig holds all configuration for rendering operations.
 type WorkflowConfig struct {
-	MaxAge          string
-	Start           string
-	End             string
-	MinItemsPerFeed int // Minimum items to show per feed (0 = no minimum, use timespan only)
-	MaxItemsPerFeed int // Maximum items to show per feed (0 = no limit)
-	FeedsPerPage    int // Feeds per page for pagination (0 = no pagination)
-	OutputDir       string
-	TemplatesDir    string
-	AssetsDir       string
-	FeedsFile       string
-	Format          string
+	MaxAge                 string
+	Start                  string
+	End                    string
+	MinItemsPerFeed        int     // Minimum items to show per feed (0 = no minimum, use timespan only)
+	MaxItemsPerFeed        int     // Maximum items to show per feed (0 = no limit)
+	FeedsPerPage           int     // Feeds per page for pagination (0 = no pagination)
+	TopicMaxFeedRatio      float32 // Maximum ratio of items allowed from a single feed before rejecting the topic
+	TopicMinDiversityCount int     // Min items before applying diversity ratio limit
+	OutputDir              string
+	TemplatesDir           string
+	AssetsDir              string
+	FeedsFile              string
+	Format                 string
 	// SiteTitle overrides the title shown as each page's <title> and <h1>.
 	// Empty means derive it from the feed list named by FeedsFile, falling
 	// back to DefaultSiteTitle when there is no feed list at all. Directory
@@ -119,15 +125,14 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 	}
 
 	if len(feeds) == 0 && !config.Quiet {
-		fmt.Println("No feeds found matching criteria") //nolint:forbidigo // User-facing output
+		logrus.Info("No feeds found matching criteria")
 	}
 
 	// Apply max items per feed limit if configured
 	if config.MaxItemsPerFeed > 0 {
 		items = limitItemsPerFeed(items, config.MaxItemsPerFeed)
 		if !config.Quiet {
-			//nolint:forbidigo // User-facing output
-			fmt.Printf("Limited to maximum %d items per feed\n", config.MaxItemsPerFeed)
+			logrus.Infof("Limited to maximum %d items per feed", config.MaxItemsPerFeed)
 		}
 	}
 
@@ -207,14 +212,13 @@ func queryData(
 	db *database.DB, startTime, endTime time.Time, feedURLs []string, minItemsPerFeed int, quiet bool,
 ) ([]database.Feed, map[string][]database.Item, error) {
 	if !quiet {
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Rendering feeds from %s to %s...\n",
+		logrus.Infof("Rendering feeds from %s to %s...",
 			startTime.Format("2006-01-02 15:04"), endTime.Format("2006-01-02 15:04"))
 		if len(feedURLs) > 0 {
-			fmt.Printf("Using %d feeds from feed list\n", len(feedURLs)) //nolint:forbidigo // User-facing output
+			logrus.Infof("Using %d feeds from feed list", len(feedURLs))
 		}
 		if minItemsPerFeed > 0 {
-			fmt.Printf("Ensuring at least %d items per feed\n", minItemsPerFeed) //nolint:forbidigo // User-facing output
+			logrus.Infof("Ensuring at least %d items per feed", minItemsPerFeed)
 		}
 	}
 
@@ -224,7 +228,7 @@ func queryData(
 	}
 
 	if !quiet {
-		fmt.Printf("Found %d feeds with items\n", len(feeds)) //nolint:forbidigo // User-facing output
+		logrus.Infof("Found %d feeds with items", len(feeds))
 	}
 	return feeds, items, nil
 }
@@ -257,24 +261,44 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
 
+	// Topics
+	var topicCtx *TopicsTemplateContext
+	var rawItemsMap map[int64][]*database.Item
+	if run, _ := db.GetLatestTopicRun(context.Background()); run != nil {
+		chrome.HasTopics = true
+		topicCtx, rawItemsMap = buildTopicsContext(db, run, chrome, config)
+	}
+
 	// Fetch metadata and favicons
 	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
 
+	// If we have topics, we might need metadata and favicons for topic items too
+	if topicCtx != nil {
+		fetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
+	}
+
 	// Generate template context
-	context := createTemplateContext(feeds, items, metadata, feedFavicon, chrome)
+	templateCtx := createTemplateContext(feeds, items, metadata, feedFavicon, chrome)
 
 	// Calculate pagination info
 	feedsPerPage := config.FeedsPerPage
 	if feedsPerPage <= 0 {
 		feedsPerPage = len(feeds) // Disable pagination
 	}
-	pages := splitFeedsIntoPages(context.Feeds, feedsPerPage)
+	pages := splitFeedsIntoPages(templateCtx.Feeds, feedsPerPage)
 	totalPages := len(pages)
 
 	// Render main index file
 	outputFile := filepath.Join(config.OutputDir, "index.html")
-	if err := renderIndexFile(r, outputFile, context, totalPages, feedsPerPage); err != nil {
+	if err := renderIndexFile(r, outputFile, templateCtx, totalPages, feedsPerPage); err != nil {
 		return err
+	}
+
+	if topicCtx != nil {
+		topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
+		if err := renderTopicsFile(r, topicOutputFile, topicCtx); err != nil {
+			return err
+		}
 	}
 
 	// Copy assets
@@ -286,7 +310,7 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 
 	// Render feed list page fragments (if pagination enabled)
 	if totalPages > 1 {
-		if err := renderFeedPages(r, feedsDir, context.Feeds, items, metadata,
+		if err := renderFeedPages(r, feedsDir, templateCtx.Feeds, items, metadata,
 			feedFavicon, chrome, feedsPerPage, config.Quiet); err != nil {
 			return err
 		}
@@ -352,7 +376,139 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	}
 }
 
-func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext, totalPages, feedsPerPage int) error {
+func buildTopicsContext(
+	db *database.DB, run *database.TopicRun, chrome SiteChrome, config *WorkflowConfig,
+) (ctx *TopicsTemplateContext, rawItemsMap map[int64][]*database.Item) {
+	topicList, _ := db.GetTopicsForRun(context.Background(), run.ID)
+	topicItemsMap, _ := db.GetTopicItems(context.Background(), run.ID)
+
+	var allItemIDs []int64
+	for _, ids := range topicItemsMap {
+		allItemIDs = append(allItemIDs, ids...)
+	}
+	topicItemsData, _ := db.GetItemsByIDs(allItemIDs)
+
+	topicItemSlices := make(map[int64][]*database.Item)
+	rejectedCount := 0
+	for topicID, itemIDs := range topicItemsMap {
+		var slice []*database.Item
+		feedCounts := make(map[string]int)
+
+		for _, id := range itemIDs {
+			if item, ok := topicItemsData[id]; ok {
+				slice = append(slice, item)
+				feedCounts[item.FeedURL]++
+			}
+		}
+
+		// Reject topic if all/most items are from the same feed
+		isSpam := false
+		if config.TopicMaxFeedRatio > 0 && len(slice) >= config.TopicMinDiversityCount {
+			for _, count := range feedCounts {
+				if float32(count)/float32(len(slice)) >= config.TopicMaxFeedRatio {
+					isSpam = true
+					break
+				}
+			}
+		}
+
+		if isSpam {
+			// Don't show this topic in the rendered page
+			rejectedCount++
+			continue
+		}
+
+		topicItemSlices[topicID] = slice
+	}
+
+	if rejectedCount > 0 {
+		logrus.Infof("Render filtered out %d topic(s) exceeding max single-feed ratio (>=%.0f%% items from 1 feed)",
+			rejectedCount, config.TopicMaxFeedRatio*100)
+	}
+
+	// Filter out topics that were rejected
+	var cleanTopicList []*database.Topic
+	for _, topic := range topicList {
+		if _, ok := topicItemSlices[topic.ID]; ok {
+			cleanTopicList = append(cleanTopicList, topic)
+		}
+	}
+
+	return &TopicsTemplateContext{
+		SiteChrome: chrome,
+		Run:        run,
+		Topics:     cleanTopicList,
+		GroupsMap:  make(map[int64][]TopicFeedGroup),
+	}, topicItemSlices
+}
+
+//nolint:cyclop
+func fetchTopicMetadataAndFavicons(
+	db *database.DB, topicCtx *TopicsTemplateContext, rawItemsMap map[int64][]*database.Item,
+) {
+	topicCtx.Metadata = make(map[string]*database.URLMetadata)
+
+	feedURLs := make(map[string]bool)
+	for _, itemsList := range rawItemsMap {
+		for _, item := range itemsList {
+			if item.Link != "" {
+				if meta, err := db.GetMetadata(item.Link); err == nil && meta != nil {
+					topicCtx.Metadata[item.Link] = meta
+				}
+			}
+			if item.FeedURL != "" {
+				feedURLs[item.FeedURL] = true
+			}
+		}
+	}
+
+	feedFavicon := make(map[string]string)
+	feedTitles := make(map[string]string)
+	for feedURL := range feedURLs {
+		if favicon, err := db.GetFeedFavicon(feedURL); err == nil && favicon != "" {
+			feedFavicon[feedURL] = favicon
+		}
+		if feed, err := db.GetFeed(feedURL); err == nil && feed != nil {
+			feedTitles[feedURL] = feed.Title
+		}
+	}
+
+	// Now that we have titles and favicons, populate the GroupsMap
+	for topicID, itemsList := range rawItemsMap {
+		// Group items by feed URL
+		groups := make(map[string]*TopicFeedGroup)
+		for _, item := range itemsList {
+			group, ok := groups[item.FeedURL]
+			if !ok {
+				group = &TopicFeedGroup{
+					FeedURL: item.FeedURL,
+					Title:   feedTitles[item.FeedURL],
+					Favicon: feedFavicon[item.FeedURL],
+				}
+				groups[item.FeedURL] = group
+			}
+			group.Items = append(group.Items, item)
+		}
+
+		// Convert map to slice and sort deterministically
+		slice := make([]TopicFeedGroup, 0, len(groups))
+		for _, group := range groups {
+			slice = append(slice, *group)
+		}
+		sort.Slice(slice, func(i, j int) bool {
+			if len(slice[i].Items) != len(slice[j].Items) {
+				return len(slice[i].Items) > len(slice[j].Items)
+			}
+			if slice[i].Title != slice[j].Title {
+				return slice[i].Title < slice[j].Title
+			}
+			return slice[i].FeedURL < slice[j].FeedURL
+		})
+		topicCtx.GroupsMap[topicID] = slice
+	}
+}
+
+func renderIndexFile(r *Renderer, outputFile string, templateCtx *TemplateContext, totalPages, feedsPerPage int) error {
 	// Wrap context with pagination info for template
 	type IndexContext struct {
 		*TemplateContext
@@ -361,7 +517,7 @@ func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext, t
 	}
 
 	indexContext := &IndexContext{
-		TemplateContext: context,
+		TemplateContext: templateCtx,
 		TotalPages:      totalPages,
 		FeedsPerPage:    feedsPerPage,
 	}
@@ -376,6 +532,19 @@ func renderIndexFile(r *Renderer, outputFile string, context *TemplateContext, t
 		return fmt.Errorf("failed to render template: %w", err)
 	}
 
+	return nil
+}
+
+func renderTopicsFile(r *Renderer, outputFile string, topicCtx *TopicsTemplateContext) error {
+	file, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer file.Close()
+
+	if err := r.Render(file, "topics.html", topicCtx); err != nil {
+		return fmt.Errorf("failed to render template: %w", err)
+	}
 	return nil
 }
 
@@ -436,7 +605,7 @@ func renderFeedPages(r *Renderer, feedsDir string, feeds []FeedWithID,
 	}
 
 	if !quiet {
-		fmt.Printf("Generated %d feed list pages\n", totalPages) //nolint:forbidigo
+		logrus.Infof("Generated %d feed list pages", totalPages)
 	}
 
 	return nil
@@ -524,21 +693,15 @@ func printSuccessMessage(feedCount int, feedTemplateExists bool, outputDir, outp
 		return
 	}
 	if feedCount > 0 {
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Generated %d individual feed pages\n", feedCount)
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Multi-page site generated successfully in: %s\n", outputDir)
+		logrus.Infof("Generated %d individual feed pages", feedCount)
+		logrus.Infof("Multi-page site generated successfully in: %s", outputDir)
 	} else {
-		//nolint:forbidigo // User-facing output
-		fmt.Printf("Single-page site generated successfully in: %s\n", outputDir)
+		logrus.Infof("Single-page site generated successfully in: %s", outputDir)
 		if feedTemplateExists {
-			//nolint:forbidigo // User-facing output
-			fmt.Printf("(no feeds matched - no individual feed pages to generate)\n")
+			logrus.Info("(no feeds matched - no individual feed pages to generate)")
 		} else {
-			//nolint:forbidigo // User-facing output
-			fmt.Printf("(feed.html template not found - skipped individual feed pages)\n")
+			logrus.Info("(feed.html template not found - skipped individual feed pages)")
 		}
 	}
-	//nolint:forbidigo // User-facing output
-	fmt.Printf("Open %s in your browser to view the site\n", outputFile)
+	logrus.Infof("Open %s in your browser to view the site", outputFile)
 }

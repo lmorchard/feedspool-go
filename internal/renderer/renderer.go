@@ -34,6 +34,24 @@ type SiteChrome struct {
 	SiteTitle   string
 	TimeWindow  string
 	GeneratedAt time.Time
+	HasTopics   bool
+}
+
+// TopicFeedGroup groups items by their source feed within a topic.
+type TopicFeedGroup struct {
+	FeedURL string
+	Title   string
+	Favicon string
+	Items   []*database.Item
+}
+
+// TopicsTemplateContext contains data for the topics template.
+type TopicsTemplateContext struct {
+	SiteChrome
+	Run       *database.TopicRun
+	Topics    []*database.Topic
+	GroupsMap map[int64][]TopicFeedGroup       // TopicID -> sorted slice of Feed groups
+	Metadata  map[string]*database.URLMetadata // URL -> metadata
 }
 
 // TemplateContext contains all data passed to templates.

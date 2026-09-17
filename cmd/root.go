@@ -94,6 +94,14 @@ func initConfig() {
 	// no flag, and a local Ollama needs none.
 	viper.SetDefault("embed.base_url", config.DefaultEmbedBaseURL)
 	viper.SetDefault("embed.model", config.DefaultEmbedModel)
+	viper.SetDefault("embed.last", config.DefaultEmbedLast)
+
+	// Topics defaults
+	viper.SetDefault("topics.concurrency", config.DefaultTopicsConcurrency)
+	viper.SetDefault("topics.min_items", config.DefaultTopicsMinItems)
+	viper.SetDefault("topics.max_items", config.DefaultTopicsMaxItems)
+	viper.SetDefault("topics.threshold", config.DefaultTopicsThreshold)
+	viper.SetDefault("topics.last", config.DefaultTopicsLast)
 
 	viper.AutomaticEnv()
 
@@ -118,10 +126,8 @@ func initConfig() {
 func setupLogging() {
 	if cfg.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
-	} else if cfg.Verbose {
-		logrus.SetLevel(logrus.InfoLevel)
 	} else {
-		logrus.SetLevel(logrus.WarnLevel)
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
 	if cfg.JSON {

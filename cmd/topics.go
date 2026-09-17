@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 	"github.com/lmorchard/feedspool-go/internal/topics"
@@ -22,6 +23,7 @@ var (
 	topicsLLM         string
 	topicsThresh      float32
 	topicsMin         int
+	topicsMax         int
 	topicsConcurrency int
 )
 
@@ -31,32 +33,16 @@ var topicsCmd = &cobra.Command{
 	RunE:  runTopics,
 }
 
-//nolint:cyclop
-func runTopics(_ *cobra.Command, _ []string) error {
+func runTopics(cmd *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
-	if topicsLast != "" && (topicsSince != "" || topicsUntil != "") {
-		return fmt.Errorf("cannot specify both --last and an explicit range (--since/--until)")
-	}
-	start, end, err := database.ParseTimeWindow(topicsLast, topicsSince, topicsUntil)
+	params, err := resolveTopicsParams(cmd, cfg)
 	if err != nil {
-		return fmt.Errorf("error parsing time window: %w", err)
-	}
-
-	model := topicsModel
-	if model == "" {
-		model = cfg.Embed.Model
-	}
-	if model == "" {
-		return fmt.Errorf("error: missing embed model config")
+		return err
 	}
 
 	topicsCfg := cfg.Topics
-	if topicsLLM != "" {
-		topicsCfg.Model = topicsLLM
-	} else if topicsCfg.Model == "" {
-		return fmt.Errorf("error: missing topics model config")
-	}
+	topicsCfg.Model = params.llmModel
 
 	client := httpclient.NewClient(&httpclient.Config{
 		UserAgent: "feedspool-topics",
@@ -67,9 +53,9 @@ func runTopics(_ *cobra.Command, _ []string) error {
 	if topicsCfg.BaseURL != "" && (strings.Contains(topicsCfg.BaseURL, "/v1") ||
 		strings.Contains(topicsCfg.BaseURL, "openai")) {
 		// Heuristic to use OpenAI format if the URL looks like an OpenAI-compatible endpoint
-		labeler = topics.NewOpenAILabeler(topicsCfg, client)
+		labeler = topics.NewOpenAILabeler(&topicsCfg, client)
 	} else {
-		labeler = topics.NewOllamaLabeler(topicsCfg, client)
+		labeler = topics.NewOllamaLabeler(&topicsCfg, client)
 	}
 
 	db, err := openDatabase(cfg.Database)
@@ -80,13 +66,10 @@ func runTopics(_ *cobra.Command, _ []string) error {
 
 	pipeline := topics.NewPipeline(db, labeler)
 
-	concurrency := topicsConcurrency
-	if concurrency <= 0 {
-		concurrency = cfg.Topics.Concurrency
-	}
-
 	run, results, itemsMap, err := pipeline.Generate(
-		context.Background(), model, start, end, topicsThresh, topicsMin, concurrency,
+		context.Background(), params.embedModel, params.start, params.end,
+		params.thresh, params.minItems, params.maxItems, params.concurrency,
+		cfg.Topics.MaxFeedRatio, cfg.Topics.MinDiversityCount,
 	)
 	if err != nil {
 		return fmt.Errorf("error generating topics: %w", err)
@@ -106,8 +89,83 @@ func runTopics(_ *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	printTopicsCLI(start, end, model, labeler.ModelID(), results, itemsMap)
+	printTopicsCLI(params.start, params.end, params.embedModel, labeler.ModelID(), results, itemsMap)
 	return nil
+}
+
+type topicsParams struct {
+	start       time.Time
+	end         time.Time
+	embedModel  string
+	llmModel    string
+	thresh      float32
+	minItems    int
+	maxItems    int
+	concurrency int
+}
+
+func resolveOption[T comparable](cmd *cobra.Command, flagName string, flagVal, configVal, defaultVal T) T {
+	var zero T
+	if cmd.Flags().Changed(flagName) {
+		return flagVal
+	}
+	if configVal != zero {
+		return configVal
+	}
+	return defaultVal
+}
+
+func resolveTopicsParams(cmd *cobra.Command, cfg *config.Config) (*topicsParams, error) {
+	if cmd.Flags().Changed("last") && (cmd.Flags().Changed("since") || cmd.Flags().Changed("until")) {
+		return nil, fmt.Errorf("cannot specify both --last and an explicit range (--since/--until)")
+	}
+
+	var last string
+	if cmd.Flags().Changed("last") {
+		last = topicsLast
+	} else if !cmd.Flags().Changed("since") && !cmd.Flags().Changed("until") {
+		last = cfg.Topics.Last
+		if last == "" {
+			last = config.DefaultTopicsLast
+		}
+	}
+
+	start, end, err := database.ParseTimeWindow(last, topicsSince, topicsUntil)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing time window: %w", err)
+	}
+
+	model := topicsModel
+	if !cmd.Flags().Changed("model") {
+		if cfg.Topics.EmbedModel != "" {
+			model = cfg.Topics.EmbedModel
+		} else {
+			model = cfg.Embed.Model
+		}
+	}
+	if model == "" {
+		return nil, fmt.Errorf("error: missing embed model config")
+	}
+
+	llmModel := resolveOption(cmd, "llm-model", topicsLLM, cfg.Topics.Model, "")
+	if llmModel == "" {
+		return nil, fmt.Errorf("error: missing topics model config")
+	}
+
+	return &topicsParams{
+		start:      start,
+		end:        end,
+		embedModel: model,
+		llmModel:   llmModel,
+		thresh: resolveOption(cmd, "threshold", topicsThresh,
+			cfg.Topics.Threshold, config.DefaultTopicsThreshold),
+		minItems: resolveOption(cmd, "min-items", topicsMin,
+			cfg.Topics.MinItems, config.DefaultTopicsMinItems),
+		maxItems: resolveOption(cmd, "max-items", topicsMax,
+			cfg.Topics.MaxItems, config.DefaultTopicsMaxItems),
+		concurrency: resolveOption(cmd, "concurrency", topicsConcurrency,
+			cfg.Topics.Concurrency, config.DefaultTopicsConcurrency),
+	}, nil
 }
 
 func printTopicsJSON(results []*database.Topic, itemsMap map[*database.Topic][]int64) {
@@ -139,15 +197,17 @@ func printTopicsCLI(
 func init() {
 	rootCmd.AddCommand(topicsCmd)
 
-	topicsCmd.Flags().StringVar(&topicsLast, "last", "1d", "Window duration (e.g. 2d, 1w)")
+	topicsCmd.Flags().StringVar(&topicsLast, "last", "", "Window duration (e.g. 2d, 1w); defaults to config")
 	topicsCmd.Flags().StringVar(&topicsSince, "since", "", "Start of window (RFC3339)")
 	topicsCmd.Flags().StringVar(&topicsUntil, "until", "", "End of window (RFC3339)")
 	topicsCmd.Flags().StringVar(&topicsModel, "model", "", "Embedding model (defaults to config)")
 	topicsCmd.Flags().StringVar(&topicsLLM, "llm-model", "", "LLM model (defaults to config)")
-	topicsCmd.Flags().Float32Var(&topicsThresh, "threshold", 0.70, //nolint:mnd
-		"Cosine similarity threshold for clustering")
-	topicsCmd.Flags().IntVar(&topicsMin, "min-items", 5, //nolint:mnd
-		"Minimum items required in a cluster to keep it and label it")
+	topicsCmd.Flags().Float32Var(&topicsThresh, "threshold", 0,
+		"Cosine similarity threshold for clustering (0 = use config default)")
+	topicsCmd.Flags().IntVar(&topicsMin, "min-items", 0,
+		"Minimum items required in a cluster to keep it and label it (0 = use config default)")
+	topicsCmd.Flags().IntVar(&topicsMax, "max-items", 0,
+		"Maximum items allowed in a cluster before dropping it (0 = no maximum limit)")
 	topicsCmd.Flags().IntVar(&topicsConcurrency, "concurrency", 0,
 		"Concurrent LLM requests to make when generating labels (defaults to config)")
 

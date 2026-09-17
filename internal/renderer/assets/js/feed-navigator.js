@@ -10,8 +10,8 @@
 
 class FeedNavigator extends HTMLElement {
     // Constants for feed container identification
-    static FEED_CONTAINER_SELECTOR = ':scope > link-loader, :scope > lazy-image-loader';
-    static FEED_CONTAINER_TAGS = ['LINK-LOADER', 'LAZY-IMAGE-LOADER'];
+    static FEED_CONTAINER_SELECTOR = ':scope > link-loader, :scope > lazy-image-loader, :scope > details.feed, :scope > article.feed';
+    static FEED_CONTAINER_TAGS = ['LINK-LOADER', 'LAZY-IMAGE-LOADER', 'DETAILS', 'ARTICLE'];
 
     constructor() {
         super();

@@ -9,7 +9,12 @@
 </head>
 <body>
     <header>
-        <h1>{{.SiteTitle}}</h1>
+        <h1><a href="../index.html" class="home-link">{{.SiteTitle}}</a></h1>
+        {{if .HasTopics}}
+        <nav class="site-nav">
+            <a href="../topics.html" class="nav-link">Trending Topics</a>
+        </nav>
+        {{end}}
         <details class="layout-options">
             <summary class="options-trigger">⚙ Options</summary>
             <div class="options-menu">
@@ -35,15 +40,14 @@
     <time-formatter>
     <layout-controller>
         <main>
-            <article class="feed">
-            <div id="feed-{{.FeedID}}">
-                <header class="feed-header">
+            <details class="feed" id="feed-{{.FeedID}}" open>
+                <summary class="feed-header">
                     <h2{{if .Feed.Description}} title="{{.Feed.Description}}"{{end}}>
                         {{if .FeedFavicon}}<img src="{{.FeedFavicon}}" alt="" class="feed-favicon">{{end}}
-                        <a href="{{.Feed.URL}}" target="_blank">{{.Feed.Title}}</a>
+                        <a href="{{.Feed.URL}}" target="_blank" onclick="event.stopPropagation();">{{.Feed.Title}}</a>
                     </h2>
                     <time class="feed-last-updated" datetime="{{if .Feed.LatestItemDate.Valid}}{{.Feed.LatestItemDate.Time.Format "2006-01-02T15:04:05Z07:00"}}{{else}}{{.Feed.LastSuccessfulFetch.Format "2006-01-02T15:04:05Z07:00"}}{{end}}">{{if .Feed.LatestItemDate.Valid}}Latest: {{.Feed.LatestItemDate.Time.Format "Jan 2, 2006 15:04 UTC"}}{{else}}Fetched: {{.Feed.LastSuccessfulFetch.Format "Jan 2, 2006 15:04 UTC"}}{{end}}</time>
-                </header>
+                </summary>
 
                 <lazy-image-loader>
             <div class="items">
@@ -101,8 +105,7 @@
                 {{end}}
             </div>
             </lazy-image-loader>
-            </div>
-        </article>
+        </details>
         </main>
         <lightbox-overlay></lightbox-overlay>
     </layout-controller>

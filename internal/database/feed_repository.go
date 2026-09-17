@@ -474,6 +474,11 @@ func (db *DB) GetFeedsWithItemsMinimum(
 	return feedsWithItems, items, nil
 }
 
+// GetFeedsByURLs gets all feeds for a specific set of URLs.
+func (db *DB) GetFeedsByURLs(feedURLs []string) ([]Feed, error) {
+	return db.getFeedsFiltered(feedURLs)
+}
+
 // getFeedsFiltered gets all feeds, optionally filtered by a list of URLs.
 func (db *DB) getFeedsFiltered(feedURLs []string) ([]Feed, error) {
 	query := `

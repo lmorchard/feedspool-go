@@ -49,6 +49,18 @@ type embedResponse struct {
 	Embeddings [][]float32 `json:"embeddings"`
 }
 
+type openAIEmbedRequest struct {
+	Model string   `json:"model"`
+	Input []string `json:"input"`
+}
+
+type openAIEmbedResponse struct {
+	Data []struct {
+		Index     int       `json:"index"`
+		Embedding []float32 `json:"embedding"`
+	} `json:"data"`
+}
+
 // OllamaProvider implements Provider against Ollama's /api/embed.
 type OllamaProvider struct {
 	client        *httpclient.Client
@@ -144,12 +156,83 @@ func (p *OllamaProvider) Embed(ctx context.Context, texts []string) ([][]float32
 	return vectors, nil
 }
 
+func (p *OllamaProvider) isOpenAI() bool {
+	return strings.HasSuffix(p.baseURL, "/v1") || strings.HasSuffix(p.baseURL, "/v1/")
+}
+
 func (p *OllamaProvider) embedBatch(ctx context.Context, texts []string) ([][]float32, error) {
 	inputs := make([]string, len(texts))
 	for i, text := range texts {
 		inputs[i] = p.prefix + truncateRunes(text, p.maxInputChars-len(p.prefix))
 	}
 
+	headers := map[string]string{"Content-Type": "application/json"}
+	if p.apiKey != "" {
+		headers["Authorization"] = "Bearer " + p.apiKey
+	}
+
+	if p.isOpenAI() {
+		return p.embedBatchOpenAI(ctx, inputs, headers)
+	}
+	return p.embedBatchOllama(ctx, inputs, headers)
+}
+
+func (p *OllamaProvider) embedBatchOpenAI(
+	ctx context.Context, inputs []string, headers map[string]string,
+) ([][]float32, error) {
+	body, err := json.Marshal(openAIEmbedRequest{
+		Model: p.model,
+		Input: inputs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode embed request: %w", err)
+	}
+
+	resp, err := p.client.Do(&httpclient.Request{
+		URL:     strings.TrimRight(p.baseURL, "/") + "/embeddings",
+		Method:  http.MethodPost,
+		Headers: headers,
+		Body:    bytes.NewReader(body),
+		Context: ctx,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to reach the embedding provider at %s: %w", p.baseURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("embedding provider returned HTTP %d: %s",
+			resp.StatusCode, firstLine(resp.BodyReader))
+	}
+
+	var decoded openAIEmbedResponse
+	if err := json.NewDecoder(resp.BodyReader).Decode(&decoded); err != nil {
+		return nil, fmt.Errorf("failed to decode the embedding response: %w", err)
+	}
+	if len(decoded.Data) != len(inputs) {
+		return nil, fmt.Errorf("sent %d inputs to model %q but got %d embeddings back",
+			len(inputs), p.model, len(decoded.Data))
+	}
+
+	embeddings := make([][]float32, len(inputs))
+	for _, item := range decoded.Data {
+		if item.Index < 0 || item.Index >= len(inputs) {
+			return nil, fmt.Errorf("embedding index %d out of bounds for %d inputs", item.Index, len(inputs))
+		}
+		embeddings[item.Index] = item.Embedding
+	}
+
+	p.normOnce.Do(func() { p.normErr = CheckUnitNorm(embeddings[0]) })
+	if p.normErr != nil {
+		return nil, fmt.Errorf("model %q: %w", p.model, p.normErr)
+	}
+
+	return embeddings, nil
+}
+
+func (p *OllamaProvider) embedBatchOllama(
+	ctx context.Context, inputs []string, headers map[string]string,
+) ([][]float32, error) {
 	body, err := json.Marshal(embedRequest{
 		Model:   p.model,
 		Input:   inputs,
@@ -157,11 +240,6 @@ func (p *OllamaProvider) embedBatch(ctx context.Context, texts []string) ([][]fl
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode embed request: %w", err)
-	}
-
-	headers := map[string]string{"Content-Type": "application/json"}
-	if p.apiKey != "" {
-		headers["Authorization"] = "Bearer " + p.apiKey
 	}
 
 	// LimitResponseSize is deliberately not set: httpclient caps limited reads
@@ -188,9 +266,9 @@ func (p *OllamaProvider) embedBatch(ctx context.Context, texts []string) ([][]fl
 	if err := json.NewDecoder(resp.BodyReader).Decode(&decoded); err != nil {
 		return nil, fmt.Errorf("failed to decode the embedding response: %w", err)
 	}
-	if len(decoded.Embeddings) != len(texts) {
+	if len(decoded.Embeddings) != len(inputs) {
 		return nil, fmt.Errorf("sent %d inputs to model %q but got %d embeddings back",
-			len(texts), p.model, len(decoded.Embeddings))
+			len(inputs), p.model, len(decoded.Embeddings))
 	}
 
 	p.normOnce.Do(func() { p.normErr = CheckUnitNorm(decoded.Embeddings[0]) })

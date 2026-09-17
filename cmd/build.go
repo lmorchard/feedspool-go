@@ -13,6 +13,8 @@ var (
 	buildOutput     string
 	buildClean      bool
 	buildWithUnfurl bool
+	buildNoEmbed    bool
+	buildNoTopics   bool
 )
 
 var buildCmd = &cobra.Command{
@@ -42,10 +44,14 @@ func init() {
 	buildCmd.Flags().BoolVar(&buildClean, "clean", false, "Remove output directory before building")
 	buildCmd.Flags().BoolVar(&buildWithUnfurl, "with-unfurl", false,
 		"Run unfurl operations in parallel with feed fetching")
+	buildCmd.Flags().BoolVar(&buildNoEmbed, "no-embed", false, "Skip vector embedding step during build")
+	buildCmd.Flags().BoolVar(&buildNoTopics, "no-topics", false, "Skip topic generation step during build")
 	rootCmd.AddCommand(buildCmd)
 }
 
 func runBuild(cmd *cobra.Command, _ []string) error {
+	cfg := GetConfig()
+
 	// Propagate build's flags onto the fetch and render command variables, then
 	// reuse their run functions so there is exactly one implementation of each
 	// phase.
@@ -61,7 +67,25 @@ func runBuild(cmd *cobra.Command, _ []string) error {
 		return fetchErr
 	}
 	if fetchErr != nil {
-		logrus.Warn("Fetch completed with skipped feed lists; continuing to render")
+		logrus.Warn("Fetch completed with skipped feed lists; continuing build pipeline")
+	}
+
+	skipEmbed := buildNoEmbed || cfg.Build.SkipEmbed
+	if !skipEmbed {
+		if err := runEmbed(cmd, nil); err != nil {
+			logrus.Warnf("Embed step failed; continuing build pipeline: %v", err)
+		}
+	} else {
+		logrus.Info("Skipping embed step (disabled by config or --no-embed)")
+	}
+
+	skipTopics := buildNoTopics || cfg.Build.SkipTopics
+	if !skipTopics {
+		if err := runTopics(cmd, nil); err != nil {
+			logrus.Warnf("Topics step failed; continuing build pipeline: %v", err)
+		}
+	} else {
+		logrus.Info("Skipping topics step (disabled by config or --no-topics)")
 	}
 
 	if err := runRender(cmd, nil); err != nil {

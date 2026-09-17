@@ -28,6 +28,11 @@ fetch:
   concurrency: 32       # Maximum concurrent feed fetches
   max_items: 100        # Maximum number of items to keep per feed
 
+# Build pipeline settings (for 'build' command)
+build:
+  skip_embed: false     # Set to true to skip vector embedding step during build
+  skip_topics: false    # Set to true to skip topic generation step during build
+
 # Static site generator settings
 render:
   output_dir: "./build"                 # Default output directory for rendered site
@@ -36,7 +41,34 @@ render:
   default_max_age: "24h"                # Default time window for rendering
   default_clean: false                  # Default behavior for cleaning output directory before building
   default_min_items_per_feed: 5         # Minimum items to show per feed regardless of age
+  default_max_items_per_feed: 50        # Maximum items to show per feed (0 = no limit)
   feeds_per_page: 25                    # Feeds per page for pagination (0 = disable pagination)
+  topic_max_feed_ratio: 0.8             # Max ratio of items from one feed before topic is rejected
+  topic_min_diversity_count: 2          # Min items in a topic before applying diversity limits
+
+# Vector embedding settings (for 'embed' command)
+embed:
+  base_url: "http://localhost:11434" # Provider URL (Ollama or OpenAI/LiteLLM /v1 endpoint)
+  model: "nomic-embed-text"          # Embedding model name
+  default_last: "1w"                 # Default time window for embedding items
+  batch_size: 0                      # Items per provider request (0 = model default)
+  num_ctx: 0                         # Context window size (0 = model default)
+  # Bearer token required for remote provider. Leave empty for local Ollama.
+  # Prefer the FEEDSPOOL_EMBED_API_KEY environment variable over writing it here.
+  api_key: ""
+
+# Trending topics settings (for 'topics' command)
+topics:
+  base_url: "http://localhost:11434" # Provider URL for LLM labeling (Ollama or OpenAI/LiteLLM /v1 endpoint)
+  model: "qwen2.5:7b"               # LLM model name for topic cluster labeling
+  embed_model: ""                    # Override embedding model used for topic clustering (empty = embed.model)
+  default_last: "1d"                 # Default time window for topic generation
+  threshold: 0.70                    # Cosine similarity threshold for clustering
+  min_items: 7                       # Minimum items in a cluster required to keep and label it
+  max_items: 100                     # Maximum items allowed in a cluster before dropping (0 = no limit)
+  concurrency: 5                     # Concurrent LLM requests when generating labels
+  # Bearer token for remote provider.
+  api_key: ""
 
 # HTTP server settings
 serve:
@@ -53,6 +85,7 @@ serve:
 
 # Purge settings
 purge:
+  max_age: "30d"    # Default time window for purging old items and topic runs
   min_items: 10     # Minimum items to keep per feed when purging old items
 
 # Initialization settings

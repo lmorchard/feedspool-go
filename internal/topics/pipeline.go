@@ -31,7 +31,9 @@ func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
 //
 //nolint:funlen // Generation pipeline is procedural by nature
 func (p *Pipeline) Generate(
-	ctx context.Context, embedModel string, since, until time.Time, threshold float32, minItems, concurrency int,
+	ctx context.Context, embedModel string, since, until time.Time,
+	threshold float32, minItems, maxItems, concurrency int,
+	maxFeedRatio float32, minDiversityCount int,
 ) (*database.TopicRun, []*database.Topic, map[*database.Topic][]int64, error) {
 	logrus.Infof("Fetching embeddings for model %q...", embedModel)
 	embeddings, err := p.db.GetEmbeddingsForWindow(ctx, embedModel, since, until)
@@ -49,14 +51,14 @@ func (p *Pipeline) Generate(
 		return nil, nil, nil, fmt.Errorf("clustering failed: %w", err)
 	}
 
-	var validClusters [][]int64
-	for _, c := range clusters {
-		if len(c) >= minItems {
-			validClusters = append(validClusters, c)
+	validClusters := filterClusters(clusters, minItems, maxItems)
+
+	if maxFeedRatio > 0 {
+		validClusters, err = p.filterByDiversity(validClusters, maxFeedRatio, minDiversityCount)
+		if err != nil {
+			return nil, nil, nil, err
 		}
 	}
-
-	logrus.Infof("Formed %d clusters with %d+ items. Fetching item details...", len(validClusters), minItems)
 
 	// Fetch item details for labeling
 	var allItemIDs []int64
@@ -182,4 +184,70 @@ func (p *Pipeline) getLabelForCluster(
 		return "", fmt.Errorf("failed to label cluster: %w", err)
 	}
 	return label, nil
+}
+
+func filterClusters(clusters [][]int64, minItems, maxItems int) [][]int64 {
+	var validClusters [][]int64
+	for _, c := range clusters {
+		if len(c) >= minItems && (maxItems <= 0 || len(c) <= maxItems) {
+			validClusters = append(validClusters, c)
+		}
+	}
+
+	if maxItems > 0 {
+		logrus.Infof("Formed %d clusters with %d-%d items. Fetching item details...", len(validClusters), minItems, maxItems)
+	} else {
+		logrus.Infof("Formed %d clusters with %d+ items. Fetching item details...", len(validClusters), minItems)
+	}
+	return validClusters
+}
+
+func (p *Pipeline) filterByDiversity(
+	clusters [][]int64, maxFeedRatio float32, minDiversityCount int,
+) ([][]int64, error) {
+	var allIDs []int64
+	for _, c := range clusters {
+		allIDs = append(allIDs, c...)
+	}
+	if len(allIDs) == 0 {
+		return clusters, nil
+	}
+
+	itemsMap, err := p.db.GetItemsByIDs(allIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch items for diversity filtering: %w", err)
+	}
+
+	var filtered [][]int64
+	rejected := 0
+	for _, c := range clusters {
+		if len(c) < minDiversityCount {
+			filtered = append(filtered, c)
+			continue
+		}
+		feedCounts := make(map[string]int)
+		for _, id := range c {
+			if item, ok := itemsMap[id]; ok {
+				feedCounts[item.FeedURL]++
+			}
+		}
+		isSpam := false
+		for _, count := range feedCounts {
+			if float32(count)/float32(len(c)) >= maxFeedRatio {
+				isSpam = true
+				break
+			}
+		}
+		if isSpam {
+			rejected++
+		} else {
+			filtered = append(filtered, c)
+		}
+	}
+
+	if rejected > 0 {
+		logrus.Infof("Filtered out %d cluster(s) where a single feed controlled >=%.0f%% of items",
+			rejected, maxFeedRatio*100)
+	}
+	return filtered, nil
 }

@@ -43,7 +43,7 @@ link-loader .error {
 
 /* Loaded content styling */
 link-loader .feed {
-    margin: 0;
+    margin-bottom: 1rem;
     box-shadow: none;
     border: none;
     background: transparent;
@@ -54,6 +54,7 @@ link-loader .feed {
     border-radius: 8px;
     box-shadow: 0 2px 4px var(--shadow);
     overflow: hidden;
+    margin-bottom: 1rem;
 }
 
 .feed-header {
@@ -65,6 +66,24 @@ link-loader .feed {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+summary.feed-header {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+
+summary.feed-header::-webkit-details-marker {
+    display: none;
+}
+
+summary.feed-header::marker {
+    content: "";
+}
+
+summary.feed-header:hover {
+    filter: brightness(1.1);
 }
 
 .feed-header h2 {
@@ -129,4 +148,193 @@ link-loader .feed {
     .feed-last-updated {
         display: none;
     }
+}
+/* Topics Page Styles */
+
+/* Header Box combining Title, Metadata, and Quick Nav Pills */
+.topics-header-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px var(--shadow);
+}
+
+.topics-page-header {
+    margin-bottom: 0.5rem;
+}
+
+.topics-page-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.topics-meta {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Topic Quick Navigation Pills */
+.topics-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.topic-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.topic-pill:hover {
+    background: var(--bg-accent);
+    color: var(--text-accent);
+    border-color: var(--bg-accent);
+    transform: translateY(-1px);
+}
+
+.topic-pill-count {
+    display: inline-block;
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.topic-pill:hover .topic-pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: var(--text-accent);
+}
+
+/* Collapsible Topic Details Group Container */
+details.topic-group-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 6px var(--shadow);
+    transition: all 0.2s ease;
+}
+
+summary.topic-summary {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    cursor: pointer;
+    padding: 1rem 1.25rem;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    list-style: none;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+summary.topic-summary::-webkit-details-marker {
+    display: none;
+}
+
+summary.topic-summary::marker {
+    content: "";
+}
+
+summary.topic-summary:hover {
+    background: var(--bg-tertiary);
+}
+
+details[open].topic-group-container summary.topic-summary {
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 2px 6px var(--shadow);
+}
+
+.topic-summary-arrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    transition: transform 0.2s ease;
+}
+
+details[open] .topic-summary-arrow {
+    transform: rotate(90deg);
+}
+
+.topic-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.topic-header-title h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.topic-badge {
+    display: inline-block;
+    background: var(--bg-accent);
+    color: var(--text-accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.topic-content {
+    padding: 1.25rem;
+}
+
+.back-to-top {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.back-to-top:hover {
+    background: var(--bg-tertiary);
+    color: var(--link-color);
+}
+
+/* Nested Feed Articles within a Topic Group */
+.topic-group-container .feed {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: none;
+}
+
+.topic-group-container .feed:last-child {
+    margin-bottom: 0;
+}
+
+.topic-item-feed-title {
+    font-weight: 600;
+    color: var(--text-secondary);
 }

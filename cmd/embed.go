@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/embed"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
@@ -57,7 +60,7 @@ func init() {
 	// already means opposite things on fetch and render, and a third meaning
 	// would make that worse.
 	embedCmd.Flags().StringVar(&embedLast, "last", "",
-		"Embed items from this far back (e.g. 24h, 2d, 1w); defaults to 24h")
+		"Embed items from this far back (e.g. 24h, 2d, 1w); defaults to config or 1w")
 	embedCmd.Flags().StringVar(&embedSince, "since", "",
 		"Embed items with an effective date at or after this time (RFC3339)")
 	embedCmd.Flags().StringVar(&embedUntil, "until", "",
@@ -87,19 +90,30 @@ func init() {
 // would otherwise silently ignore one of them.
 //
 // Mirrors how render rejects --max-age together with --start/--end.
-func resolveEmbedWindow() (since, until time.Time, err error) {
-	if embedLast != "" && (embedSince != "" || embedUntil != "") {
+func resolveEmbedWindow(cmd *cobra.Command, cfg *config.Config) (since, until time.Time, err error) {
+	if cmd.Flags().Changed("last") && (cmd.Flags().Changed("since") || cmd.Flags().Changed("until")) {
 		return time.Time{}, time.Time{}, fmt.Errorf(
 			"cannot specify both --last and an explicit range (--since/--until)",
 		)
 	}
-	return database.ParseTimeWindow(embedLast, embedSince, embedUntil)
+
+	var last string
+	if cmd.Flags().Changed("last") {
+		last = embedLast
+	} else if !cmd.Flags().Changed("since") && !cmd.Flags().Changed("until") {
+		last = cfg.Embed.Last
+		if last == "" {
+			last = config.DefaultEmbedLast
+		}
+	}
+
+	return database.ParseTimeWindow(last, embedSince, embedUntil)
 }
 
-func runEmbed(_ *cobra.Command, _ []string) error {
+func runEmbed(cmd *cobra.Command, _ []string) error {
 	cfg := GetConfig()
 
-	since, until, err := resolveEmbedWindow()
+	since, until, err := resolveEmbedWindow(cmd, cfg)
 	if err != nil {
 		return err
 	}
@@ -124,20 +138,20 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fmt.Printf("Window %s to %s (effective date)\n",
+	logrus.Infof("Window %s to %s (effective date)",
 		since.Format(time.RFC3339), until.Format(time.RFC3339))
-	fmt.Printf("Model %s: %d items to embed\n", model, outstanding)
+	logrus.Infof("Model %s: %d items to embed", model, outstanding)
 	if missingText > 0 {
-		fmt.Printf("Skipping %d items with no derived text; run `feedspool reindex` to derive it\n",
+		logrus.Warnf("Skipping %d items with no derived text; run `feedspool reindex` to derive it",
 			missingText)
 	}
 
 	if embedDryRun {
-		fmt.Println("Dry run: no embeddings computed")
+		logrus.Info("Dry run: no embeddings computed")
 		return nil
 	}
 	if outstanding == 0 {
-		fmt.Println("Nothing to do")
+		logrus.Info("Nothing to do")
 		return nil
 	}
 
@@ -157,10 +171,6 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 		Timeout:   cfg.Timeout,
 	}, httpclient.NewClient(&httpclient.Config{Timeout: cfg.Timeout}))
 
-	// Progress goes to stdout rather than logrus, for the same reason reindex
-	// does it: this runs for tens of seconds to minutes and the default log
-	// level is Warn, so an info-level report would be indistinguishable from a
-	// command doing nothing.
 	started := time.Now()
 	var embedded int64
 	if err := db.EmbedItems(
@@ -168,13 +178,13 @@ func runEmbed(_ *cobra.Command, _ []string) error {
 		embedForce, driverBatchFor(providerBatch),
 		func(done, total int64) {
 			embedded = done
-			fmt.Printf("Embedded %d of %d items\n", done, total)
+			logrus.Infof("Embedded %d of %d items", done, total)
 		},
 	); err != nil {
 		return err
 	}
 
-	fmt.Printf("Embedded %d items with %s in %s\n",
+	logrus.Infof("Embedded %d items with %s in %s",
 		embedded, model, time.Since(started).Round(time.Millisecond))
 	return nil
 }
