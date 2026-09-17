@@ -121,12 +121,11 @@ fi
 
 # Check if feed file exists before running fetch
 if [ -d "/data/feeds.d" ] || [ -f "/data/feeds.txt" ] || [ -f "/data/feeds.opml" ]; then
-    # Run initial fetch and render in background to populate content
-    echo "Starting initial fetch and render in background..."
+    # Run initial build in background to populate content
+    echo "Starting initial build in background..."
     (
-        /usr/local/bin/feedspool fetch || echo "Initial fetch failed - continuing anyway"
-        /usr/local/bin/feedspool render || echo "Initial render failed - continuing anyway"
-        echo "Initial fetch and render completed"
+        /usr/local/bin/feedspool build || echo "Initial build failed - continuing anyway"
+        echo "Initial build completed"
     ) &
     FETCH_PID=$!
     

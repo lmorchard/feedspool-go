@@ -6,6 +6,10 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
@@ -43,6 +47,43 @@ header {
 header h1 {
     color: var(--text-primary);
     margin: 0;
+}
+
+header h1 a.home-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+header h1 a.home-link:hover {
+    text-decoration: underline;
+}
+
+.site-nav {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.nav-link {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-link:hover {
+    background: var(--bg-tertiary);
+    color: var(--link-color);
+}
+
+.nav-link.active {
+    background: var(--bg-accent);
+    color: var(--text-accent);
+    font-weight: 600;
 }
 
 header p {

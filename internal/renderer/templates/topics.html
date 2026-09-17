@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending Topics - {{.SiteTitle}}</title>
+    <link rel="stylesheet" href="index.css">
+    <script type="module" src="index.js"></script>
+</head>
+<body id="top">
+    <header>
+        <h1><a href="index.html" class="home-link">{{.SiteTitle}}</a></h1>
+        <nav class="site-nav">
+            <a href="topics.html" class="nav-link active">Trending Topics</a>
+        </nav>
+        <details class="layout-options">
+            <summary class="options-trigger">⚙ Options</summary>
+            <div class="options-menu">
+                <label class="option-item">
+                    <input type="checkbox" id="show-thumbnails" checked>
+                    Show thumbnails
+                </label>
+                <fieldset class="option-group">
+                    <legend>View mode</legend>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="list" id="view-list" checked>
+                        List
+                    </label>
+                    <label class="option-item">
+                        <input type="radio" name="view-mode" value="card" id="view-card">
+                        Card
+                    </label>
+                </fieldset>
+            </div>
+        </details>
+    </header>
+
+    <time-formatter>
+    <layout-controller>
+        <main>
+            <topic-navigator>
+            <div class="topics-header-box">
+                <div class="topics-page-header">
+                    <h2>Trending Topics</h2>
+                    {{if .Run}}
+                    <p class="topics-meta">Computed on <time datetime="{{.Run.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{.Run.CreatedAt.Format "Jan 2, 2006 15:04 UTC"}}</time> for window {{.Run.WindowStart.Format "Jan 2"}} to {{.Run.WindowEnd.Format "Jan 2"}}</p>
+                    {{end}}
+                </div>
+
+                {{if .Topics}}
+                <nav class="topics-index" aria-label="Topic index">
+                    {{range .Topics}}
+                    <a href="#topic-{{.ID}}" class="topic-pill">
+                        <span class="topic-pill-label">{{.Label}}</span>
+                        <span class="topic-pill-count">{{.Score | printf "%.0f"}}</span>
+                    </a>
+                    {{end}}
+                </nav>
+                {{end}}
+            </div>
+            
+            <div class="topics-list">
+                {{range .Topics}}
+                <details class="topic-group-container" id="topic-{{.ID}}">
+                    <summary class="topic-summary">
+                        <div class="topic-header-title">
+                            <span class="topic-summary-arrow">▶</span>
+                            <h2>{{.Label}}</h2>
+                            <span class="topic-badge">{{.Score | printf "%.0f"}} items</span>
+                        </div>
+                        <a href="#top" class="back-to-top" title="Back to top">↑ Top</a>
+                    </summary>
+                    
+                    <div class="topic-content">
+                        {{$groups := index $.GroupsMap .ID}}
+                        {{range $groups}}
+                        {{$group := .}}
+                        <details class="feed" open>
+                            <summary class="feed-header">
+                                <h2>
+                                    {{if $group.Favicon}}<img src="{{$group.Favicon}}" alt="" class="feed-favicon">{{end}}
+                                    <a href="{{$group.FeedURL}}" target="_blank" onclick="event.stopPropagation();">{{if $group.Title}}{{$group.Title}}{{else}}{{$group.FeedURL}}{{end}}</a>
+                                </h2>
+                            </summary>
+                            
+                            <lazy-image-loader>
+                            <div class="items">
+                                {{range .Items}}
+                                {{$item := .}}
+                                <details class="item">
+                                    <summary class="item-summary">
+                                        {{$metadata := index $.Metadata $item.Link}}
+                                        {{if and $metadata $metadata.ImageURL.Valid}}
+                                        <div class="item-thumbnail">
+                                            <img data-src="{{$metadata.ImageURL.String}}" alt="" loading="lazy" class="thumbnail">
+                                        </div>
+                                        {{end}}
+                                        <div class="item-info">
+                                            <span class="item-title">
+                                                {{$title := $item.Title}}
+                                                {{if eq $title ""}}
+                                                    {{if $item.Summary}}
+                                                        {{$title = printf "%.80s..." $item.Summary}}
+                                                    {{else if $item.Content}}
+                                                        {{$title = printf "%.80s..." $item.Content}}
+                                                    {{else}}
+                                                        {{$title = "Untitled"}}
+                                                    {{end}}
+                                                {{end}}
+                                                {{if $item.Link}}
+                                                <a href="{{$item.Link}}" target="_blank">{{$title}}</a>
+                                                {{else}}
+                                                {{$title}}
+                                                {{end}}
+                                            </span>
+                                            <div class="item-excerpt">
+                                                {{if $item.Summary}}
+                                                    {{printf "%.200s..." ($item.Summary | stripHTML)}}
+                                                {{else if $item.Content}}
+                                                    {{printf "%.200s..." ($item.Content | stripHTML)}}
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                        <time class="item-date" datetime="{{$item.EffectiveDate.Format "2006-01-02T15:04:05Z07:00"}}">{{$item.EffectiveDate.Format "Jan 2, 2006 15:04 UTC"}}</time>
+                                    </summary>
+                                    <div class="item-content">
+                                        {{if $item.Content}}
+                                            <content-isolation-iframe>
+                                                <iframe data-src="{{$item.Content | iframeContent}}" class="content-iframe"></iframe>
+                                            </content-isolation-iframe>
+                                        {{else if $item.Summary}}
+                                            <content-isolation-iframe>
+                                                <iframe data-src="{{$item.Summary | iframeContent}}" class="content-iframe"></iframe>
+                                            </content-isolation-iframe>
+                                        {{else}}
+                                            <p><em>No content available</em></p>
+                                        {{end}}
+                                    </div>
+                                </details>
+                                {{end}}
+                            </div>
+                            </lazy-image-loader>
+                        </details>
+                        {{end}}
+                    </div>
+                </details>
+                {{end}}
+                
+                {{if not .Topics}}
+                <p class="empty-state">No trending topics computed for this window.</p>
+                {{end}}
+            </div>
+            </topic-navigator>
+        </main>
+        <lightbox-overlay></lightbox-overlay>
+    </layout-controller>
+    </time-formatter>
+
+    <footer>
+        <p>Generated by feedspool at {{.GeneratedAt.Format "2006-01-02 15:04:05 UTC"}}</p>
+    </footer>
+</body>
+</html>

@@ -43,7 +43,7 @@ type OllamaLabeler struct {
 	apiKey  string
 }
 
-func NewOllamaLabeler(cfg config.TopicsConfig, client *httpclient.Client) *OllamaLabeler {
+func NewOllamaLabeler(cfg *config.TopicsConfig, client *httpclient.Client) *OllamaLabeler {
 	return &OllamaLabeler{
 		client:  client,
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),

@@ -9,7 +9,12 @@
 </head>
 <body>
     <header>
-        <h1>{{.SiteTitle}}</h1>
+        <h1><a href="index.html" class="home-link">{{.SiteTitle}}</a></h1>
+        {{if .HasTopics}}
+        <nav class="site-nav">
+            <a href="topics.html" class="nav-link">Trending Topics</a>
+        </nav>
+        {{end}}
         <details class="layout-options">
             <summary class="options-trigger">⚙ Options</summary>
             <div class="options-menu">

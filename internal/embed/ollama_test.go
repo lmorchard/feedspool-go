@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 )
@@ -359,5 +360,51 @@ func TestEmbedReadsResponsesLargerThanTheHTTPClientCap(t *testing.T) {
 	}
 	if len(vectors) != 64 {
 		t.Fatalf("got %d vectors, want 64", len(vectors))
+	}
+}
+
+func TestEmbedOpenAIEndpoint(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/embeddings" {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		var req openAIEmbedRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
+		}
+
+		resp := openAIEmbedResponse{}
+		for i := range req.Input {
+			vec := make([]float32, probeDims)
+			vec[i%probeDims] = 1.0
+			resp.Data = append(resp.Data, struct {
+				Index     int       `json:"index"`
+				Embedding []float32 `json:"embedding"`
+			}{
+				Index:     i,
+				Embedding: vec,
+			})
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(&httpclient.Config{Timeout: time.Second})
+	provider := NewOllamaProvider(Config{
+		BaseURL: server.URL + "/v1",
+		Model:   "text-embedding-004",
+	}, client)
+
+	vectors, err := provider.Embed(context.Background(), []string{"test 1", "test 2"})
+	if err != nil {
+		t.Fatalf("Embed error: %v", err)
+	}
+	if len(vectors) != 2 {
+		t.Fatalf("got %d vectors, want 2", len(vectors))
+	}
+	if len(vectors[0]) != probeDims {
+		t.Errorf("got vector dimension %d, want %d", len(vectors[0]), probeDims)
 	}
 }

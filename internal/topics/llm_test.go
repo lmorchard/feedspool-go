@@ -48,7 +48,7 @@ func TestOllamaLabeler(t *testing.T) {
 	client := httpclient.NewClient(&httpclient.Config{
 		UserAgent: "test-client",
 	})
-	labeler := NewOllamaLabeler(cfg, client)
+	labeler := NewOllamaLabeler(&cfg, client)
 
 	titles := []string{"Apple releases new iPhone", "New iPhone announced today"}
 	label, err := labeler.LabelCluster(context.Background(), titles)

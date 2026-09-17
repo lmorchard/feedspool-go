@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -284,24 +285,7 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 	cutoffTime := time.Now().Add(-duration)
 
 	if purgeDryRun {
-		if cfg.JSON {
-			result := map[string]interface{}{
-				keyMode:         modeAge,
-				keyDryRun:       true,
-				keyCutoffDate:   cutoffTime.Format(time.RFC3339),
-				keyMinItemsKeep: minItems,
-				keyDeleted:      0,
-			}
-			jsonData, _ := json.Marshal(result)
-			fmt.Println(string(jsonData))
-		} else {
-			fmt.Printf("Dry run mode - would delete archived items older than %s\n", cutoffTime.Format("2006-01-02"))
-			fmt.Printf("(Items published before %s)\n", cutoffTime.Format(time.RFC3339))
-			if minItems > 0 {
-				fmt.Printf("Keeping at least %d items per feed\n", minItems)
-			}
-		}
-		return nil
+		return reportAgePurgeDryRun(cfg, db, cutoffTime, minItems)
 	}
 
 	var deleted int64
@@ -314,11 +298,19 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 		return fmt.Errorf("failed to delete archived items: %w", err)
 	}
 
+	// Delete old topic runs created before cutoffTime (keeping the latest run)
+	deletedTopics, err := db.DeleteTopicRuns(context.Background(), cutoffTime, true)
+	if err != nil {
+		fmt.Printf("Warning: Failed to clean up topic runs: %v\n", err)
+	} else if deletedTopics > 0 && !cfg.JSON {
+		fmt.Printf("Cleaned up %d old topic run(s)\n", deletedTopics)
+	}
+
 	// Clean up orphaned metadata after deleting items
 	metadataDeleted, err := db.DeleteOrphanedMetadata()
 	if err != nil {
 		fmt.Printf("Warning: Failed to clean up orphaned metadata: %v\n", err)
-	} else if metadataDeleted > 0 {
+	} else if metadataDeleted > 0 && !cfg.JSON {
 		fmt.Printf("Cleaned up %d orphaned metadata entries\n", metadataDeleted)
 	}
 
@@ -329,6 +321,7 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 			keyCutoffDate:      cutoffTime.Format(time.RFC3339),
 			keyMinItemsKeep:    minItems,
 			keyDeleted:         deleted,
+			"deleted_topics":   deletedTopics,
 			keyMetadataDeleted: metadataDeleted,
 		}
 		jsonData, _ := json.Marshal(result)
@@ -340,6 +333,38 @@ func runAgePurge(cfg *config.Config, db *database.DB, minItems int) error {
 		}
 	}
 
+	return nil
+}
+
+func reportAgePurgeDryRun(cfg *config.Config, db *database.DB, cutoffTime time.Time, minItems int) error {
+	var topicRunsWouldDelete int64
+	_ = db.GetConnection().QueryRowContext(context.Background(), `
+		SELECT COUNT(*) FROM topic_runs
+		WHERE created_at < ?
+		AND id NOT IN (SELECT id FROM topic_runs ORDER BY created_at DESC LIMIT 1)
+	`, cutoffTime.UTC().Format(time.RFC3339Nano)).Scan(&topicRunsWouldDelete)
+
+	if cfg.JSON {
+		result := map[string]interface{}{
+			keyMode:                modeAge,
+			keyDryRun:              true,
+			keyCutoffDate:          cutoffTime.Format(time.RFC3339),
+			keyMinItemsKeep:        minItems,
+			keyDeleted:             0,
+			"topic_runs_to_delete": topicRunsWouldDelete,
+		}
+		jsonData, _ := json.Marshal(result)
+		fmt.Println(string(jsonData))
+	} else {
+		fmt.Printf("Dry run mode - would delete archived items older than %s\n", cutoffTime.Format("2006-01-02"))
+		fmt.Printf("(Items published before %s)\n", cutoffTime.Format(time.RFC3339))
+		if minItems > 0 {
+			fmt.Printf("Keeping at least %d items per feed\n", minItems)
+		}
+		if topicRunsWouldDelete > 0 {
+			fmt.Printf("Would delete %d old topic run(s)\n", topicRunsWouldDelete)
+		}
+	}
 	return nil
 }
 

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/renderer"
 	"github.com/lmorchard/feedspool-go/internal/sitegroup"
@@ -14,19 +16,21 @@ import (
 )
 
 var (
-	renderMaxAge          string
-	renderStart           string
-	renderEnd             string
-	renderOutput          string
-	renderTemplates       string
-	renderAssets          string
-	renderFeeds           string
-	renderFormat          string
-	renderClean           bool
-	renderMinItemsPerFeed int
-	renderMaxItemsPerFeed int
-	renderFeedsPerPage    int
-	renderFeedsDir        string
+	renderMaxAge                 string
+	renderStart                  string
+	renderEnd                    string
+	renderOutput                 string
+	renderTemplates              string
+	renderAssets                 string
+	renderFeeds                  string
+	renderFormat                 string
+	renderClean                  bool
+	renderMinItemsPerFeed        int
+	renderMaxItemsPerFeed        int
+	renderFeedsPerPage           int
+	renderTopicMaxFeedRatio      float32
+	renderTopicMinDiversityCount int
+	renderFeedsDir               string
 )
 
 var renderCmd = &cobra.Command{
@@ -72,6 +76,10 @@ func init() {
 		"Maximum items to show per feed (-1 = use config default, 0 = no limit)")
 	renderCmd.Flags().IntVar(&renderFeedsPerPage, "feeds-per-page", -1,
 		"Feeds per page for pagination (-1 = use config default, 0 = disable pagination)")
+	renderCmd.Flags().Float32Var(&renderTopicMaxFeedRatio, "topic-max-feed-ratio", -1.0,
+		"Max ratio of items from one feed before topic is rejected (-1 = use config default)")
+	renderCmd.Flags().IntVar(&renderTopicMinDiversityCount, "topic-min-diversity-count", -1,
+		"Min items in a topic before applying diversity limits (-1 = use config default)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
@@ -144,7 +152,7 @@ func runDirRender(dir string, renderConfig *renderer.WorkflowConfig) error {
 // index. Per-site ExecuteWorkflow progress output is suppressed via
 // WorkflowConfig.Quiet, so this is the only confirmation the user sees.
 func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
-	fmt.Printf("Generated %d %s in %s\n", len(summary.Sites),
+	logrus.Infof("Generated %d %s in %s", len(summary.Sites),
 		pluralize(len(summary.Sites), "site", "sites"), outputDir)
 
 	slugWidth := 0
@@ -157,10 +165,10 @@ func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
 	for i := range summary.Sites {
 		s := &summary.Sites[i]
 		if s.Err != nil {
-			fmt.Printf("  %-*s failed to render: %v\n", slugWidth, s.Slug, s.Err)
+			logrus.Warnf("  %-*s failed to render: %v", slugWidth, s.Slug, s.Err)
 			continue
 		}
-		fmt.Printf("  %-*s %d %s, %d %s\n", slugWidth, s.Slug,
+		logrus.Infof("  %-*s %d %s, %d %s", slugWidth, s.Slug,
 			s.FeedCount, pluralize(s.FeedCount, "feed", "feeds"),
 			s.ItemCount, pluralize(s.ItemCount, "item", "items"))
 	}
@@ -169,13 +177,13 @@ func printDirRenderSummary(summary *sitegroup.RenderSummary, outputDir string) {
 	case 0:
 		// Nothing pruned; no line to print.
 	case 1:
-		fmt.Printf("Pruned 1 stale site directory: %s\n", summary.Removed[0])
+		logrus.Infof("Pruned 1 stale site directory: %s", summary.Removed[0])
 	default:
-		fmt.Printf("Pruned %d stale site directories: %s\n",
+		logrus.Infof("Pruned %d stale site directories: %s",
 			len(summary.Removed), strings.Join(summary.Removed, ", "))
 	}
 
-	fmt.Printf("Open %s in your browser to view the site\n", filepath.Join(outputDir, "index.html"))
+	logrus.Infof("Open %s in your browser to view the site", filepath.Join(outputDir, "index.html"))
 }
 
 // pluralize returns singular when n is exactly 1, and plural otherwise.
@@ -189,19 +197,21 @@ func pluralize(n int, singular, plural string) string {
 func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.WorkflowConfig {
 	// Start with config file values
 	renderConfig := &renderer.WorkflowConfig{
-		MaxAge:          cfg.Render.DefaultMaxAge,
-		Start:           "",
-		End:             "",
-		MinItemsPerFeed: cfg.Render.DefaultMinItemsPerFeed,
-		MaxItemsPerFeed: cfg.Render.DefaultMaxItemsPerFeed,
-		FeedsPerPage:    cfg.Render.FeedsPerPage,
-		OutputDir:       cfg.Render.OutputDir,
-		TemplatesDir:    cfg.Render.TemplatesDir,
-		AssetsDir:       cfg.Render.AssetsDir,
-		FeedsFile:       "",
-		Format:          cfg.FeedList.Format,
-		Database:        cfg.Database,
-		Clean:           cfg.Render.DefaultClean,
+		MaxAge:                 cfg.Render.DefaultMaxAge,
+		Start:                  "",
+		End:                    "",
+		MinItemsPerFeed:        cfg.Render.DefaultMinItemsPerFeed,
+		MaxItemsPerFeed:        cfg.Render.DefaultMaxItemsPerFeed,
+		FeedsPerPage:           cfg.Render.FeedsPerPage,
+		TopicMaxFeedRatio:      cfg.Render.TopicMaxFeedRatio,
+		TopicMinDiversityCount: cfg.Render.TopicMinDiversityCount,
+		OutputDir:              cfg.Render.OutputDir,
+		TemplatesDir:           cfg.Render.TemplatesDir,
+		AssetsDir:              cfg.Render.AssetsDir,
+		FeedsFile:              "",
+		Format:                 cfg.FeedList.Format,
+		Database:               cfg.Database,
+		Clean:                  cfg.Render.DefaultClean,
 
 		MigrationProgress: migrationReporter{},
 	}
@@ -224,6 +234,12 @@ func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.Workflo
 	}
 	if renderFeedsPerPage >= 0 {
 		renderConfig.FeedsPerPage = renderFeedsPerPage
+	}
+	if renderTopicMaxFeedRatio >= 0 {
+		renderConfig.TopicMaxFeedRatio = renderTopicMaxFeedRatio
+	}
+	if renderTopicMinDiversityCount >= 0 {
+		renderConfig.TopicMinDiversityCount = renderTopicMinDiversityCount
 	}
 	if cmd.Flags().Changed("output") {
 		renderConfig.OutputDir = renderOutput

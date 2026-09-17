@@ -15,17 +15,35 @@ func getIntWithDefault(key string, defaultValue int) int {
 	return defaultValue
 }
 
+// getFloat64WithDefault returns the viper float64 value or default if not set.
+func getFloat64WithDefault(key string, defaultValue float64) float64 {
+	if viper.IsSet(key) {
+		return viper.GetFloat64(key)
+	}
+	return defaultValue
+}
+
+// getStringWithDefault returns the viper string value or default if not set.
+func getStringWithDefault(key, defaultValue string) string {
+	if viper.IsSet(key) && viper.GetString(key) != "" {
+		return viper.GetString(key)
+	}
+	return defaultValue
+}
+
 const (
-	defaultPort              = 8080
-	defaultOutputDir         = "./build"
-	DefaultTimeout           = 30 * time.Second
-	DefaultConcurrency       = 32
-	DefaultMaxItems          = 100
-	DefaultDirPerm           = 0o755
-	DefaultMinItemsPerFeed   = 5  // Render: minimum items to show per feed
-	DefaultMaxItemsPerFeed   = 50 // Render: maximum items to show per feed
-	DefaultMinItemsKeepPurge = 10 // Purge: minimum items to keep per feed
-	DefaultFeedsPerPage      = 25 // Render: feeds per page for pagination
+	defaultPort                   = 8080
+	defaultOutputDir              = "./build"
+	DefaultTimeout                = 30 * time.Second
+	DefaultConcurrency            = 32
+	DefaultMaxItems               = 100
+	DefaultDirPerm                = 0o755
+	DefaultMinItemsPerFeed        = 5   // Render: minimum items to show per feed
+	DefaultMaxItemsPerFeed        = 50  // Render: maximum items to show per feed
+	DefaultMinItemsKeepPurge      = 10  // Purge: minimum items to keep per feed
+	DefaultFeedsPerPage           = 25  // Render: feeds per page for pagination
+	DefaultTopicMaxFeedRatio      = 0.8 // Render: Default max ratio of items from one feed before topic is rejected
+	DefaultTopicMinDiversityCount = 2   // Render: Min topic size before applying diversity limits
 
 	// DefaultEmbedBaseURL points at a local Ollama. A hosted provider is the
 	// same code path with a different URL and an API key.
@@ -34,10 +52,15 @@ const (
 	// options, Apache-2.0, and the only one shipping a dedicated "clustering:"
 	// task prefix, which is what this feature is ultimately for.
 	DefaultEmbedModel = "nomic-embed-text"
+	DefaultEmbedLast  = "1w"
 
 	// DefaultTopicsConcurrency restricts how many concurrent requests are sent
 	// to the LLM when labeling clusters.
 	DefaultTopicsConcurrency = 5
+	DefaultTopicsMinItems    = 7
+	DefaultTopicsMaxItems    = 100
+	DefaultTopicsThreshold   = 0.70
+	DefaultTopicsLast        = "1d"
 )
 
 type Config struct {
@@ -55,6 +78,7 @@ type Config struct {
 	Purge    PurgeConfig
 	Embed    EmbedConfig
 	Topics   TopicsConfig
+	Build    BuildConfig
 }
 
 type FeedListConfig struct {
@@ -74,10 +98,12 @@ type RenderConfig struct {
 	TemplatesDir           string
 	AssetsDir              string
 	DefaultMaxAge          string
-	DefaultClean           bool `mapstructure:"default_clean"`
-	DefaultMinItemsPerFeed int  `mapstructure:"default_min_items_per_feed"`
-	DefaultMaxItemsPerFeed int  `mapstructure:"default_max_items_per_feed"`
-	FeedsPerPage           int  `mapstructure:"feeds_per_page"`
+	DefaultClean           bool    `mapstructure:"default_clean"`
+	DefaultMinItemsPerFeed int     `mapstructure:"default_min_items_per_feed"`
+	DefaultMaxItemsPerFeed int     `mapstructure:"default_max_items_per_feed"`
+	FeedsPerPage           int     `mapstructure:"feeds_per_page"`
+	TopicMaxFeedRatio      float32 `mapstructure:"topic_max_feed_ratio"`
+	TopicMinDiversityCount int     `mapstructure:"topic_min_diversity_count"`
 }
 
 type ServeConfig struct {
@@ -115,6 +141,11 @@ type PurgeConfig struct {
 	MinItemsKeep int    `mapstructure:"min_items_keep"`
 }
 
+type BuildConfig struct {
+	SkipEmbed  bool `mapstructure:"skip_embed"`
+	SkipTopics bool `mapstructure:"skip_topics"`
+}
+
 // EmbedConfig controls the embedding provider used by the embed and related
 // commands.
 //
@@ -123,6 +154,7 @@ type PurgeConfig struct {
 type EmbedConfig struct {
 	BaseURL string `mapstructure:"base_url"`
 	Model   string `mapstructure:"model"`
+	Last    string `mapstructure:"last"`
 	// BatchSize and NumCtx are 0 by default, meaning "use the model's own
 	// measured defaults" from internal/embed. Set them only to override.
 	BatchSize int `mapstructure:"batch_size"`
@@ -134,10 +166,17 @@ type EmbedConfig struct {
 }
 
 type TopicsConfig struct {
-	BaseURL     string `mapstructure:"base_url"`
-	Model       string `mapstructure:"model"`
-	APIKey      string `mapstructure:"api_key"`
-	Concurrency int    `mapstructure:"concurrency"`
+	BaseURL           string  `mapstructure:"base_url"`
+	Model             string  `mapstructure:"model"`
+	EmbedModel        string  `mapstructure:"embed_model"`
+	APIKey            string  `mapstructure:"api_key"`
+	Concurrency       int     `mapstructure:"concurrency"`
+	MinItems          int     `mapstructure:"min_items"`
+	MaxItems          int     `mapstructure:"max_items"`
+	Threshold         float32 `mapstructure:"threshold"`
+	Last              string  `mapstructure:"last"`
+	MaxFeedRatio      float32 `mapstructure:"max_feed_ratio"`
+	MinDiversityCount int     `mapstructure:"min_diversity_count"`
 }
 
 func LoadConfig() *Config {
@@ -172,6 +211,8 @@ func LoadConfig() *Config {
 			DefaultMinItemsPerFeed: getIntWithDefault("render.default_min_items_per_feed", DefaultMinItemsPerFeed),
 			DefaultMaxItemsPerFeed: getIntWithDefault("render.default_max_items_per_feed", DefaultMaxItemsPerFeed),
 			FeedsPerPage:           getIntWithDefault("render.feeds_per_page", DefaultFeedsPerPage),
+			TopicMaxFeedRatio:      float32(getFloat64WithDefault("render.topic_max_feed_ratio", DefaultTopicMaxFeedRatio)),
+			TopicMinDiversityCount: getIntWithDefault("render.topic_min_diversity_count", DefaultTopicMinDiversityCount),
 		},
 		Serve: ServeConfig{
 			Port: viper.GetInt("serve.port"),
@@ -197,18 +238,29 @@ func LoadConfig() *Config {
 			MinItemsKeep: getIntWithDefault("purge.min_items_keep", 0),
 		},
 		Embed: EmbedConfig{
-			BaseURL: viper.GetString("embed.base_url"),
-			Model:   viper.GetString("embed.model"),
-			// Zero means "use the model's own default" -- see EmbedConfig.
+			BaseURL:   viper.GetString("embed.base_url"),
+			Model:     viper.GetString("embed.model"),
+			Last:      getStringWithDefault("embed.last", DefaultEmbedLast),
 			BatchSize: getIntWithDefault("embed.batch_size", 0),
 			NumCtx:    getIntWithDefault("embed.num_ctx", 0),
 			APIKey:    viper.GetString("embed.api_key"),
 		},
 		Topics: TopicsConfig{
-			BaseURL:     viper.GetString("topics.base_url"),
-			Model:       viper.GetString("topics.model"),
-			APIKey:      viper.GetString("topics.api_key"),
-			Concurrency: getIntWithDefault("topics.concurrency", DefaultTopicsConcurrency),
+			BaseURL:           viper.GetString("topics.base_url"),
+			Model:             viper.GetString("topics.model"),
+			EmbedModel:        viper.GetString("topics.embed_model"),
+			APIKey:            viper.GetString("topics.api_key"),
+			Concurrency:       getIntWithDefault("topics.concurrency", DefaultTopicsConcurrency),
+			MinItems:          getIntWithDefault("topics.min_items", DefaultTopicsMinItems),
+			MaxItems:          getIntWithDefault("topics.max_items", DefaultTopicsMaxItems),
+			Threshold:         float32(getFloat64WithDefault("topics.threshold", DefaultTopicsThreshold)),
+			Last:              getStringWithDefault("topics.last", DefaultTopicsLast),
+			MaxFeedRatio:      float32(getFloat64WithDefault("topics.max_feed_ratio", float64(DefaultTopicMaxFeedRatio))),
+			MinDiversityCount: getIntWithDefault("topics.min_diversity_count", DefaultTopicMinDiversityCount),
+		},
+		Build: BuildConfig{
+			SkipEmbed:  viper.GetBool("build.skip_embed"),
+			SkipTopics: viper.GetBool("build.skip_topics"),
 		},
 	}
 }
@@ -235,6 +287,8 @@ func GetDefault() *Config {
 			DefaultMinItemsPerFeed: DefaultMinItemsPerFeed,
 			DefaultMaxItemsPerFeed: DefaultMaxItemsPerFeed,
 			FeedsPerPage:           DefaultFeedsPerPage,
+			TopicMaxFeedRatio:      DefaultTopicMaxFeedRatio,
+			TopicMinDiversityCount: DefaultTopicMinDiversityCount,
 		},
 		Serve: ServeConfig{
 			Port: defaultPort,
@@ -256,14 +310,21 @@ func GetDefault() *Config {
 		Embed: EmbedConfig{
 			BaseURL: DefaultEmbedBaseURL,
 			Model:   DefaultEmbedModel,
+			Last:    DefaultEmbedLast,
 			// Zero means "use the model's own measured default".
 			BatchSize: 0,
 			NumCtx:    0,
 		},
 		Topics: TopicsConfig{
-			BaseURL:     "",
-			Model:       "",
-			Concurrency: DefaultTopicsConcurrency,
+			BaseURL:           "",
+			Model:             "",
+			Concurrency:       DefaultTopicsConcurrency,
+			MinItems:          DefaultTopicsMinItems,
+			MaxItems:          DefaultTopicsMaxItems,
+			Threshold:         DefaultTopicsThreshold,
+			Last:              DefaultTopicsLast,
+			MaxFeedRatio:      DefaultTopicMaxFeedRatio,
+			MinDiversityCount: DefaultTopicMinDiversityCount,
 		},
 	}
 }

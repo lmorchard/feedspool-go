@@ -39,7 +39,7 @@ type OpenAILabeler struct {
 	apiKey  string
 }
 
-func NewOpenAILabeler(cfg config.TopicsConfig, client *httpclient.Client) *OpenAILabeler {
+func NewOpenAILabeler(cfg *config.TopicsConfig, client *httpclient.Client) *OpenAILabeler {
 	return &OpenAILabeler{
 		client:  client,
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),

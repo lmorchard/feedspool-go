@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/lmorchard/feedspool-go/internal/embed"
 )
 
@@ -199,6 +201,28 @@ func (g *itemEmbeddingBackfill) Compute(
 
 	vectors, err := g.provider.Embed(ctx, texts)
 	if err != nil {
+		// If batch embedding failed (e.g. HTTP 400 token count limit on an oversized item),
+		// fall back to embedding items individually so valid items in the batch still get processed.
+		logrus.Warnf("Batch embedding of %d items failed (%v); retrying items individually...", len(inputs), err)
+		var results []StagedResult
+		for _, input := range inputs {
+			vecs, itemErr := g.provider.Embed(ctx, []string{input.Text})
+			if itemErr != nil {
+				logrus.Warnf("Skipping item %d for model %q due to embedding error: %v",
+					input.ItemID, g.modelID, itemErr)
+				continue
+			}
+			if len(vecs) > 0 {
+				results = append(results, StagedResult{
+					ItemID:     input.ItemID,
+					SourceHash: input.SourceHash,
+					Vector:     vecs[0],
+				})
+			}
+		}
+		if len(results) > 0 {
+			return results, nil
+		}
 		return nil, fmt.Errorf("failed to embed %d items with model %q: %w",
 			len(inputs), g.modelID, err)
 	}

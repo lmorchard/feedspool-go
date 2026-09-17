@@ -26,8 +26,10 @@ const (
 const (
 	testFormatOPML         = "opml"
 	testTitleTechBlogs     = "Tech Blogs"
-	testH1TechBlogs        = "<h1>Tech Blogs</h1>"
+	testH1TechBlogs        = "<h1><a href=\"index.html\" class=\"home-link\">Tech Blogs</a></h1>"
+	testH1TechBlogsSub     = "<h1><a href=\"../index.html\" class=\"home-link\">Tech Blogs</a></h1>"
 	testTitleTechBlogsHTML = "<title>Tech Blogs</title>"
+	testTopicGo            = "Go Programming"
 )
 
 // newTestWorkflow builds a database with one feed and two items, and returns a
@@ -401,7 +403,7 @@ func TestExecuteWorkflowSiteTitleOverrideWins(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read index.html: %v", err)
 	}
-	if !strings.Contains(string(indexHTML), "<h1>Explicit Override</h1>") {
+	if !strings.Contains(string(indexHTML), "<h1><a href=\"index.html\" class=\"home-link\">Explicit Override</a></h1>") {
 		t.Errorf("index.html does not use the SiteTitle override")
 	}
 	if strings.Contains(string(indexHTML), testTitleTechBlogs) {
@@ -420,7 +422,7 @@ func TestExecuteWorkflowDatabaseModeUsesDefaultTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read index.html: %v", err)
 	}
-	if !strings.Contains(string(indexHTML), "<h1>"+DefaultSiteTitle+"</h1>") {
+	if !strings.Contains(string(indexHTML), "<h1><a href=\"index.html\" class=\"home-link\">"+DefaultSiteTitle+"</a></h1>") {
 		t.Errorf("index.html does not fall back to %q with no feed list", DefaultSiteTitle)
 	}
 }
@@ -482,7 +484,7 @@ func TestFeedPageUsesFeedListTitle(t *testing.T) {
 		t.Fatalf("failed to read feed page: %v", err)
 	}
 	// newTestWorkflow's feed is titled "Example".
-	for _, want := range []string{"<title>Example - Tech Blogs</title>", testH1TechBlogs} {
+	for _, want := range []string{"<title>Example - Tech Blogs</title>", testH1TechBlogsSub} {
 		if !strings.Contains(string(page), want) {
 			t.Errorf("feed page does not contain %q", want)
 		}
@@ -505,10 +507,89 @@ func TestFeedPageDatabaseModeUsesDefaultTitle(t *testing.T) {
 	}
 	for _, want := range []string{
 		"<title>Example - " + DefaultSiteTitle + "</title>",
-		"<h1>" + DefaultSiteTitle + "</h1>",
+		"<h1><a href=\"../index.html\" class=\"home-link\">" + DefaultSiteTitle + "</a></h1>",
 	} {
 		if !strings.Contains(string(page), want) {
 			t.Errorf("feed page does not contain %q", want)
+		}
+	}
+}
+
+func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+
+	// Insert topic run data into database
+	db, err := database.New(cfg.Database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	run := &database.TopicRun{
+		CreatedAt:    now,
+		WindowStart:  now.Add(-24 * time.Hour),
+		WindowEnd:    now,
+		EmbedModelID: "test-embed",
+		LLMModelID:   "test-llm",
+	}
+	topic1 := &database.Topic{Label: "AI & ML", Score: 2.0}
+	topic2 := &database.Topic{Label: testTopicGo, Score: 1.0}
+
+	// Fetch item IDs inserted by newTestWorkflow
+	itemsList, err := db.GetItemsForFeed(testFeedURL, 10, time.Time{}, time.Time{})
+	if err != nil || len(itemsList) < 2 {
+		t.Fatalf("failed to get items for testing: %v", err)
+	}
+	id1 := itemsList[0].ID
+	id2 := itemsList[1].ID
+
+	topicItems := map[*database.Topic][]int64{
+		topic1: {id1, id2},
+		topic2: {id2},
+	}
+
+	ctx := t.Context()
+	if err := db.InsertTopicRun(ctx, run, []*database.Topic{topic1, topic2}, topicItems); err != nil {
+		t.Fatalf("failed to insert topic run: %v", err)
+	}
+	db.Close()
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	// Verify index.html has Trending Topics header link
+	indexHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read index.html: %v", err)
+	}
+	if !strings.Contains(string(indexHTML), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+		t.Errorf("index.html missing Trending Topics header link")
+	}
+
+	// Verify topics.html exists and contains expected components
+	topicsHTMLPath := filepath.Join(cfg.OutputDir, "topics.html")
+	topicsHTML, err := os.ReadFile(topicsHTMLPath)
+	if err != nil {
+		t.Fatalf("failed to read topics.html: %v", err)
+	}
+	got := string(topicsHTML)
+
+	expectedSnippets := []string{
+		`<a href="topics.html" class="nav-link active">Trending Topics</a>`,
+		`<div class="topics-header-box">`,
+		`<nav class="topics-index" aria-label="Topic index">`,
+		`class="topic-pill"`,
+		`AI &amp; ML`,
+		testTopicGo,
+		`<details class="topic-group-container"`,
+		`<summary class="topic-summary">`,
+		`class="topic-badge"`,
+		`class="back-to-top"`,
+	}
+
+	for _, snippet := range expectedSnippets {
+		if !strings.Contains(got, snippet) {
+			t.Errorf("topics.html missing expected snippet %q", snippet)
 		}
 	}
 }

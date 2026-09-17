@@ -237,7 +237,7 @@ func TestRenderAllTitlesEachSiteFromItsOwnList(t *testing.T) {
 			t.Fatalf("failed to read %s/index.html: %v", tc.slug, err)
 		}
 		got := string(indexHTML)
-		for _, want := range []string{"<title>" + tc.title + "</title>", "<h1>" + tc.title + "</h1>"} {
+		for _, want := range []string{"<title>" + tc.title + "</title>", "<h1><a href=\"index.html\" class=\"home-link\">" + tc.title + "</a></h1>"} {
 			if !strings.Contains(got, want) {
 				t.Errorf("%s/index.html does not contain %q", tc.slug, want)
 			}
@@ -245,7 +245,7 @@ func TestRenderAllTitlesEachSiteFromItsOwnList(t *testing.T) {
 		if strings.Contains(got, ">"+tc.other+"<") {
 			t.Errorf("%s/index.html contains the other site's title %q", tc.slug, tc.other)
 		}
-		if strings.Contains(got, "<h1>"+renderer.DefaultSiteTitle+"</h1>") {
+		if strings.Contains(got, "<h1><a href=\"index.html\" class=\"home-link\">"+renderer.DefaultSiteTitle+"</a></h1>") {
 			t.Errorf("%s/index.html still shows the default title", tc.slug)
 		}
 	}
