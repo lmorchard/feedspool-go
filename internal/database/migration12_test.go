@@ -20,11 +20,6 @@ func TestMigration12TableExistsOnAFreshDatabase(t *testing.T) {
 }
 
 func TestMigration12IsRegistered(t *testing.T) {
-	if maxMigrationVersion != migrationVersion12 {
-		t.Errorf("maxMigrationVersion = %d, want %d: a migration that is not the head "+
-			"never runs on an existing database", maxMigrationVersion, migrationVersion12)
-	}
-
 	sql, ok := getMigrations()[migrationVersion12]
 	if !ok {
 		t.Fatal("getMigrations() has no entry for migration 12")

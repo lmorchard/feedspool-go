@@ -128,7 +128,9 @@ func setupLogging() {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{
-			DisableTimestamp: true,
+			DisableTimestamp: false,
+			FullTimestamp:    true,
+			TimestampFormat:  "15:04:05.000",
 		})
 	}
 }

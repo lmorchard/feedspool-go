@@ -34,6 +34,10 @@ const (
 	// options, Apache-2.0, and the only one shipping a dedicated "clustering:"
 	// task prefix, which is what this feature is ultimately for.
 	DefaultEmbedModel = "nomic-embed-text"
+
+	// DefaultTopicsConcurrency restricts how many concurrent requests are sent
+	// to the LLM when labeling clusters.
+	DefaultTopicsConcurrency = 5
 )
 
 type Config struct {
@@ -50,6 +54,7 @@ type Config struct {
 	Unfurl   UnfurlConfig
 	Purge    PurgeConfig
 	Embed    EmbedConfig
+	Topics   TopicsConfig
 }
 
 type FeedListConfig struct {
@@ -128,6 +133,13 @@ type EmbedConfig struct {
 	APIKey string `mapstructure:"api_key"`
 }
 
+type TopicsConfig struct {
+	BaseURL     string `mapstructure:"base_url"`
+	Model       string `mapstructure:"model"`
+	APIKey      string `mapstructure:"api_key"`
+	Concurrency int    `mapstructure:"concurrency"`
+}
+
 func LoadConfig() *Config {
 	timeoutStr := viper.GetString("timeout")
 	timeout, err := time.ParseDuration(timeoutStr)
@@ -192,6 +204,12 @@ func LoadConfig() *Config {
 			NumCtx:    getIntWithDefault("embed.num_ctx", 0),
 			APIKey:    viper.GetString("embed.api_key"),
 		},
+		Topics: TopicsConfig{
+			BaseURL:     viper.GetString("topics.base_url"),
+			Model:       viper.GetString("topics.model"),
+			APIKey:      viper.GetString("topics.api_key"),
+			Concurrency: getIntWithDefault("topics.concurrency", DefaultTopicsConcurrency),
+		},
 	}
 }
 
@@ -241,6 +259,11 @@ func GetDefault() *Config {
 			// Zero means "use the model's own measured default".
 			BatchSize: 0,
 			NumCtx:    0,
+		},
+		Topics: TopicsConfig{
+			BaseURL:     "",
+			Model:       "",
+			Concurrency: DefaultTopicsConcurrency,
 		},
 	}
 }

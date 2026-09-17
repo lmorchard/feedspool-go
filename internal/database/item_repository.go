@@ -172,6 +172,52 @@ func (db *DB) queryItems(query string, args ...any) ([]*Item, error) {
 	return items, nil
 }
 
+// GetItemsByIDs retrieves items by their exact primary keys.
+func (db *DB) GetItemsByIDs(ids []int64) (map[int64]*Item, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `
+		SELECT id, feed_url, guid, title, link, published_date, first_seen, content, summary, archived
+		FROM items
+		WHERE id IN (`
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i] = id
+	}
+	query += `)`
+
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items by ids: %w", err)
+	}
+	defer rows.Close()
+
+	items := make(map[int64]*Item)
+	for rows.Next() {
+		var item Item
+		var firstSeen sql.NullTime
+		if err := rows.Scan(
+			&item.ID, &item.FeedURL, &item.GUID, &item.Title, &item.Link,
+			scanNullableTime(&item.PublishedDate), &firstSeen,
+			&item.Content, &item.Summary, &item.Archived,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		item.FirstSeen = firstSeen
+		items[item.ID] = &item
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating items: %w", err)
+	}
+	return items, nil
+}
+
 // GetItemsForFeed retrieves items for a specific feed with optional filtering by time range and limit.
 func (db *DB) GetItemsForFeed(feedURL string, limit int, since, until time.Time) ([]*Item, error) {
 	query := `

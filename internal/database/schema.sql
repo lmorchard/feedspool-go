@@ -127,3 +127,25 @@ CREATE TABLE IF NOT EXISTS item_embeddings (
 );
 CREATE INDEX IF NOT EXISTS idx_item_embeddings_model
     ON item_embeddings(model_id, item_id);
+
+CREATE TABLE IF NOT EXISTS topic_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    window_start DATETIME NOT NULL,
+    window_end DATETIME NOT NULL,
+    embed_model_id TEXT NOT NULL,
+    llm_model_id TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS topics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL REFERENCES topic_runs(id) ON DELETE CASCADE,
+    label TEXT NOT NULL,
+    score REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS topic_items (
+    topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+    PRIMARY KEY (topic_id, item_id)
+);

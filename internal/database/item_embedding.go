@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -79,8 +80,44 @@ func (db *DB) GetItemEmbedding(itemID int64, modelID string) (*ItemEmbedding, er
 	return scanItemEmbedding(row.Scan)
 }
 
-// scanItemEmbedding decodes one row, shared by the single-row and scan paths.
-//
+// GetEmbeddingsForWindow retrieves all item embeddings for a specific model within a time window.
+func (db *DB) GetEmbeddingsForWindow(
+	ctx context.Context, modelID string, since, until time.Time,
+) ([]*ItemEmbedding, error) {
+	query := `
+		SELECT e.item_id, e.model_id, e.dims, e.vector, e.source_hash, e.generator_version, e.computed_at
+		FROM item_embeddings e
+		JOIN items i ON e.item_id = i.id
+		WHERE e.model_id = ?
+		` + effectiveDateSinceClause + effectiveDateUntilClause + `
+		ORDER BY e.item_id ASC
+	`
+	rows, err := db.conn.QueryContext(
+		ctx, query,
+		modelID,
+		formatDatabaseTime(since),
+		formatDatabaseTime(until),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query embeddings for window: %w", err)
+	}
+	defer rows.Close()
+
+	var embeddings []*ItemEmbedding
+	for rows.Next() {
+		emb, err := scanItemEmbedding(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		embeddings = append(embeddings, emb)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
+	}
+
+	return embeddings, nil
+}
+
 // It takes the Scan method itself so *sql.Row and *sql.Rows can both use it;
 // they share no interface in database/sql.
 func scanItemEmbedding(scan func(...any) error) (*ItemEmbedding, error) {

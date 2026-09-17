@@ -20,6 +20,50 @@ import (
 // predicate deliberately skips). Change one and change the other.
 const itemTextStalenessCondition = `t.item_id IS NULL OR t.generator <> ? OR t.generator_version <> ?`
 
+type ItemText struct {
+	ItemID  int64
+	Title   string
+	Summary string
+	Body    string
+}
+
+// GetItemTextsByIDs retrieves plain-text representations for the given items.
+func (db *DB) GetItemTextsByIDs(ids []int64) (map[int64]*ItemText, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	query := `SELECT item_id, title, summary, body FROM item_text WHERE item_id IN (`
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i] = id
+	}
+	query += `)`
+
+	rows, err := db.conn.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query item_text by ids: %w", err)
+	}
+	defer rows.Close()
+
+	texts := make(map[int64]*ItemText)
+	for rows.Next() {
+		var text ItemText
+		if err := rows.Scan(&text.ItemID, &text.Title, &text.Summary, &text.Body); err != nil {
+			return nil, fmt.Errorf("failed to scan item_text: %w", err)
+		}
+		texts[text.ItemID] = &text
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating item_text: %w", err)
+	}
+	return texts, nil
+}
+
 // itemTextBackfill derives HTML-free search text for items that lack it.
 // rederiveAll widens that to every item, which is what a forced rebuild needs.
 type itemTextBackfill struct {

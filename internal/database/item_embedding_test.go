@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -229,5 +230,39 @@ func TestGetItemEmbeddingRejectsCorruptBlob(t *testing.T) {
 
 	if _, err := db.GetItemEmbedding(id, testModelNomic); err == nil {
 		t.Fatal("a blob shorter than its dims column decoded successfully, want an error")
+	}
+}
+
+func TestGetEmbeddingsForWindow(t *testing.T) {
+	db := setupTestDB(t)
+	now := time.Now().UTC()
+
+	// Seed 3 items with different dates
+	id1 := seedItem(t, db, "item-1", now.Add(-10*time.Hour))
+	id2 := seedItem(t, db, "item-2", now.Add(-30*time.Hour))
+	id3 := seedItem(t, db, "item-3", now.Add(-50*time.Hour))
+
+	putEmbedding(t, db, id1, testModelNomic, unitVectorAt(768, 1), testHashA)
+	putEmbedding(t, db, id2, testModelNomic, unitVectorAt(768, 2), testHashA)
+	putEmbedding(t, db, id3, testModelNomic, unitVectorAt(768, 3), testHashA)
+
+	// Fetch 2-day window (should include 1 and 2)
+	since := now.Add(-48 * time.Hour)
+	until := now
+	embeddings, err := db.GetEmbeddingsForWindow(context.Background(), testModelNomic, since, until)
+	if err != nil {
+		t.Fatalf("GetEmbeddingsForWindow: %v", err)
+	}
+
+	if len(embeddings) != 2 {
+		t.Fatalf("got %d embeddings, want 2", len(embeddings))
+	}
+
+	// Verify the items are correct (order should be item_id ASC)
+	if embeddings[0].ItemID != id1 {
+		t.Errorf("embeddings[0].ItemID = %d, want %d", embeddings[0].ItemID, id1)
+	}
+	if embeddings[1].ItemID != id2 {
+		t.Errorf("embeddings[1].ItemID = %d, want %d", embeddings[1].ItemID, id2)
 	}
 }
