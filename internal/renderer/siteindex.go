@@ -26,6 +26,7 @@ type SiteIndexContext struct {
 	Sites       []SiteEntry
 	GeneratedAt time.Time
 	TimeWindow  string
+	HasTopics   bool
 }
 
 // RenderSiteIndex writes the multi-site directory page into outputDir and

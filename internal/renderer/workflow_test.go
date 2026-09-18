@@ -19,6 +19,8 @@ const testFeedURL = "https://example.com/feed.xml"
 const (
 	testAssetIndexCSS = "index.css"
 	testAssetIndexJS  = "index.js"
+	testEmbedModelID  = "test-embed"
+	testLLMModelID    = "test-llm"
 )
 
 // testFormatOPML and testTitleTechBlogs are shared across the site-title
@@ -528,8 +530,8 @@ func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
 		CreatedAt:    now,
 		WindowStart:  now.Add(-24 * time.Hour),
 		WindowEnd:    now,
-		EmbedModelID: "test-embed",
-		LLMModelID:   "test-llm",
+		EmbedModelID: testEmbedModelID,
+		LLMModelID:   testLLMModelID,
 	}
 	topic1 := &database.Topic{Label: "AI & ML", Score: 2.0}
 	topic2 := &database.Topic{Label: testTopicGo, Score: 1.0}
@@ -591,5 +593,96 @@ func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
 		if !strings.Contains(got, snippet) {
 			t.Errorf("topics.html missing expected snippet %q", snippet)
 		}
+	}
+}
+
+func TestExecuteWorkflowFiltersTopicsPerFeedList(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, false)
+
+	feed1A := "https://feed1a.com/rss.xml"
+	feed1B := "https://feed1b.com/rss.xml"
+	feed2A := "https://feed2a.com/rss.xml"
+	feed2B := "https://feed2b.com/rss.xml"
+
+	db, err := database.New(cfg.Database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+
+	for _, u := range []string{feed1A, feed1B, feed2A, feed2B} {
+		if err := db.UpsertFeed(&database.Feed{
+			URL:                 u,
+			Title:               u,
+			LastFetchTime:       now,
+			LastSuccessfulFetch: now,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	item1A := &database.Item{FeedURL: feed1A, GUID: "1a", Title: "Item 1A", Link: feed1A + "/1", PublishedDate: now}
+	item1B := &database.Item{FeedURL: feed1B, GUID: "1b", Title: "Item 1B", Link: feed1B + "/1", PublishedDate: now}
+	item2A := &database.Item{FeedURL: feed2A, GUID: "2a", Title: "Item 2A", Link: feed2A + "/1", PublishedDate: now}
+	item2B := &database.Item{FeedURL: feed2B, GUID: "2b", Title: "Item 2B", Link: feed2B + "/1", PublishedDate: now}
+
+	for _, item := range []*database.Item{item1A, item1B, item2A, item2B} {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Retrieve inserted item IDs
+	dbItems1A, _ := db.GetItemsForFeed(feed1A, 1, time.Time{}, time.Time{})
+	dbItems1B, _ := db.GetItemsForFeed(feed1B, 1, time.Time{}, time.Time{})
+	dbItems2A, _ := db.GetItemsForFeed(feed2A, 1, time.Time{}, time.Time{})
+	dbItems2B, _ := db.GetItemsForFeed(feed2B, 1, time.Time{}, time.Time{})
+
+	run := &database.TopicRun{
+		CreatedAt:    now,
+		WindowStart:  now.Add(-24 * time.Hour),
+		WindowEnd:    now,
+		EmbedModelID: testEmbedModelID,
+		LLMModelID:   testLLMModelID,
+	}
+
+	topic1 := &database.Topic{Label: "Topic 1 Feeds", Score: 2.0}
+	topic2 := &database.Topic{Label: "Topic 2 Feeds", Score: 2.0}
+
+	topicItems := map[*database.Topic][]int64{
+		topic1: {dbItems1A[0].ID, dbItems1B[0].ID},
+		topic2: {dbItems2A[0].ID, dbItems2B[0].ID},
+	}
+
+	if err := db.InsertTopicRun(t.Context(), run, []*database.Topic{topic1, topic2}, topicItems); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	// Create OPML list containing only Feed 1A and Feed 1B
+	opmlPath := filepath.Join(t.TempDir(), "site1.opml")
+	opmlContent := `<opml version="2.0"><body><outline xmlUrl="` + feed1A + `" /><outline xmlUrl="` + feed1B + `" /></body></opml>`
+	if err := os.WriteFile(opmlPath, []byte(opmlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg.FeedsFile = opmlPath
+	cfg.Format = "opml"
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	topicsHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "topics.html"))
+	if err != nil {
+		t.Fatalf("failed to read topics.html: %v", err)
+	}
+
+	got := string(topicsHTML)
+	if !strings.Contains(got, "Topic 1 Feeds") {
+		t.Errorf("topics.html expected to contain Topic 1 Feeds")
+	}
+	if strings.Contains(got, "Topic 2 Feeds") {
+		t.Errorf("topics.html should NOT contain Topic 2 Feeds")
 	}
 }
