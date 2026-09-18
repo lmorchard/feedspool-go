@@ -244,10 +244,22 @@ func renderIndex(base *renderer.WorkflowConfig, summary *RenderSummary, startTim
 		})
 	}
 
+	chrome := renderer.SiteChrome{
+		SiteTitle:   renderer.DefaultSiteTitle,
+		TimeWindow:  renderer.FormatTimeWindow(startTime, endTime, base.MaxAge),
+		GeneratedAt: endTime,
+	}
+
+	hasTopics, err := renderer.RenderGlobalTopics(base, chrome)
+	if err != nil {
+		logrus.Warnf("Failed to render global topics for site index: %v", err)
+	}
+
 	return renderer.RenderSiteIndex(base.OutputDir, base.TemplatesDir, base.AssetsDir,
 		&renderer.SiteIndexContext{
 			Sites:       entries,
 			GeneratedAt: time.Now().UTC(),
 			TimeWindow:  renderer.FormatTimeWindow(startTime, endTime, base.MaxAge),
+			HasTopics:   hasTopics,
 		})
 }

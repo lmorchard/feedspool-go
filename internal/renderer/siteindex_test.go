@@ -82,6 +82,26 @@ func TestRenderSiteIndex(t *testing.T) {
 	}
 }
 
+func TestRenderSiteIndexHasTopics(t *testing.T) {
+	out := t.TempDir()
+	ctx := &SiteIndexContext{
+		GeneratedAt: time.Now().UTC(),
+		HasTopics:   true,
+	}
+
+	if err := RenderSiteIndex(out, "", "", ctx); err != nil {
+		t.Fatalf("RenderSiteIndex() error = %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatalf("reading index.html: %v", err)
+	}
+	if !strings.Contains(string(data), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+		t.Errorf("site index missing Trending Topics header link when HasTopics is true")
+	}
+}
+
 // TestRenderSiteIndexCopiesOnlyThinBundle guards against RenderSiteIndex
 // copying the entire feed-reader asset tree into the output root instead of
 // the documented thin bundle. Before the fix, RenderSiteIndex called the same

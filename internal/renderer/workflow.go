@@ -143,7 +143,7 @@ func ExecuteWorkflow(config *WorkflowConfig) (*Result, error) {
 		TimeWindow:  FormatTimeWindow(startTime, endTime, config.MaxAge),
 		GeneratedAt: endTime,
 	}
-	if err := generateSite(config, feeds, items, chrome); err != nil {
+	if err := generateSite(config, feeds, items, chrome, feedURLs); err != nil {
 		return nil, err
 	}
 
@@ -251,7 +251,7 @@ func limitItemsPerFeed(items map[string][]database.Item, maxItems int) map[strin
 }
 
 func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[string][]database.Item,
-	chrome SiteChrome,
+	chrome SiteChrome, feedURLs []string,
 ) error {
 	db, err := database.New(config.Database)
 	if err != nil {
@@ -262,20 +262,11 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
 
 	// Topics
-	var topicCtx *TopicsTemplateContext
-	var rawItemsMap map[int64][]*database.Item
-	if run, _ := db.GetLatestTopicRun(context.Background()); run != nil {
-		chrome.HasTopics = true
-		topicCtx, rawItemsMap = buildTopicsContext(db, run, chrome, config)
-	}
+	topicCtx, hasTopics := resolveSiteTopics(db, config, chrome, feedURLs)
+	chrome.HasTopics = hasTopics
 
 	// Fetch metadata and favicons
 	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
-
-	// If we have topics, we might need metadata and favicons for topic items too
-	if topicCtx != nil {
-		fetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
-	}
 
 	// Generate template context
 	templateCtx := createTemplateContext(feeds, items, metadata, feedFavicon, chrome)
@@ -294,11 +285,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		return err
 	}
 
-	if topicCtx != nil {
-		topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
-		if err := renderTopicsFile(r, topicOutputFile, topicCtx); err != nil {
-			return err
-		}
+	if err := writeOrRemoveTopicsFile(r, config, topicCtx); err != nil {
+		return err
 	}
 
 	// Copy assets
@@ -328,6 +316,33 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	}
 
 	printSuccessMessage(feedsGenerated, feedTemplateExists, config.OutputDir, outputFile, config.Quiet)
+	return nil
+}
+
+func resolveSiteTopics(
+	db *database.DB, config *WorkflowConfig, chrome SiteChrome, feedURLs []string,
+) (*TopicsTemplateContext, bool) {
+	run, _ := db.GetLatestTopicRun(context.Background())
+	if run == nil {
+		return nil, false
+	}
+	topicCtx, rawItemsMap := BuildTopicsContext(db, run, chrome, config, feedURLs)
+	if topicCtx == nil || len(topicCtx.Topics) == 0 {
+		return nil, false
+	}
+	topicCtx.HasTopics = true
+	FetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
+	return topicCtx, true
+}
+
+func writeOrRemoveTopicsFile(r *Renderer, config *WorkflowConfig, topicCtx *TopicsTemplateContext) error {
+	topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
+	if topicCtx != nil {
+		return renderTopicsFile(r, topicOutputFile, topicCtx)
+	}
+	if err := os.Remove(topicOutputFile); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove stale topics file: %w", err)
+	}
 	return nil
 }
 
@@ -376,62 +391,65 @@ func createTemplateContext(feeds []database.Feed, items map[string][]database.It
 	}
 }
 
-func buildTopicsContext(
-	db *database.DB, run *database.TopicRun, chrome SiteChrome, config *WorkflowConfig,
+// BuildTopicsContext builds the template context for trending topics.
+// If allowedFeedURLs is non-nil, only items from feeds in allowedFeedURLs are included.
+func BuildTopicsContext(
+	db *database.DB, run *database.TopicRun, chrome SiteChrome, config *WorkflowConfig, allowedFeedURLs []string,
 ) (ctx *TopicsTemplateContext, rawItemsMap map[int64][]*database.Item) {
-	topicList, _ := db.GetTopicsForRun(context.Background(), run.ID)
-	topicItemsMap, _ := db.GetTopicItems(context.Background(), run.ID)
+	topicList, err := db.GetTopicsForRun(context.Background(), run.ID)
+	if err != nil {
+		return nil, nil
+	}
+	topicItemsMap, err := db.GetTopicItems(context.Background(), run.ID)
+	if err != nil {
+		return nil, nil
+	}
 
 	var allItemIDs []int64
 	for _, ids := range topicItemsMap {
 		allItemIDs = append(allItemIDs, ids...)
 	}
-	topicItemsData, _ := db.GetItemsByIDs(allItemIDs)
+	topicItemsData, err := db.GetItemsByIDs(allItemIDs)
+	if err != nil {
+		return nil, nil
+	}
+
+	var allowedSet map[string]bool
+	if allowedFeedURLs != nil {
+		allowedSet = make(map[string]bool, len(allowedFeedURLs))
+		for _, url := range allowedFeedURLs {
+			allowedSet[url] = true
+		}
+	}
 
 	topicItemSlices := make(map[int64][]*database.Item)
 	rejectedCount := 0
 	for topicID, itemIDs := range topicItemsMap {
-		var slice []*database.Item
-		feedCounts := make(map[string]int)
-
-		for _, id := range itemIDs {
-			if item, ok := topicItemsData[id]; ok {
-				slice = append(slice, item)
-				feedCounts[item.FeedURL]++
-			}
-		}
-
-		// Reject topic if all/most items are from the same feed
-		isSpam := false
-		if config.TopicMaxFeedRatio > 0 && len(slice) >= config.TopicMinDiversityCount {
-			for _, count := range feedCounts {
-				if float32(count)/float32(len(slice)) >= config.TopicMaxFeedRatio {
-					isSpam = true
-					break
-				}
-			}
-		}
-
-		if isSpam {
-			// Don't show this topic in the rendered page
+		slice, rejected := filterSingleTopicItems(itemIDs, topicItemsData, allowedSet, config)
+		if rejected {
 			rejectedCount++
 			continue
 		}
-
 		topicItemSlices[topicID] = slice
 	}
 
-	if rejectedCount > 0 {
-		logrus.Infof("Render filtered out %d topic(s) exceeding max single-feed ratio (>=%.0f%% items from 1 feed)",
-			rejectedCount, config.TopicMaxFeedRatio*100)
+	if rejectedCount > 0 && !config.Quiet {
+		logrus.Infof("Render filtered out %d topic(s) exceeding max single-feed ratio or with no items for site",
+			rejectedCount)
 	}
 
-	// Filter out topics that were rejected
+	// Filter out topics that were rejected and copy topics with updated item counts
 	var cleanTopicList []*database.Topic
 	for _, topic := range topicList {
-		if _, ok := topicItemSlices[topic.ID]; ok {
-			cleanTopicList = append(cleanTopicList, topic)
+		if slice, ok := topicItemSlices[topic.ID]; ok {
+			topicCopy := *topic
+			topicCopy.Score = float64(len(slice))
+			cleanTopicList = append(cleanTopicList, &topicCopy)
 		}
+	}
+
+	if len(cleanTopicList) == 0 {
+		return nil, nil
 	}
 
 	return &TopicsTemplateContext{
@@ -442,8 +460,41 @@ func buildTopicsContext(
 	}, topicItemSlices
 }
 
+func filterSingleTopicItems(
+	itemIDs []int64, topicItemsData map[int64]*database.Item, allowedSet map[string]bool, config *WorkflowConfig,
+) ([]*database.Item, bool) {
+	var slice []*database.Item
+	feedCounts := make(map[string]int)
+
+	for _, id := range itemIDs {
+		if item, ok := topicItemsData[id]; ok {
+			if allowedSet != nil && !allowedSet[item.FeedURL] {
+				continue
+			}
+			slice = append(slice, item)
+			feedCounts[item.FeedURL]++
+		}
+	}
+
+	if len(slice) == 0 {
+		return nil, true
+	}
+
+	if config.TopicMaxFeedRatio > 0 && len(slice) >= config.TopicMinDiversityCount {
+		for _, count := range feedCounts {
+			if float32(count)/float32(len(slice)) >= config.TopicMaxFeedRatio {
+				return nil, true
+			}
+		}
+	}
+
+	return slice, false
+}
+
+// FetchTopicMetadataAndFavicons populates metadata, favicons, and feed groups for topics.
+//
 //nolint:cyclop
-func fetchTopicMetadataAndFavicons(
+func FetchTopicMetadataAndFavicons(
 	db *database.DB, topicCtx *TopicsTemplateContext, rawItemsMap map[int64][]*database.Item,
 ) {
 	topicCtx.Metadata = make(map[string]*database.URLMetadata)
@@ -506,6 +557,56 @@ func fetchTopicMetadataAndFavicons(
 		})
 		topicCtx.GroupsMap[topicID] = slice
 	}
+}
+
+// RenderGlobalTopics renders the top-level topics.html page for multi-site directory builds.
+func RenderGlobalTopics(config *WorkflowConfig, chrome SiteChrome) (bool, error) {
+	db, err := database.New(config.Database)
+	if err != nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, fmt.Errorf("failed to connect to database for global topics: %w", err)
+	}
+	defer db.Close()
+
+	run, err := db.GetLatestTopicRun(context.Background())
+	if err != nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, fmt.Errorf("failed to query latest topic run: %w", err)
+	}
+	if run == nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, nil
+	}
+
+	topicCtx, rawItemsMap := BuildTopicsContext(db, run, chrome, config, nil)
+	if topicCtx == nil || len(topicCtx.Topics) == 0 {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, nil
+	}
+
+	chrome.HasTopics = true
+	topicCtx.HasTopics = true
+
+	FetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
+
+	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
+	topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
+	if err := renderTopicsFile(r, topicOutputFile, topicCtx); err != nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, err
+	}
+
+	if err := r.CopyAssets(config.OutputDir); err != nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, fmt.Errorf("failed to copy assets for global topics: %w", err)
+	}
+
+	return true, nil
+}
+
+func removeStaleTopicsFile(dir string) {
+	topicOutputFile := filepath.Join(dir, "topics.html")
+	_ = os.Remove(topicOutputFile)
 }
 
 func renderIndexFile(r *Renderer, outputFile string, templateCtx *TemplateContext, totalPages, feedsPerPage int) error {

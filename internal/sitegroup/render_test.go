@@ -537,3 +537,129 @@ func TestRenderAllIndexTimeWindowMatchesSitePages(t *testing.T) {
 		t.Errorf("index.html shows the raw --start/--end strings %q instead of a parsed, formatted window", rawForm)
 	}
 }
+
+func TestRenderAllGeneratesTopLevelTopicsAndPerSiteTopics(t *testing.T) {
+	feed1A := "https://feed1a.com/rss.xml"
+	feed1B := "https://feed1b.com/rss.xml"
+	feed2A := "https://feed2a.com/rss.xml"
+	feed2B := "https://feed2b.com/rss.xml"
+
+	dir := writeDir(t, map[string]string{
+		"site1.opml": opmlWith("Site 1", feed1A, feed1B),
+		"site2.opml": opmlWith("Site 2", feed2A, feed2B),
+	})
+	out := filepath.Join(t.TempDir(), "build")
+
+	dbPath := filepath.Join(t.TempDir(), "topics_test.db")
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.InitSchema(); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now().UTC()
+	for _, u := range []string{feed1A, feed1B, feed2A, feed2B} {
+		if err := db.UpsertFeed(&database.Feed{
+			URL:                 u,
+			Title:               u,
+			LastFetchTime:       now,
+			LastSuccessfulFetch: now,
+			LatestItemDate:      sql.NullTime{Time: now, Valid: true},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	item1A := &database.Item{FeedURL: feed1A, GUID: "1a", Title: "Item 1A", Link: feed1A + "/1", PublishedDate: now}
+	item1B := &database.Item{FeedURL: feed1B, GUID: "1b", Title: "Item 1B", Link: feed1B + "/1", PublishedDate: now}
+	item2A := &database.Item{FeedURL: feed2A, GUID: "2a", Title: "Item 2A", Link: feed2A + "/1", PublishedDate: now}
+	item2B := &database.Item{FeedURL: feed2B, GUID: "2b", Title: "Item 2B", Link: feed2B + "/1", PublishedDate: now}
+
+	for _, item := range []*database.Item{item1A, item1B, item2A, item2B} {
+		if err := db.UpsertItem(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	dbItems1A, _ := db.GetItemsForFeed(feed1A, 1, time.Time{}, time.Time{})
+	dbItems1B, _ := db.GetItemsForFeed(feed1B, 1, time.Time{}, time.Time{})
+	dbItems2A, _ := db.GetItemsForFeed(feed2A, 1, time.Time{}, time.Time{})
+	dbItems2B, _ := db.GetItemsForFeed(feed2B, 1, time.Time{}, time.Time{})
+
+	run := &database.TopicRun{
+		CreatedAt:    now,
+		WindowStart:  now.Add(-24 * time.Hour),
+		WindowEnd:    now,
+		EmbedModelID: "test-embed",
+		LLMModelID:   "test-llm",
+	}
+
+	topic1 := &database.Topic{Label: "Topic 1 Feeds", Score: 2.0}
+	topic2 := &database.Topic{Label: "Topic 2 Feeds", Score: 2.0}
+
+	topicItems := map[*database.Topic][]int64{
+		topic1: {dbItems1A[0].ID, dbItems1B[0].ID},
+		topic2: {dbItems2A[0].ID, dbItems2B[0].ID},
+	}
+
+	if err := db.InsertTopicRun(t.Context(), run, []*database.Topic{topic1, topic2}, topicItems); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	base := &renderer.WorkflowConfig{
+		OutputDir: out,
+		Database:  dbPath,
+		MaxAge:    "24h",
+	}
+
+	summary, err := RenderAll(dir, base)
+	if err != nil {
+		t.Fatalf("RenderAll() error = %v", err)
+	}
+	if summary.HasFailures() {
+		t.Fatalf("RenderAll() reported failures")
+	}
+
+	// Verify top-level index.html has Trending Topics link
+	topIndexHTML, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatalf("failed to read top-level index.html: %v", err)
+	}
+	if !strings.Contains(string(topIndexHTML), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+		t.Errorf("top-level index.html missing Trending Topics header link")
+	}
+
+	// Verify top-level topics.html contains both topics
+	topTopicsHTML, err := os.ReadFile(filepath.Join(out, "topics.html"))
+	if err != nil {
+		t.Fatalf("failed to read top-level topics.html: %v", err)
+	}
+	topGot := string(topTopicsHTML)
+	if !strings.Contains(topGot, "Topic 1 Feeds") || !strings.Contains(topGot, "Topic 2 Feeds") {
+		t.Errorf("top-level topics.html missing topics; got:\n%s", topGot)
+	}
+
+	// Verify site1 topics.html contains Topic 1 and not Topic 2
+	site1TopicsHTML, err := os.ReadFile(filepath.Join(out, "site1", "topics.html"))
+	if err != nil {
+		t.Fatalf("failed to read site1/topics.html: %v", err)
+	}
+	site1Got := string(site1TopicsHTML)
+	if !strings.Contains(site1Got, "Topic 1 Feeds") || strings.Contains(site1Got, "Topic 2 Feeds") {
+		t.Errorf("site1/topics.html expected Topic 1 Feeds and no Topic 2 Feeds; got:\n%s", site1Got)
+	}
+
+	// Verify site2 topics.html contains Topic 2 and not Topic 1
+	site2TopicsHTML, err := os.ReadFile(filepath.Join(out, "site2", "topics.html"))
+	if err != nil {
+		t.Fatalf("failed to read site2/topics.html: %v", err)
+	}
+	site2Got := string(site2TopicsHTML)
+	if !strings.Contains(site2Got, "Topic 2 Feeds") || strings.Contains(site2Got, "Topic 1 Feeds") {
+		t.Errorf("site2/topics.html expected Topic 2 Feeds and no Topic 1 Feeds; got:\n%s", site2Got)
+	}
+}
