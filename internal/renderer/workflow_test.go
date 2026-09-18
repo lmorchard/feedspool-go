@@ -686,3 +686,25 @@ func TestExecuteWorkflowFiltersTopicsPerFeedList(t *testing.T) {
 		t.Errorf("topics.html should NOT contain Topic 2 Feeds")
 	}
 }
+
+func TestExecuteWorkflowRemovesStaleTopicsFile(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, false)
+
+	// Pre-create a stale topics.html in output directory
+	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	staleTopicsPath := filepath.Join(cfg.OutputDir, "topics.html")
+	if err := os.WriteFile(staleTopicsPath, []byte("<html>stale topics</html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Execute workflow on database with no topic run
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+
+	if _, err := os.Stat(staleTopicsPath); !os.IsNotExist(err) {
+		t.Errorf("expected stale topics.html to be removed, but it still exists")
+	}
+}

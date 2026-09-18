@@ -262,18 +262,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
 
 	// Topics
-	var topicCtx *TopicsTemplateContext
-	var rawItemsMap map[int64][]*database.Item
-	if run, _ := db.GetLatestTopicRun(context.Background()); run != nil {
-		topicCtx, rawItemsMap = BuildTopicsContext(db, run, chrome, config, feedURLs)
-		if topicCtx != nil && len(topicCtx.Topics) > 0 {
-			chrome.HasTopics = true
-			topicCtx.HasTopics = true
-			FetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
-		} else {
-			topicCtx = nil
-		}
-	}
+	topicCtx, hasTopics := resolveSiteTopics(db, config, chrome, feedURLs)
+	chrome.HasTopics = hasTopics
 
 	// Fetch metadata and favicons
 	metadata, feedFavicon := fetchMetadataAndFavicons(db, feeds, items)
@@ -295,11 +285,8 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 		return err
 	}
 
-	if topicCtx != nil {
-		topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
-		if err := renderTopicsFile(r, topicOutputFile, topicCtx); err != nil {
-			return err
-		}
+	if err := writeOrRemoveTopicsFile(r, config, topicCtx); err != nil {
+		return err
 	}
 
 	// Copy assets
@@ -329,6 +316,33 @@ func generateSite(config *WorkflowConfig, feeds []database.Feed, items map[strin
 	}
 
 	printSuccessMessage(feedsGenerated, feedTemplateExists, config.OutputDir, outputFile, config.Quiet)
+	return nil
+}
+
+func resolveSiteTopics(
+	db *database.DB, config *WorkflowConfig, chrome SiteChrome, feedURLs []string,
+) (*TopicsTemplateContext, bool) {
+	run, _ := db.GetLatestTopicRun(context.Background())
+	if run == nil {
+		return nil, false
+	}
+	topicCtx, rawItemsMap := BuildTopicsContext(db, run, chrome, config, feedURLs)
+	if topicCtx == nil || len(topicCtx.Topics) == 0 {
+		return nil, false
+	}
+	topicCtx.HasTopics = true
+	FetchTopicMetadataAndFavicons(db, topicCtx, rawItemsMap)
+	return topicCtx, true
+}
+
+func writeOrRemoveTopicsFile(r *Renderer, config *WorkflowConfig, topicCtx *TopicsTemplateContext) error {
+	topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
+	if topicCtx != nil {
+		return renderTopicsFile(r, topicOutputFile, topicCtx)
+	}
+	if err := os.Remove(topicOutputFile); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove stale topics file: %w", err)
+	}
 	return nil
 }
 
@@ -424,11 +438,13 @@ func BuildTopicsContext(
 			rejectedCount)
 	}
 
-	// Filter out topics that were rejected
+	// Filter out topics that were rejected and copy topics with updated item counts
 	var cleanTopicList []*database.Topic
 	for _, topic := range topicList {
-		if _, ok := topicItemSlices[topic.ID]; ok {
-			cleanTopicList = append(cleanTopicList, topic)
+		if slice, ok := topicItemSlices[topic.ID]; ok {
+			topicCopy := *topic
+			topicCopy.Score = float64(len(slice))
+			cleanTopicList = append(cleanTopicList, &topicCopy)
 		}
 	}
 
@@ -547,17 +563,24 @@ func FetchTopicMetadataAndFavicons(
 func RenderGlobalTopics(config *WorkflowConfig, chrome SiteChrome) (bool, error) {
 	db, err := database.New(config.Database)
 	if err != nil {
+		removeStaleTopicsFile(config.OutputDir)
 		return false, fmt.Errorf("failed to connect to database for global topics: %w", err)
 	}
 	defer db.Close()
 
 	run, err := db.GetLatestTopicRun(context.Background())
-	if err != nil || run == nil {
+	if err != nil {
+		removeStaleTopicsFile(config.OutputDir)
+		return false, fmt.Errorf("failed to query latest topic run: %w", err)
+	}
+	if run == nil {
+		removeStaleTopicsFile(config.OutputDir)
 		return false, nil
 	}
 
 	topicCtx, rawItemsMap := BuildTopicsContext(db, run, chrome, config, nil)
 	if topicCtx == nil || len(topicCtx.Topics) == 0 {
+		removeStaleTopicsFile(config.OutputDir)
 		return false, nil
 	}
 
@@ -569,14 +592,21 @@ func RenderGlobalTopics(config *WorkflowConfig, chrome SiteChrome) (bool, error)
 	r := NewRenderer(config.TemplatesDir, config.AssetsDir)
 	topicOutputFile := filepath.Join(config.OutputDir, "topics.html")
 	if err := renderTopicsFile(r, topicOutputFile, topicCtx); err != nil {
+		removeStaleTopicsFile(config.OutputDir)
 		return false, err
 	}
 
 	if err := r.CopyAssets(config.OutputDir); err != nil {
+		removeStaleTopicsFile(config.OutputDir)
 		return false, fmt.Errorf("failed to copy assets for global topics: %w", err)
 	}
 
 	return true, nil
+}
+
+func removeStaleTopicsFile(dir string) {
+	topicOutputFile := filepath.Join(dir, "topics.html")
+	_ = os.Remove(topicOutputFile)
 }
 
 func renderIndexFile(r *Renderer, outputFile string, templateCtx *TemplateContext, totalPages, feedsPerPage int) error {
