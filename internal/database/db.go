@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 	"github.com/sirupsen/logrus"
 	modernsqlite "modernc.org/sqlite" // pure-Go sqlite driver, no CGO
 	sqlite3 "modernc.org/sqlite/lib"
@@ -30,6 +31,12 @@ const (
 type DB struct {
 	conn              *sql.DB
 	migrationProgress MigrationProgress
+
+	// Lineage settings for the migration 14 backfill, installed by
+	// SetLineageOptions before IsInitialized so the replay of history uses
+	// the same rule the next live run will. Zero values mean the defaults.
+	lineageOptions  lineage.Options
+	lineageLookback int
 }
 
 // New creates a new database connection and initializes it.

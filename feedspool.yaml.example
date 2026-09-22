@@ -67,6 +67,9 @@ topics:
   min_items: 7                       # Minimum items in a cluster required to keep and label it
   max_items: 100                     # Maximum items allowed in a cluster before dropping (0 = no limit)
   concurrency: 5                     # Concurrent LLM requests when generating labels
+  lineage_lookback: 6                # Previous runs searched for the same topic
+  lineage_threshold: 0.5             # Item-set Jaccard at/above which a cluster joins an existing thread
+  inherit_threshold: 0.9             # Jaccard at/above which it also keeps the thread's label (no LLM call)
   # Bearer token for remote provider.
   api_key: ""
 

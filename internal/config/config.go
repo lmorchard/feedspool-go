@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 )
 
 // getIntWithDefault returns the viper int value or default if not set.
@@ -61,6 +63,13 @@ const (
 	DefaultTopicsMaxItems    = 100
 	DefaultTopicsThreshold   = 0.70
 	DefaultTopicsLast        = "1d"
+
+	// Topic lineage: how a run finds the same topic in earlier runs and when it
+	// keeps the earlier label. The numbers live in internal/lineage so the
+	// migration backfill and live runs share one source; see there for why.
+	DefaultTopicsLineageLookback  = lineage.DefaultLookback
+	DefaultTopicsLineageThreshold = lineage.DefaultAttachThreshold
+	DefaultTopicsInheritThreshold = lineage.DefaultInheritThreshold
 )
 
 type Config struct {
@@ -177,6 +186,9 @@ type TopicsConfig struct {
 	Last              string  `mapstructure:"last"`
 	MaxFeedRatio      float32 `mapstructure:"max_feed_ratio"`
 	MinDiversityCount int     `mapstructure:"min_diversity_count"`
+	LineageLookback   int     `mapstructure:"lineage_lookback"`
+	LineageThreshold  float64 `mapstructure:"lineage_threshold"`
+	InheritThreshold  float64 `mapstructure:"inherit_threshold"`
 }
 
 func LoadConfig() *Config {
@@ -257,6 +269,9 @@ func LoadConfig() *Config {
 			Last:              getStringWithDefault("topics.last", DefaultTopicsLast),
 			MaxFeedRatio:      float32(getFloat64WithDefault("topics.max_feed_ratio", float64(DefaultTopicMaxFeedRatio))),
 			MinDiversityCount: getIntWithDefault("topics.min_diversity_count", DefaultTopicMinDiversityCount),
+			LineageLookback:   getIntWithDefault("topics.lineage_lookback", DefaultTopicsLineageLookback),
+			LineageThreshold:  getFloat64WithDefault("topics.lineage_threshold", DefaultTopicsLineageThreshold),
+			InheritThreshold:  getFloat64WithDefault("topics.inherit_threshold", DefaultTopicsInheritThreshold),
 		},
 		Build: BuildConfig{
 			SkipEmbed:  viper.GetBool("build.skip_embed"),
@@ -325,6 +340,9 @@ func GetDefault() *Config {
 			Last:              DefaultTopicsLast,
 			MaxFeedRatio:      DefaultTopicMaxFeedRatio,
 			MinDiversityCount: DefaultTopicMinDiversityCount,
+			LineageLookback:   DefaultTopicsLineageLookback,
+			LineageThreshold:  DefaultTopicsLineageThreshold,
+			InheritThreshold:  DefaultTopicsInheritThreshold,
 		},
 	}
 }

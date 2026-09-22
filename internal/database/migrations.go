@@ -21,7 +21,8 @@ const (
 	migrationVersion11  = 11 // Add derived item text and the FTS5 search index
 	migrationVersion12  = 12 // Add per-item, per-model vector embeddings
 	migrationVersion13  = 13 // Add topic clustering tables
-	maxMigrationVersion = migrationVersion13
+	migrationVersion14  = 14 // Add topic threads and per-topic lineage
+	maxMigrationVersion = migrationVersion14
 )
 
 // migrationDescriptions names what each migration does, for the announcement a
@@ -44,6 +45,7 @@ func migrationDescriptions() map[int]string {
 		migrationVersion11: "derive item text and build the full-text search index",
 		migrationVersion12: "add the item_embeddings table",
 		migrationVersion13: "add topic clustering tables",
+		migrationVersion14: "add topic thread lineage tables and assign threads to existing topics",
 	}
 }
 
@@ -180,6 +182,7 @@ func getMigrations() map[int]string {
 			item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
 			PRIMARY KEY (topic_id, item_id)
 		);`,
+		migrationVersion14: migration14DDL,
 	}
 }
 
@@ -305,6 +308,8 @@ func (db *DB) applySpecificMigration(version int) error {
 		return db.applyMigration10()
 	case migrationVersion11:
 		return db.applyMigration11()
+	case migrationVersion14:
+		return db.applyMigration14()
 	default:
 		// For any new migrations, just apply them directly
 		migrations := getMigrations()
@@ -635,17 +640,51 @@ func (db *DB) applyMigration11() error {
 
 // applyMigration11Schema creates the search schema in its own transaction.
 func (db *DB) applyMigration11Schema() error {
+	return db.applyMigrationSchemaStage(migrationVersion11, getMigrations()[migrationVersion11])
+}
+
+// applyMigrationSchemaStage runs a migration's DDL in its own transaction
+// without recording the version -- for migrations that follow the DDL with a
+// backfill and record the version only once that is complete.
+func (db *DB) applyMigrationSchemaStage(version int, ddl string) error {
 	tx, err := db.conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to begin migration %d: %w", migrationVersion11, err)
+		return fmt.Errorf("failed to begin migration %d: %w", version, err)
 	}
-	defer rollbackUnlessDone(tx, "migration 11's schema stage")
+	defer rollbackUnlessDone(tx, fmt.Sprintf("migration %d's schema stage", version))
 
-	if _, err := tx.Exec(getMigrations()[migrationVersion11]); err != nil {
-		return fmt.Errorf("failed to create the item text schema: %w", err)
+	if _, err := tx.Exec(ddl); err != nil {
+		return fmt.Errorf("failed to apply migration %d schema: %w", version, err)
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit migration %d schema: %w", migrationVersion11, err)
+		return fmt.Errorf("failed to commit migration %d schema: %w", version, err)
 	}
 	return nil
 }
+
+// migration14DDL is pure CREATE IF NOT EXISTS, so it is idempotent and its
+// sqlite_master text matches schema.sql (TestMigration14MatchesSchemaFile).
+//
+// Lineage is a 1:1 side table rather than new columns on topics because ALTER
+// TABLE ADD COLUMN is neither idempotent nor text-stable against an inline
+// CREATE, and a fresh database runs schema.sql and then every migration.
+//
+// topic_threads has no foreign key to runs on purpose: a thread outlives the
+// runs that created it, and purge removes a thread only once no lineage row
+// points at it. topic_lineage cascades from topics, so a purged run takes its
+// lineage rows with it the same way it takes topic_items.
+const migration14DDL = `CREATE TABLE IF NOT EXISTS topic_threads (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			first_seen_at DATETIME NOT NULL,
+			last_seen_at  DATETIME NOT NULL,
+			label         TEXT     NOT NULL,
+			labeled_at    DATETIME NOT NULL
+		);
+		CREATE TABLE IF NOT EXISTS topic_lineage (
+			topic_id     INTEGER PRIMARY KEY REFERENCES topics(id) ON DELETE CASCADE,
+			thread_id    INTEGER NOT NULL REFERENCES topic_threads(id),
+			set_hash     TEXT    NOT NULL,
+			label_source TEXT    NOT NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_topic_lineage_thread ON topic_lineage(thread_id);
+		CREATE INDEX IF NOT EXISTS idx_topic_lineage_hash   ON topic_lineage(set_hash);`

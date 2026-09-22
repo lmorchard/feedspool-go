@@ -147,6 +147,9 @@ linters:
           - forbidigo
         path: cmd/(embed|related|topics|fetch|show|purge|export|reindex|render|serve|subscribe|unsubscribe|version)\.go
       - linters:
+          - forbidigo
+        path: scripts/
+      - linters:
           - nestif
         path: cmd/(fetch|purge|render|root)\.go
       - linters:

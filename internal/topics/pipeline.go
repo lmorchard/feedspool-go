@@ -11,25 +11,37 @@ import (
 
 	"github.com/lmorchard/feedspool-go/internal/clustering"
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 )
 
 // Pipeline orchestrates the topic generation process.
 type Pipeline struct {
 	db      *database.DB
 	labeler Labeler
+
+	// Lineage controls how clusters are matched to threads from earlier runs
+	// and when a matched cluster keeps the thread's label instead of asking
+	// the LLM again. Lookback is how many previous runs are candidates.
+	// NewPipeline sets the measured defaults; cmd/topics overrides from config.
+	Lineage  lineage.Options
+	Lookback int
 }
 
 func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
 	return &Pipeline{
 		db:      db,
 		labeler: labeler,
+		Lineage: lineage.Options{
+			AttachThreshold:  lineage.DefaultAttachThreshold,
+			InheritThreshold: lineage.DefaultInheritThreshold,
+			Inherit:          true,
+		},
+		Lookback: lineage.DefaultLookback,
 	}
 }
 
 // Generate finds clusters of embedded items and labels them.
 // Output topics are sorted by descending score (size).
-//
-//nolint:funlen // Generation pipeline is procedural by nature
 func (p *Pipeline) Generate(
 	ctx context.Context, embedModel string, since, until time.Time,
 	threshold float32, minItems, maxItems, concurrency int,
@@ -79,60 +91,19 @@ func (p *Pipeline) Generate(
 		LLMModelID:   p.labeler.ModelID(),
 	}
 
-	var topics []*database.Topic
-	topicItemsMap := make(map[*database.Topic][]int64)
-
-	type clusterResult struct {
-		topic   *database.Topic
-		cluster []int64
-		err     error
+	// Match clusters to threads from earlier runs before labeling, so a
+	// cluster whose membership has not changed keeps its label and skips
+	// the LLM. The run is not in the database yet, so "runs created before
+	// run.CreatedAt" is exactly the previous runs.
+	candidates, err := p.db.GetLineageCandidates(ctx, run.CreatedAt, p.Lookback)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to load lineage candidates: %w", err)
 	}
+	assignments := lineage.Assign(validClusters, candidates, p.Lineage)
 
-	if concurrency <= 0 {
-		concurrency = 5
-	}
-	resultsCh := make(chan clusterResult, len(validClusters))
-	sem := make(chan struct{}, concurrency)
-	var wg sync.WaitGroup
-
-	logrus.Infof("Generating LLM labels for %d clusters (concurrency: %d)...", len(validClusters), concurrency)
-
-	for _, cluster := range validClusters {
-		wg.Add(1)
-		go func(c []int64) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			label, err := p.getLabelForCluster(ctx, c, itemsMap)
-			resultsCh <- clusterResult{
-				topic: &database.Topic{
-					Label: label,
-					Score: float64(len(c)),
-				},
-				cluster: c,
-				err:     err,
-			}
-		}(cluster)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultsCh)
-	}()
-
-	done := 0
-	for res := range resultsCh {
-		if res.err != nil {
-			return nil, nil, nil, res.err
-		}
-		topics = append(topics, res.topic)
-		topicItemsMap[res.topic] = res.cluster
-
-		done++
-		if done%10 == 0 || done == len(validClusters) {
-			logrus.Infof("Labeled %d of %d clusters", done, len(validClusters))
-		}
+	topics, topicItemsMap, err := p.labelClusters(ctx, validClusters, assignments, itemsMap, concurrency)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	logrus.Infof("Saving %d topics to database...", len(topics))
@@ -148,6 +119,86 @@ func (p *Pipeline) Generate(
 
 	logrus.Info("Done generating topics.")
 	return run, topics, topicItemsMap, nil
+}
+
+// labelClusters turns clusters into Topics, concurrently. A cluster whose
+// assignment carries an inherited label takes it without an LLM call; the
+// rest are labeled fresh. The first labeling error aborts the whole run.
+func (p *Pipeline) labelClusters(
+	ctx context.Context, clusters [][]int64, assignments []lineage.Assignment,
+	itemsMap map[int64]*database.ItemText, concurrency int,
+) ([]*database.Topic, map[*database.Topic][]int64, error) {
+	type clusterResult struct {
+		topic   *database.Topic
+		cluster []int64
+		err     error
+	}
+
+	if concurrency <= 0 {
+		concurrency = 5
+	}
+	resultsCh := make(chan clusterResult, len(clusters))
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+
+	logrus.Infof("Labeling %d clusters (concurrency: %d)...", len(clusters), concurrency)
+
+	for i, cluster := range clusters {
+		wg.Add(1)
+		go func(c []int64, a lineage.Assignment) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			topic := &database.Topic{
+				Score:       float64(len(c)),
+				ThreadID:    a.ThreadID,
+				SetHash:     a.Hash,
+				ThreadIsNew: a.ThreadID == 0,
+			}
+			var err error
+			if a.Label != "" {
+				topic.Label, topic.LabelSource = a.Label, lineage.SourceInherited
+			} else {
+				topic.Label, err = p.getLabelForCluster(ctx, c, itemsMap)
+				topic.LabelSource = lineage.SourceGenerated
+			}
+			resultsCh <- clusterResult{topic: topic, cluster: c, err: err}
+		}(cluster, assignments[i])
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
+
+	var topics []*database.Topic
+	topicItemsMap := make(map[*database.Topic][]int64)
+	var inherited, generated, newThreads int
+	for res := range resultsCh {
+		if res.err != nil {
+			return nil, nil, res.err
+		}
+		topics = append(topics, res.topic)
+		topicItemsMap[res.topic] = res.cluster
+
+		switch {
+		case res.topic.ThreadIsNew:
+			newThreads++
+			generated++
+		case res.topic.LabelSource == lineage.SourceInherited:
+			inherited++
+		default:
+			generated++
+		}
+		if done := len(topics); done%10 == 0 || done == len(clusters) {
+			logrus.Infof("Labeled %d of %d clusters", done, len(clusters))
+		}
+	}
+
+	logrus.Infof("Labeled %d topics: %d inherited, %d generated, %d new threads",
+		len(topics), inherited, generated, newThreads)
+	return topics, topicItemsMap, nil
 }
 
 func (p *Pipeline) getLabelForCluster(

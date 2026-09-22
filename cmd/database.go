@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 )
 
 // migrationReporter shows migration progress while it happens.
@@ -45,8 +46,16 @@ func openDatabase(path string) (*database.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
-	// Installed before IsInitialized, which is the call that migrates.
+	// Both installed before IsInitialized, which is the call that migrates:
+	// the reporter so a long migration is visible, and the lineage rule so
+	// migration 14 threads history the way the next live run will.
 	db.SetMigrationProgress(migrationReporter{})
+	topicsCfg := GetConfig().Topics
+	db.SetLineageOptions(lineage.Options{
+		AttachThreshold:  topicsCfg.LineageThreshold,
+		InheritThreshold: topicsCfg.InheritThreshold,
+		Inherit:          true,
+	}, topicsCfg.LineageLookback)
 	if err := db.IsInitialized(); err != nil {
 		db.Close()
 		return nil, err

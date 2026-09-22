@@ -12,6 +12,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 	"github.com/lmorchard/feedspool-go/internal/topics"
 )
 
@@ -25,6 +26,7 @@ var (
 	topicsMin         int
 	topicsMax         int
 	topicsConcurrency int
+	topicsNoInherit   bool
 )
 
 var topicsCmd = &cobra.Command{
@@ -65,6 +67,12 @@ func runTopics(cmd *cobra.Command, _ []string) error {
 	defer db.Close()
 
 	pipeline := topics.NewPipeline(db, labeler)
+	pipeline.Lookback = cfg.Topics.LineageLookback
+	pipeline.Lineage = lineage.Options{
+		AttachThreshold:  cfg.Topics.LineageThreshold,
+		InheritThreshold: cfg.Topics.InheritThreshold,
+		Inherit:          !topicsNoInherit,
+	}
 
 	run, results, itemsMap, err := pipeline.Generate(
 		context.Background(), params.embedModel, params.start, params.end,
@@ -171,10 +179,18 @@ func resolveTopicsParams(cmd *cobra.Command, cfg *config.Config) (*topicsParams,
 func printTopicsJSON(results []*database.Topic, itemsMap map[*database.Topic][]int64) {
 	output := make([]map[string]any, len(results))
 	for i, t := range results {
+		transition := lineage.TransitionSurvived
+		if t.ThreadIsNew {
+			transition = lineage.TransitionNew
+		}
 		output[i] = map[string]any{
-			"label": t.Label,
-			"score": t.Score,
-			"count": len(itemsMap[t]),
+			"label":        t.Label,
+			"score":        t.Score,
+			"count":        len(itemsMap[t]),
+			"thread_id":    t.ThreadID,
+			"set_hash":     t.SetHash,
+			"label_source": t.LabelSource,
+			"transition":   transition,
 		}
 	}
 	jsonOut, _ := json.MarshalIndent(output, "", "  ")
@@ -210,6 +226,8 @@ func init() {
 		"Maximum items allowed in a cluster before dropping it (0 = no maximum limit)")
 	topicsCmd.Flags().IntVar(&topicsConcurrency, "concurrency", 0,
 		"Concurrent LLM requests to make when generating labels (defaults to config)")
+	topicsCmd.Flags().BoolVar(&topicsNoInherit, "no-inherit", false,
+		"Label every cluster fresh instead of reusing the label of an unchanged topic")
 
 	topicsCmd.MarkFlagsMutuallyExclusive("last", "since")
 	topicsCmd.MarkFlagsMutuallyExclusive("last", "until")

@@ -2,8 +2,11 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/lmorchard/feedspool-go/internal/lineage"
 )
 
 type TopicRun struct {
@@ -20,6 +23,14 @@ type Topic struct {
 	RunID int64
 	Label string
 	Score float64
+
+	// Lineage, written by InsertTopicRun. ThreadID 0 on input means "open a
+	// new thread"; SetHash and LabelSource are filled in when empty.
+	ThreadID    int64
+	SetHash     string // lineage.SetHash of the topic's item IDs
+	LabelSource string // lineage.SourceGenerated or lineage.SourceInherited
+	// ThreadIsNew is transient: true when this insert opened the thread.
+	ThreadIsNew bool
 }
 
 type TopicItem struct {
@@ -81,6 +92,10 @@ func (db *DB) InsertTopicRun(
 				return fmt.Errorf("failed to insert topic_item: %w", err)
 			}
 		}
+
+		if err := writeTopicLineage(ctx, tx, run.CreatedAt, topic, items); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -119,10 +134,12 @@ func (db *DB) GetLatestTopicRun(ctx context.Context) (*TopicRun, error) {
 // GetTopicsForRun retrieves all topics associated with a specific run, sorted by score descending.
 func (db *DB) GetTopicsForRun(ctx context.Context, runID int64) ([]*Topic, error) {
 	rows, err := db.conn.QueryContext(ctx, `
-		SELECT id, run_id, label, score
-		FROM topics
-		WHERE run_id = ?
-		ORDER BY score DESC
+		SELECT t.id, t.run_id, t.label, t.score,
+		       COALESCE(l.thread_id, 0), COALESCE(l.set_hash, ''), COALESCE(l.label_source, '')
+		FROM topics t
+		LEFT JOIN topic_lineage l ON l.topic_id = t.id
+		WHERE t.run_id = ?
+		ORDER BY t.score DESC
 	`, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query topics for run: %w", err)
@@ -132,7 +149,7 @@ func (db *DB) GetTopicsForRun(ctx context.Context, runID int64) ([]*Topic, error
 	var topics []*Topic
 	for rows.Next() {
 		var t Topic
-		if err := rows.Scan(&t.ID, &t.RunID, &t.Label, &t.Score); err != nil {
+		if err := rows.Scan(&t.ID, &t.RunID, &t.Label, &t.Score, &t.ThreadID, &t.SetHash, &t.LabelSource); err != nil {
 			return nil, fmt.Errorf("failed to scan topic: %w", err)
 		}
 		topics = append(topics, &t)
@@ -194,7 +211,13 @@ func (db *DB) DeleteTopicRuns(ctx context.Context, cutoffTime time.Time, keepLat
 		`
 	}
 
-	res, err := db.conn.ExecContext(ctx, query, cutoffStr)
+	tx, err := db.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer rollbackUnlessDone(tx, "DeleteTopicRuns")
+
+	res, err := tx.ExecContext(ctx, query, cutoffStr)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete topic runs: %w", err)
 	}
@@ -204,5 +227,126 @@ func (db *DB) DeleteTopicRuns(ctx context.Context, cutoffTime time.Time, keepLat
 		return 0, fmt.Errorf("failed to get deleted topic runs count: %w", err)
 	}
 
+	// A thread whose last topic just cascaded away can never be matched
+	// again (matching reads topics rows), so it is dead weight; remove it.
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM topic_threads
+		WHERE id NOT IN (SELECT thread_id FROM topic_lineage)
+	`); err != nil {
+		return 0, fmt.Errorf("failed to delete orphaned topic threads: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 	return rows, nil
+}
+
+// writeTopicLineage creates or updates the topic's thread and inserts its
+// lineage row, inside the caller's transaction. InsertTopicRun and the
+// migration 14 backfill both go through here, so live runs and the replay of
+// historical runs cannot disagree on what a thread is.
+//
+// A generated label on a surviving thread replaces the thread's label and
+// moves labeled_at; an inherited label touches only last_seen_at. An unknown
+// ThreadID fails on the topic_lineage foreign key rather than silently
+// attaching to nothing.
+func writeTopicLineage(ctx context.Context, tx *sql.Tx, runAt time.Time, topic *Topic, items []int64) error {
+	if topic.SetHash == "" {
+		topic.SetHash = lineage.SetHash(items)
+	}
+	if topic.LabelSource == "" {
+		topic.LabelSource = lineage.SourceGenerated
+	}
+	at := formatDatabaseTime(runAt)
+
+	switch {
+	case topic.ThreadID == 0:
+		res, err := tx.ExecContext(ctx, `
+			INSERT INTO topic_threads (first_seen_at, last_seen_at, label, labeled_at)
+			VALUES (?, ?, ?, ?)
+		`, at, at, topic.Label, at)
+		if err != nil {
+			return fmt.Errorf("failed to open topic thread: %w", err)
+		}
+		threadID, err := res.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("failed to get thread_id: %w", err)
+		}
+		topic.ThreadID = threadID
+		topic.ThreadIsNew = true
+	case topic.LabelSource == lineage.SourceGenerated:
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE topic_threads SET last_seen_at = ?, label = ?, labeled_at = ? WHERE id = ?
+		`, at, topic.Label, at, topic.ThreadID); err != nil {
+			return fmt.Errorf("failed to relabel topic thread %d: %w", topic.ThreadID, err)
+		}
+	default:
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE topic_threads SET last_seen_at = ? WHERE id = ?
+		`, at, topic.ThreadID); err != nil {
+			return fmt.Errorf("failed to touch topic thread %d: %w", topic.ThreadID, err)
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO topic_lineage (topic_id, thread_id, set_hash, label_source)
+		VALUES (?, ?, ?, ?)
+	`, topic.ID, topic.ThreadID, topic.SetHash, topic.LabelSource); err != nil {
+		return fmt.Errorf("failed to insert topic lineage for topic %d: %w", topic.ID, err)
+	}
+	return nil
+}
+
+// GetLineageCandidates returns every threaded topic in the `lookback` most
+// recent runs created strictly before `before`, with ascending item IDs. A
+// live run passes its own CreatedAt; the migration backfill passes each
+// historical run's CreatedAt so it sees only that run's past.
+func (db *DB) GetLineageCandidates(ctx context.Context, before time.Time, lookback int) ([]lineage.Candidate, error) {
+	return lineageCandidates(ctx, db.conn, before, lookback)
+}
+
+// queryer is satisfied by *sql.DB and *sql.Tx. The backfill must read
+// candidates through its open transaction: with SetMaxOpenConns(1), a db.conn
+// query while a transaction is open waits out busy_timeout and then fails.
+type queryer interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func lineageCandidates(ctx context.Context, q queryer, before time.Time, lookback int) ([]lineage.Candidate, error) {
+	rows, err := q.QueryContext(ctx, `
+		WITH recent AS (
+			SELECT id FROM topic_runs WHERE created_at < ? ORDER BY created_at DESC LIMIT ?
+		)
+		SELECT t.id, l.thread_id, th.label, l.set_hash, ti.item_id
+		FROM topics t
+		JOIN recent r         ON r.id = t.run_id
+		JOIN topic_lineage l  ON l.topic_id = t.id
+		JOIN topic_threads th ON th.id = l.thread_id
+		JOIN topic_items ti   ON ti.topic_id = t.id
+		ORDER BY t.id, ti.item_id
+	`, formatDatabaseTime(before), lookback)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query lineage candidates: %w", err)
+	}
+	defer rows.Close()
+
+	var out []lineage.Candidate
+	var current *lineage.Candidate
+	for rows.Next() {
+		var topicID, threadID, itemID int64
+		var label, hash string
+		if err := rows.Scan(&topicID, &threadID, &label, &hash, &itemID); err != nil {
+			return nil, fmt.Errorf("failed to scan lineage candidate: %w", err)
+		}
+		if current == nil || current.TopicID != topicID {
+			out = append(out, lineage.Candidate{TopicID: topicID, ThreadID: threadID, ThreadLabel: label, Hash: hash})
+			current = &out[len(out)-1]
+		}
+		current.Items = append(current.Items, itemID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating lineage candidates: %w", err)
+	}
+	return out, nil
 }

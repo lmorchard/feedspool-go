@@ -863,6 +863,8 @@ Cluster embedded items in a time window into trending topics, using LLM-generate
 
 The generated topics, along with their labels and item associations, are persisted as point-in-time artifacts in the database (`topic_runs`, `topics`, `topic_items`), and printed to standard output or as JSON.
 
+**Threads and label inheritance.** Each topic is matched against the topics of the previous `lineage_lookback` runs by item-set overlap: an identical set of items (same `set_hash`) is the same thread; otherwise the best Jaccard overlap at or above `lineage_threshold` attaches the cluster to that thread; otherwise a new thread opens. A cluster whose overlap is at or above `inherit_threshold` keeps the thread's existing label and skips the LLM, which on a 7-day window run hourly is about 96% of topics. Threads live in `topic_threads` and each topic's thread, hash and label provenance in `topic_lineage`. Each run logs `Labeled N topics: X inherited, Y generated, Z new threads`.
+
 **Flags:**
 - `--last <duration>`: Cluster items from this far back (e.g., `24h`, `2d`, `1w`). Defaults to `1d`. Mutually exclusive with `--since`.
 - `--since <rfc3339>`: Cluster items at or after this date.
@@ -872,7 +874,8 @@ The generated topics, along with their labels and item associations, are persist
 - `--threshold <float>`: Cosine similarity cutoff for clustering (defaults to `0.70`). A tighter threshold (like `0.80`) will break up large generic blobs into highly specific story clusters.
 - `--min-items <int>`: Minimum items required to keep and label a cluster (defaults to `5`). Smaller clusters are discarded.
 - `--concurrency <int>`: How many simultaneous labeling requests to make to the LLM provider (defaults to `topics.concurrency` in config).
-- `--json`: Output the generated topics in JSON format.
+- `--no-inherit`: Label every cluster fresh instead of reusing the label of an unchanged topic. Threads are still assigned. Use after switching `topics.model` to relabel everything once.
+- `--json`: Output the generated topics in JSON format. Each entry carries `label`, `score`, `count`, `thread_id`, `set_hash`, `label_source` (`generated` or `inherited`) and `transition` (`new` or `survived`).
 
 **Configuration:**
 Requires a `[topics]` block in `feedspool.yaml` with the LLM API's base URL and model name (an API key is optional). `topics` transparently supports both Ollama and OpenAI-compatible API schemas (like LiteLLM or vLLM). It detects OpenAI-compatible schemas automatically if the base URL contains `/v1` or `openai`.
@@ -888,9 +891,12 @@ topics:
   model: "gemini-2.5-flash"
   api_key: "sk-..." 
   concurrency: 5
+  lineage_lookback: 6      # previous runs searched for the same topic
+  lineage_threshold: 0.5   # Jaccard at/above which a cluster joins an existing thread
+  inherit_threshold: 0.9   # Jaccard at/above which it keeps the thread's label
 ```
 
-**Side effects:** Writes `topic_runs`, `topics`, and `topic_items`; makes network requests to the `topics` LLM provider.
+**Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
 
 ## HTTP API
 
@@ -1497,9 +1503,38 @@ Embedding needs network access and a configured provider, and migrations run on
 any command that opens the database — a backfilling migration would turn a
 `status` into a network operation. Run [`embed`](#embed) explicitly.
 
+### `topic_threads` and `topic_lineage`
+
+A thread is a topic's identity across runs; `topic_lineage` is one row per
+topic saying which thread it belongs to, the hash of its item set, and where
+its label came from. Written by [`topics`](#topics); read by the next run to
+match clusters and reuse labels.
+
+```sql
+CREATE TABLE topic_threads (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_seen_at DATETIME NOT NULL,   -- run that opened the thread
+    last_seen_at  DATETIME NOT NULL,   -- latest run with a topic in it
+    label         TEXT     NOT NULL,   -- current label; what survivors inherit
+    labeled_at    DATETIME NOT NULL    -- when the label was last generated
+);
+CREATE TABLE topic_lineage (
+    topic_id     INTEGER PRIMARY KEY REFERENCES topics(id) ON DELETE CASCADE,
+    thread_id    INTEGER NOT NULL REFERENCES topic_threads(id),
+    set_hash     TEXT    NOT NULL,     -- sha256 prefix over sorted item IDs
+    label_source TEXT    NOT NULL      -- generated | inherited
+);
+```
+
+`topic_threads` has no foreign key to runs on purpose: a thread outlives the
+runs that created it. [`purge`](#purge) removes a thread once no lineage row
+points at it. Migration 14 creates both tables and **backfills** them over every
+retained run — in-process, from rows already stored, no network — so the first
+run after upgrading already inherits.
+
 ### `schema_migrations`
 
-Internal version tracking. Current version: 12.
+Internal version tracking. Current version: 14.
 
 ## SQL Recipes
 
