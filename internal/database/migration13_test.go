@@ -31,10 +31,6 @@ func TestMigration13TableExistsOnAFreshDatabase(t *testing.T) {
 }
 
 func TestMigration13IsRegistered(t *testing.T) {
-	if maxMigrationVersion != migrationVersion13 {
-		t.Errorf("maxMigrationVersion = %d, want %d", maxMigrationVersion, migrationVersion13)
-	}
-
 	sql, ok := getMigrations()[migrationVersion13]
 	if !ok {
 		t.Fatal("getMigrations() has no entry for migration 13")

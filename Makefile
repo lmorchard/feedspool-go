@@ -1,4 +1,4 @@
-.PHONY: build test clean run lint format fmt check setup check-toolchain print-golangci-lint-version print-go-version
+.PHONY: build test clean run lint format fmt check setup check-toolchain print-golangci-lint-version print-go-version topic-lineage
 
 # Assigned with ?= so the release workflows can pass the authoritative values
 # in the environment. They already do, deriving VERSION from the pushed tag;
@@ -140,3 +140,12 @@ setup: $(GOLANGCI_LINT)
 	@echo "Installing development tools..."
 	go install mvdan.cc/gofumpt@latest
 	@echo "Tools installed successfully!"
+# topic-lineage is the measurement spike for issue #78: how well do topics in
+# adjacent `feedspool topics` runs match by item overlap, how fast does that
+# decay across skipped runs, and how much do LLM labels flicker on topics that
+# did not change. Read-only. DB and LAST are overridable:
+#   make topic-lineage DB=data/feeds.db LAST=0
+DB ?= data/feeds.db
+LAST ?= 24h
+topic-lineage:
+	go run ./scripts/topic-lineage --database $(DB) --last $(LAST) $(ARGS)

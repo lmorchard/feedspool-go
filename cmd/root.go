@@ -102,6 +102,9 @@ func initConfig() {
 	viper.SetDefault("topics.max_items", config.DefaultTopicsMaxItems)
 	viper.SetDefault("topics.threshold", config.DefaultTopicsThreshold)
 	viper.SetDefault("topics.last", config.DefaultTopicsLast)
+	viper.SetDefault("topics.lineage_lookback", config.DefaultTopicsLineageLookback)
+	viper.SetDefault("topics.lineage_threshold", config.DefaultTopicsLineageThreshold)
+	viper.SetDefault("topics.inherit_threshold", config.DefaultTopicsInheritThreshold)
 
 	viper.AutomaticEnv()
 

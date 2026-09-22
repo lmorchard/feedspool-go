@@ -204,4 +204,12 @@ func TestDeleteTopicRuns(t *testing.T) {
 	err = db.conn.QueryRow(`SELECT COUNT(*) FROM topic_runs WHERE id = ?`, recentRun.ID).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
+
+	// The deleted run's thread is orphaned and goes with it; the kept run's thread stays.
+	err = db.conn.QueryRow(`SELECT COUNT(*) FROM topic_threads WHERE id = ?`, topicOld.ThreadID).Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 0, count)
+	err = db.conn.QueryRow(`SELECT COUNT(*) FROM topic_threads WHERE id = ?`, topicRecent.ThreadID).Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
 }

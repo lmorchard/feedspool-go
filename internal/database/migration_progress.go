@@ -44,7 +44,12 @@ func (db *DB) migrationProgressFunc() func(done, total int64) {
 // running with -v or reading a log file; the reporter is what a user sitting at
 // a terminal actually sees.
 func (db *DB) migrationBackfillProgress() func(done, total int64) {
-	log := ItemTextProgressLogger()
+	return db.migrationBackfillProgressWith(ItemTextProgressLogger())
+}
+
+// migrationBackfillProgressWith pairs a backfill-specific log line with the
+// installed migration reporter, for backfills that are not about item text.
+func (db *DB) migrationBackfillProgressWith(log func(done, total int64)) func(done, total int64) {
 	reporter := db.migrationProgressFunc()
 	return func(done, total int64) {
 		log(done, total)

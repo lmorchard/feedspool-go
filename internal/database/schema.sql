@@ -149,3 +149,19 @@ CREATE TABLE IF NOT EXISTS topic_items (
     item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
     PRIMARY KEY (topic_id, item_id)
 );
+
+CREATE TABLE IF NOT EXISTS topic_threads (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_seen_at DATETIME NOT NULL,
+    last_seen_at  DATETIME NOT NULL,
+    label         TEXT     NOT NULL,
+    labeled_at    DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS topic_lineage (
+    topic_id     INTEGER PRIMARY KEY REFERENCES topics(id) ON DELETE CASCADE,
+    thread_id    INTEGER NOT NULL REFERENCES topic_threads(id),
+    set_hash     TEXT    NOT NULL,
+    label_source TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_topic_lineage_thread ON topic_lineage(thread_id);
+CREATE INDEX IF NOT EXISTS idx_topic_lineage_hash   ON topic_lineage(set_hash);
