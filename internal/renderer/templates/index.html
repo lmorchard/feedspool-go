@@ -12,11 +12,11 @@
         <h1><a href="index.html" class="home-link">{{.SiteTitle}}</a></h1>
         {{if .HasTopics}}
         <nav class="site-nav">
-            <a href="topics.html" class="nav-link">Trending Topics</a>
+            <a href="topics.html" class="nav-link">Trending</a>
         </nav>
         {{end}}
         <details class="layout-options">
-            <summary class="options-trigger">⚙ Options</summary>
+            <summary class="options-trigger" aria-label="Options">⚙ <span class="options-label">Options</span></summary>
             <div class="options-menu">
                 <label class="option-item">
                     <input type="checkbox" id="show-thumbnails" checked>

@@ -83,3 +83,9 @@ main {
     flex-direction: column;
     gap: 1rem;
 }
+/* On narrow screens the options trigger is just the gear icon. */
+@media (max-width: 700px) {
+    .options-label {
+        display: none;
+    }
+}

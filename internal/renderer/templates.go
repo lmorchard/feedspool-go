@@ -64,6 +64,9 @@ func LoadTemplateFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	}
 
 	tmpl := template.New(name).Funcs(template.FuncMap{
+		"sparkline":       sparklineSVG,
+		"trendDelta":      trendDelta,
+		"trendDeltaClass": trendDeltaClass,
 		"html": func(s string) template.HTML {
 			// #nosec G203 - Intentional HTML output for template rendering
 			return template.HTML(s)

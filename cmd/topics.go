@@ -187,7 +187,8 @@ func generatedTrends(
 	for t, ids := range itemsMap {
 		byID[t.ID] = ids
 	}
-	tr, err := topics.LoadTrends(context.Background(), db, run, results, byID)
+	tr, err := topics.LoadTrends(context.Background(), db, run, results, byID,
+		topics.TrendOptions{GrowthMargin: GetConfig().Topics.GrowthMargin})
 	if err != nil {
 		logrus.WithError(err).Warn("Could not compute topic trends; omitting them from output")
 		return nil

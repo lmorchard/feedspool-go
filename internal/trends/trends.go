@@ -22,7 +22,20 @@ const (
 	StatusSteady  = "steady"
 )
 
+// StatusOrder is the order statuses are presented in: what just appeared,
+// what is moving, then what is not. A function so callers cannot mutate it.
+func StatusOrder() []string {
+	return []string{StatusNew, StatusGrowing, StatusFading, StatusSteady, StatusQuiet}
+}
+
 const day = 24 * time.Hour
+
+// DefaultGrowthMargin is how many more (or fewer) items the last 24h must have
+// than the 24h before for a topic to count as growing (or fading), unless
+// Input.GrowthMargin says otherwise. The windows slide hourly, so with a
+// margin of 1 a topic flipped between growing and fading as single items aged
+// across the 24h boundary.
+const DefaultGrowthMargin = 2
 
 // Item is the part of a feed item trends needs.
 type Item struct {
@@ -38,6 +51,7 @@ type Input struct {
 	PrevItemIDs            []int64 // the thread's previous topic's members
 	HasPrev                bool    // false when the thread has no earlier topic
 	ThreadFirstSeen        time.Time
+	GrowthMargin           int // <= 0 means DefaultGrowthMargin
 }
 
 // Trend is Compute's result, shaped for `topics --json`.
@@ -117,18 +131,23 @@ func diff(cur, prev []int64, hasPrev bool) (added, dropped int) {
 }
 
 // status applies, first match wins: a thread first seen within the last 24h
-// of the window is new; otherwise compare the last 24h with the 24h before.
-// Nothing in either is quiet -- kept apart from steady because on real data
-// it was 36 of 37 "steady" topics, dormant rather than consistently active.
+// of the window is new; growing and fading need the last 24h to differ from
+// the 24h before by at least the growth margin; nothing in either is quiet -- kept
+// apart from steady because on real data it was 36 of 37 "steady" topics,
+// dormant rather than consistently active; anything else is steady.
 func status(in *Input, t *Trend) string {
+	margin := in.GrowthMargin
+	if margin <= 0 {
+		margin = DefaultGrowthMargin
+	}
 	switch {
 	case !in.ThreadFirstSeen.Before(in.WindowEnd.Add(-day)):
 		return StatusNew
-	case t.Last24h > t.Prior24h:
+	case t.Last24h-t.Prior24h >= margin:
 		return StatusGrowing
-	case t.Last24h < t.Prior24h:
+	case t.Prior24h-t.Last24h >= margin:
 		return StatusFading
-	case t.Last24h == 0:
+	case t.Last24h == 0 && t.Prior24h == 0:
 		return StatusQuiet
 	default:
 		return StatusSteady

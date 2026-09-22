@@ -97,7 +97,7 @@ func TestRenderSiteIndexHasTopics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading index.html: %v", err)
 	}
-	if !strings.Contains(string(data), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+	if !strings.Contains(string(data), `<a href="topics.html" class="nav-link">Trending</a>`) {
 		t.Errorf("site index missing Trending Topics header link when HasTopics is true")
 	}
 }

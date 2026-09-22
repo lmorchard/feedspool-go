@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/lmorchard/feedspool-go/internal/lineage"
+	"github.com/lmorchard/feedspool-go/internal/trends"
 )
 
 // getIntWithDefault returns the viper int value or default if not set.
@@ -70,6 +71,10 @@ const (
 	DefaultTopicsLineageLookback  = lineage.DefaultLookback
 	DefaultTopicsLineageThreshold = lineage.DefaultAttachThreshold
 	DefaultTopicsInheritThreshold = lineage.DefaultInheritThreshold
+
+	// DefaultTopicsGrowthMargin is how many items a topic must gain (or lose)
+	// in the last 24h against the 24h before to show as growing (or fading).
+	DefaultTopicsGrowthMargin = trends.DefaultGrowthMargin
 )
 
 type Config struct {
@@ -189,6 +194,7 @@ type TopicsConfig struct {
 	LineageLookback   int     `mapstructure:"lineage_lookback"`
 	LineageThreshold  float64 `mapstructure:"lineage_threshold"`
 	InheritThreshold  float64 `mapstructure:"inherit_threshold"`
+	GrowthMargin      int     `mapstructure:"growth_margin"`
 }
 
 func LoadConfig() *Config {
@@ -272,6 +278,7 @@ func LoadConfig() *Config {
 			LineageLookback:   getIntWithDefault("topics.lineage_lookback", DefaultTopicsLineageLookback),
 			LineageThreshold:  getFloat64WithDefault("topics.lineage_threshold", DefaultTopicsLineageThreshold),
 			InheritThreshold:  getFloat64WithDefault("topics.inherit_threshold", DefaultTopicsInheritThreshold),
+			GrowthMargin:      getIntWithDefault("topics.growth_margin", DefaultTopicsGrowthMargin),
 		},
 		Build: BuildConfig{
 			SkipEmbed:  viper.GetBool("build.skip_embed"),
@@ -343,6 +350,7 @@ func GetDefault() *Config {
 			LineageLookback:   DefaultTopicsLineageLookback,
 			LineageThreshold:  DefaultTopicsLineageThreshold,
 			InheritThreshold:  DefaultTopicsInheritThreshold,
+			GrowthMargin:      DefaultTopicsGrowthMargin,
 		},
 	}
 }
