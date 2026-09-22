@@ -875,7 +875,7 @@ The generated topics, along with their labels and item associations, are persist
 - `--min-items <int>`: Minimum items required to keep and label a cluster (defaults to `5`). Smaller clusters are discarded.
 - `--concurrency <int>`: How many simultaneous labeling requests to make to the LLM provider (defaults to `topics.concurrency` in config).
 - `--no-inherit`: Label every cluster fresh instead of reusing the label of an unchanged topic. Threads are still assigned. Use after switching `topics.model` to relabel everything once.
-- `--json`: Output the generated topics in JSON format. Each entry carries `label`, `score`, `count`, `thread_id`, `set_hash`, `label_source` (`generated` or `inherited`) and `transition` (`new` or `survived`).
+- `--json`: Output the generated topics in JSON format. Each entry carries `label`, `score`, `count`, `thread_id`, `set_hash`, `label_source` (`generated` or `inherited`) and `transition` (`new` or `survived`), plus a `trend` object (see [`topics latest`](#topics-latest)).
 
 **Configuration:**
 Requires a `[topics]` block in `feedspool.yaml` with the LLM API's base URL and model name (an API key is optional). `topics` transparently supports both Ollama and OpenAI-compatible API schemas (like LiteLLM or vLLM). It detects OpenAI-compatible schemas automatically if the base URL contains `/v1` or `openai`.
@@ -897,6 +897,49 @@ topics:
 ```
 
 **Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
+
+#### topics latest
+
+Show the most recent topic run with trend signals for each topic.
+
+**Usage:** `feedspool topics latest [--json]`
+
+Read-only: no clustering, no LLM calls, no new topic run. Trends are computed
+from the stored run, its threads (see `topic_threads` under Data Model), and
+item dates.
+
+```
+STATUS   ITEMS  FEEDS  24H  PREV24H  +NEW  -GONE  DAILY    LABEL
+new      16     7      16   0        2     0      ▁▁▁▁▁▁█  Xbox layoffs, studio consolidation
+fading   40     5      4    11       0     0      ▁▁▁█▁▄▂  Trump bans media from White House
+growing  11     9      1    0        0     0      ▁▁▁█▁▁▁  Gemini AI Hacked Companies
+```
+
+Every signal is anchored on the run's window end, not on the current time,
+so an old run always reports the same thing:
+
+- **DAILY** (`daily`): item counts in consecutive 24-hour buckets ending at
+  the window end, oldest first — seven buckets for a 7-day window. Buckets are
+  closed on the right, so an item exactly 24h old counts in the earlier bucket.
+  Items dated outside the window count in the nearest edge bucket, so the
+  counts always sum to ITEMS. The table renders them as a sparkline scaled to
+  the topic's own peak.
+- **24H** / **PREV24H** (`last_24h`, `prior_24h`): the last two buckets.
+- **FEEDS** (`distinct_feeds`): distinct feeds among the topic's items.
+- **+NEW** / **-GONE** (`new_items`, `dropped_items`): members added and
+  dropped since the same thread's topic in the most recent earlier run that
+  had it — however long ago, regardless of `lineage_lookback`. A new thread
+  reports all its items as new.
+- **STATUS** (`status`), first match wins: `new` if the thread was first seen
+  within 24h of the window end; `growing` if 24H > PREV24H; `fading` if
+  24H < PREV24H; `quiet` if both are 0 (nothing in two days); otherwise
+  `steady`. With a window of 24h or less PREV24H is
+  always 0.
+- `thread_first_seen`: when the topic's thread first appeared (JSON only).
+
+`--json` emits `{"run": {...}, "topics": [...]}`, each topic carrying `label`,
+`score`, `count`, `thread_id`, `set_hash`, `label_source`, and `trend`. With no
+topic runs yet it prints `null`.
 
 ## HTTP API
 
