@@ -2,12 +2,15 @@
 
 A CLI tool for managing RSS/Atom and HTML-scraped feeds with SQLite storage and static website generation.
 
+![screenshot 1](./docs/screenshot-1.png)
+![screenshot 2](./docs/screenshot-2.png)
+
 ## Features
 
 I wanted a simple tool that takes OPML & text lists of feeds, fetches those feeds
 periodically into a SQLite database, and produces static HTML as a report.
 
-I don't want an inbox of unread items like a to-do list. I want to scroll 
+I don't want an inbox of unread items like a to-do list. I want to scroll
 through a personal newspaper of recent content from the web - I stop reading
 when I see stuff I saw before. This basically does that.
 
@@ -37,7 +40,7 @@ Further feature highlights:
 
 The name is vaguely inspired by Usenet "spool" storage. [From Wikipedia](https://en.wikipedia.org/wiki/Spooling#Other_applications):
 
-> Some store and forward messaging systems, such as uucp, used "spool" to refer to their inbound and outbound message queues, and this terminology is still found in the documentation for email and Usenet software. 
+> Some store and forward messaging systems, such as uucp, used "spool" to refer to their inbound and outbound message queues, and this terminology is still found in the documentation for email and Usenet software.
 
 ## Installation
 
@@ -46,7 +49,7 @@ The name is vaguely inspired by Usenet "spool" storage. [From Wikipedia](https:/
 Download the latest release from the [GitHub Releases page](../../releases) for your platform:
 
 - Linux (amd64, arm64)
-- macOS (amd64, arm64) 
+- macOS (amd64, arm64)
 - Windows (amd64)
 
 ### Build from source
@@ -124,6 +127,7 @@ No C compiler is needed. The SQLite driver is pure Go, and builds run with cgo
 disabled, so cross-compiling is just `GOOS=… GOARCH=… make build`.
 
 Install development tools:
+
 ```bash
 # Quick setup - installs gofumpt plus the pinned golangci-lint
 make setup
@@ -165,6 +169,7 @@ This project maintains code quality through:
 - **CI/CD**: All quality checks run in GitHub Actions to ensure consistency
 
 **Recommended workflow:**
+
 ```bash
 # Format code before committing
 make format
@@ -179,6 +184,7 @@ make lint
 ## TODO
 
 ### Future Enhancements
+
 - [ ] switchable named theme directories
 - [ ] Merge OPML / text lists of feeds with de-dupe
 - [ ] support feed tags and/or folders?
