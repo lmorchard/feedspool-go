@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lmorchard/feedspool-go/internal/lineage"
@@ -347,6 +348,101 @@ func lineageCandidates(ctx context.Context, q queryer, before time.Time, lookbac
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating lineage candidates: %w", err)
+	}
+	return out, nil
+}
+
+// int64Placeholders returns "?,?,..." and the bound args for an IN list.
+func int64Placeholders(ids []int64) (placeholders string, args []any) {
+	args = make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	return strings.TrimSuffix(strings.Repeat("?,", len(ids)), ","), args
+}
+
+// GetPreviousThreadItems returns, for each thread, the ascending item IDs of
+// its topic in the most recent run created strictly before `before`. Threads
+// with no earlier topic are absent. It ignores the lineage lookback on
+// purpose: trend reporting diffs against where a thread last was, however
+// long ago that was.
+func (db *DB) GetPreviousThreadItems(
+	ctx context.Context, before time.Time, threadIDs []int64,
+) (map[int64][]int64, error) {
+	out := make(map[int64][]int64)
+	if len(threadIDs) == 0 {
+		return out, nil
+	}
+	placeholders, args := int64Placeholders(threadIDs)
+	args = append([]any{formatDatabaseTime(before)}, args...)
+
+	//nolint:gosec // Safe: only formatting placeholder count, not user input
+	query := `
+		WITH ranked AS (
+			SELECT l.thread_id, l.topic_id,
+			       ROW_NUMBER() OVER (
+			           PARTITION BY l.thread_id ORDER BY r.created_at DESC, t.id DESC
+			       ) AS rn
+			FROM topic_lineage l
+			JOIN topics t     ON t.id = l.topic_id
+			JOIN topic_runs r ON r.id = t.run_id
+			WHERE r.created_at < ? AND l.thread_id IN (` + placeholders + `)
+		)
+		SELECT ranked.thread_id, ti.item_id
+		FROM ranked
+		JOIN topic_items ti ON ti.topic_id = ranked.topic_id
+		WHERE ranked.rn = 1
+		ORDER BY ranked.thread_id, ti.item_id`
+	rows, err := db.conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query previous thread items: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var threadID, itemID int64
+		if err := rows.Scan(&threadID, &itemID); err != nil {
+			return nil, fmt.Errorf("failed to scan previous thread item: %w", err)
+		}
+		out[threadID] = append(out[threadID], itemID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating previous thread items: %w", err)
+	}
+	return out, nil
+}
+
+// GetThreadFirstSeen returns topic_threads.first_seen_at for each thread that
+// exists. Unknown IDs are absent from the map.
+func (db *DB) GetThreadFirstSeen(ctx context.Context, threadIDs []int64) (map[int64]time.Time, error) {
+	out := make(map[int64]time.Time)
+	if len(threadIDs) == 0 {
+		return out, nil
+	}
+	placeholders, args := int64Placeholders(threadIDs)
+
+	//nolint:gosec // Safe: only formatting placeholder count, not user input
+	query := `SELECT id, first_seen_at FROM topic_threads WHERE id IN (` + placeholders + `)`
+	rows, err := db.conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query thread first-seen times: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var raw string
+		if err := rows.Scan(&id, &raw); err != nil {
+			return nil, fmt.Errorf("failed to scan thread first-seen time: %w", err)
+		}
+		seen, err := parseDatabaseTime(raw)
+		if err != nil {
+			return nil, fmt.Errorf("thread %d has unparseable first_seen_at %q: %w", id, raw, err)
+		}
+		out[id] = seen
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating thread first-seen times: %w", err)
 	}
 	return out, nil
 }

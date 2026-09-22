@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/lmorchard/feedspool-go/internal/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/httpclient"
 	"github.com/lmorchard/feedspool-go/internal/lineage"
 	"github.com/lmorchard/feedspool-go/internal/topics"
+	"github.com/lmorchard/feedspool-go/internal/trends"
 )
 
 var (
@@ -93,7 +95,7 @@ func runTopics(cmd *cobra.Command, _ []string) error {
 	}
 
 	if cfg.JSON {
-		printTopicsJSON(results, itemsMap)
+		printTopicsJSON(results, itemsMap, generatedTrends(db, run, results, itemsMap))
 		return nil
 	}
 
@@ -176,7 +178,26 @@ func resolveTopicsParams(cmd *cobra.Command, cfg *config.Config) (*topicsParams,
 	}, nil
 }
 
-func printTopicsJSON(results []*database.Topic, itemsMap map[*database.Topic][]int64) {
+// generatedTrends computes trends for a run that was just generated. A failure
+// here is logged and the trend omitted: the run itself already succeeded.
+func generatedTrends(
+	db *database.DB, run *database.TopicRun, results []*database.Topic, itemsMap map[*database.Topic][]int64,
+) map[int64]trends.Trend {
+	byID := make(map[int64][]int64, len(itemsMap))
+	for t, ids := range itemsMap {
+		byID[t.ID] = ids
+	}
+	tr, err := topics.LoadTrends(context.Background(), db, run, results, byID)
+	if err != nil {
+		logrus.WithError(err).Warn("Could not compute topic trends; omitting them from output")
+		return nil
+	}
+	return tr
+}
+
+func printTopicsJSON(
+	results []*database.Topic, itemsMap map[*database.Topic][]int64, topicTrends map[int64]trends.Trend,
+) {
 	output := make([]map[string]any, len(results))
 	for i, t := range results {
 		transition := lineage.TransitionSurvived
@@ -191,6 +212,9 @@ func printTopicsJSON(results []*database.Topic, itemsMap map[*database.Topic][]i
 			"set_hash":     t.SetHash,
 			"label_source": t.LabelSource,
 			"transition":   transition,
+		}
+		if tr, ok := topicTrends[t.ID]; ok {
+			output[i]["trend"] = tr
 		}
 	}
 	jsonOut, _ := json.MarshalIndent(output, "", "  ")
