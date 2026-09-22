@@ -105,6 +105,7 @@ func initConfig() {
 	viper.SetDefault("topics.lineage_lookback", config.DefaultTopicsLineageLookback)
 	viper.SetDefault("topics.lineage_threshold", config.DefaultTopicsLineageThreshold)
 	viper.SetDefault("topics.inherit_threshold", config.DefaultTopicsInheritThreshold)
+	viper.SetDefault("topics.growth_margin", config.DefaultTopicsGrowthMargin)
 
 	viper.AutomaticEnv()
 

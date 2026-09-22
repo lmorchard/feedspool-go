@@ -16,6 +16,13 @@
     --code-bg: #ecf0f1;
     --code-text: #2c3e50;
     --shadow: rgba(0,0,0,0.1);
+
+    /* Topic trend status colours */
+    --st-new: #8e44ad;
+    --st-growing: #27ae60;
+    --st-fading: #e67e22;
+    --st-steady: #7f8c8d;
+    --st-quiet: #bdc3c7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,5 +42,6 @@
         --code-bg: #4a5568;
         --code-text: #e2e8f0;
         --shadow: rgba(0,0,0,0.3);
+        --st-quiet: #5a6270;
     }
 }

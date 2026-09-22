@@ -127,6 +127,11 @@ func TestComputeStatusPrecedence(t *testing.T) {
 		{"growing", 3 * day, 6, 2, StatusGrowing},
 		{"fading", 3 * day, 2, 6, StatusFading},
 		{"steady", 3 * day, 3, 3, StatusSteady},
+		{"one more is within the margin", 3 * day, 3, 2, StatusSteady},
+		{"one fewer is within the margin", 3 * day, 2, 3, StatusSteady},
+		{"growing at exactly the margin", 3 * day, 4, 2, StatusGrowing},
+		{"fading at exactly the margin", 3 * day, 2, 4, StatusFading},
+		{"nothing today, one yesterday is steady, not quiet", 3 * day, 0, 1, StatusSteady},
 		{"quiet: nothing in either window", 3 * day, 0, 0, StatusQuiet},
 		{"new beats quiet", 2 * time.Hour, 0, 0, StatusNew},
 		{"new boundary is inclusive", day, 0, 0, StatusNew},
@@ -175,5 +180,44 @@ func TestSparkline(t *testing.T) {
 		if utf8.RuneCountInString(got) != len(c.in) {
 			t.Errorf("Sparkline(%v) has %d runes, want %d", c.in, utf8.RuneCountInString(got), len(c.in))
 		}
+	}
+}
+
+func TestStatusOrder(t *testing.T) {
+	want := []string{StatusNew, StatusGrowing, StatusFading, StatusSteady, StatusQuiet}
+	got := StatusOrder()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("StatusOrder() = %v, want %v", got, want)
+	}
+	got[0] = "mutated"
+	if StatusOrder()[0] != StatusNew {
+		t.Fatal("StatusOrder returned a shared slice")
+	}
+}
+
+func TestComputeHonorsGrowthMargin(t *testing.T) {
+	mk := func(margin, last, prior int) string {
+		in := window(7 * day)
+		in.ThreadFirstSeen = windowEnd().Add(-3 * day)
+		in.GrowthMargin = margin
+		for range last {
+			in.Items = append(in.Items, at(time.Hour))
+		}
+		for range prior {
+			in.Items = append(in.Items, at(30*time.Hour))
+		}
+		return Compute(in).Status
+	}
+	if got := mk(1, 3, 2); got != StatusGrowing {
+		t.Errorf("margin 1, 3 vs 2: %q, want growing", got)
+	}
+	if got := mk(3, 4, 2); got != StatusSteady {
+		t.Errorf("margin 3, 4 vs 2: %q, want steady", got)
+	}
+	if got := mk(3, 5, 2); got != StatusGrowing {
+		t.Errorf("margin 3, 5 vs 2: %q, want growing", got)
+	}
+	if got := mk(0, 3, 2); got != StatusSteady {
+		t.Errorf("margin 0 means the default (%d), 3 vs 2: %q, want steady", DefaultGrowthMargin, got)
 	}
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lmorchard/feedspool-go/internal/config"
 	"github.com/lmorchard/feedspool-go/internal/database"
+	"github.com/lmorchard/feedspool-go/internal/trends"
 )
 
 // FeedWithID wraps a Feed with a generated ID.
@@ -52,6 +53,14 @@ type TopicsTemplateContext struct {
 	Topics    []*database.Topic
 	GroupsMap map[int64][]TopicFeedGroup       // TopicID -> sorted slice of Feed groups
 	Metadata  map[string]*database.URLMetadata // URL -> metadata
+
+	// Trends, from topics.LoadTrends, keyed by topic ID. StatusGroups
+	// is what the template iterates: non-empty groups in trends.StatusOrder.
+	// StatusTally summarizes them for the meta line. When trends cannot be
+	// loaded, StatusGroups holds one group with an empty Status.
+	Trends       map[int64]trends.Trend
+	StatusGroups []TopicStatusGroup
+	StatusTally  string
 }
 
 // TemplateContext contains all data passed to templates.

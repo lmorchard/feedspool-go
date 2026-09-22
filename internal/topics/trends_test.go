@@ -2,6 +2,7 @@ package topics
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func latestTrends(t *testing.T, db *database.DB) (*database.TopicRun, []*databas
 	require.NoError(t, err)
 	items, err := db.GetTopicItems(ctx, run.ID)
 	require.NoError(t, err)
-	got, err := LoadTrends(ctx, db, run, topicList, items)
+	got, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{})
 	require.NoError(t, err)
 	return run, topicList, got
 }
@@ -112,7 +113,7 @@ func TestLoadTrendsToleratesPurgedItem(t *testing.T) {
 	id := topicList[0].ID
 	items[id] = append(items[id], 999999)
 
-	got, err := LoadTrends(ctx, db, run, topicList, items)
+	got, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{})
 	require.NoError(t, err)
 	tr := got[id]
 	assert.Equal(t, 3, sumInts(tr.Daily), "the missing item has no date to bucket")
@@ -120,3 +121,86 @@ func TestLoadTrendsToleratesPurgedItem(t *testing.T) {
 }
 
 func formatTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
+
+func TestLoadTrendsFiltersFeedsOnBothSides(t *testing.T) {
+	db, ids := newTopicsTestDB(t)
+	ctx := context.Background()
+
+	const otherFeed = "https://other.example/feed"
+	require.NoError(t, db.UpsertFeed(&database.Feed{URL: otherFeed, Title: "Other", FeedJSON: database.JSON(`{}`)}))
+	now := time.Now().UTC()
+	other := make([]int64, 0, 2)
+	for _, guid := range []string{"o1", "o2"} {
+		require.NoError(t, db.UpsertItem(&database.Item{
+			FeedURL: otherFeed, GUID: guid, Title: guid, Link: "https://other.example/" + guid,
+			PublishedDate: now, FirstSeen: sql.NullTime{Time: now, Valid: true}, ItemJSON: database.JSON(`{}`),
+		}))
+		item, err := db.GetItem(otherFeed, guid)
+		require.NoError(t, err)
+		other = append(other, item.ID)
+	}
+
+	insert := func(at time.Time, threadID int64, items []int64) *database.Topic {
+		topic := &database.Topic{Label: "T", Score: float64(len(items)), ThreadID: threadID}
+		if threadID != 0 {
+			topic.LabelSource = lineage.SourceInherited
+		}
+		run := &database.TopicRun{
+			CreatedAt: at, WindowStart: at.Add(-7 * 24 * time.Hour), WindowEnd: at,
+			EmbedModelID: testEmbedModel, LLMModelID: (&fakeLabeler{}).ModelID(),
+		}
+		require.NoError(t, db.InsertTopicRun(ctx, run, []*database.Topic{topic},
+			map[*database.Topic][]int64{topic: items}))
+		return topic
+	}
+	first := insert(now.Add(-time.Hour), 0, []int64{ids[0], ids[1], other[0]})
+	second := insert(now, first.ThreadID, []int64{ids[0], ids[2], other[1]})
+
+	run, err := db.GetLatestTopicRun(ctx)
+	require.NoError(t, err)
+	topicList, err := db.GetTopicsForRun(ctx, run.ID)
+	require.NoError(t, err)
+	items, err := db.GetTopicItems(ctx, run.ID)
+	require.NoError(t, err)
+
+	filtered, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{AllowedFeeds: map[string]bool{testFeedURL: true}})
+	require.NoError(t, err)
+	f := filtered[second.ID]
+	assert.Equal(t, 1, f.NewItems, "only ids[2] is new on this site")
+	assert.Equal(t, 1, f.DroppedItems, "only ids[1] dropped on this site; o1 belongs to another")
+	assert.Equal(t, 1, f.DistinctFeeds)
+	assert.Equal(t, 2, sumInts(f.Daily))
+
+	all, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{})
+	require.NoError(t, err)
+	a := all[second.ID]
+	assert.Equal(t, 2, a.NewItems)
+	assert.Equal(t, 2, a.DroppedItems)
+	assert.Equal(t, 2, a.DistinctFeeds)
+	assert.Equal(t, 3, sumInts(a.Daily))
+}
+
+func TestLoadTrendsPassesGrowthMargin(t *testing.T) {
+	db, ids := newTopicsTestDB(t)
+	embed(t, db, ids[0:3], 0)
+	generate(t, NewPipeline(db, &fakeLabeler{}))
+	ctx := context.Background()
+	run, err := db.GetLatestTopicRun(ctx)
+	require.NoError(t, err)
+	// Push the thread's first-seen out of the "new" window so growing can show.
+	_, err = db.GetConnection().Exec(`UPDATE topic_threads SET first_seen_at = ?`,
+		run.WindowEnd.Add(-72*time.Hour).UTC().Format(time.RFC3339Nano))
+	require.NoError(t, err)
+	topicList, err := db.GetTopicsForRun(ctx, run.ID)
+	require.NoError(t, err)
+	items, err := db.GetTopicItems(ctx, run.ID)
+	require.NoError(t, err)
+
+	// All three items are in the last 24h and none before: +3.
+	loose, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{GrowthMargin: 3})
+	require.NoError(t, err)
+	assert.Equal(t, trends.StatusGrowing, loose[topicList[0].ID].Status)
+	strict, err := LoadTrends(ctx, db, run, topicList, items, TrendOptions{GrowthMargin: 4})
+	require.NoError(t, err)
+	assert.Equal(t, trends.StatusSteady, strict[topicList[0].ID].Status)
+}

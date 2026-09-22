@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -564,7 +565,7 @@ func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read index.html: %v", err)
 	}
-	if !strings.Contains(string(indexHTML), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+	if !strings.Contains(string(indexHTML), `<a href="topics.html" class="nav-link">Trending</a>`) {
 		t.Errorf("index.html missing Trending Topics header link")
 	}
 
@@ -577,7 +578,7 @@ func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
 	got := string(topicsHTML)
 
 	expectedSnippets := []string{
-		`<a href="topics.html" class="nav-link active">Trending Topics</a>`,
+		`<a href="topics.html" class="nav-link active">Trending</a>`,
 		`<div class="topics-header-box">`,
 		`<nav class="topics-index" aria-label="Topic index">`,
 		`class="topic-pill"`,
@@ -587,11 +588,28 @@ func TestExecuteWorkflowRendersTopicsPage(t *testing.T) {
 		`<summary class="topic-summary">`,
 		`class="topic-badge"`,
 		`class="back-to-top"`,
+		`id="thread-`,
+		`href="#thread-`,
+		`class="pill-group-label"`,
+		`class="status-heading"`,
+		`</span> 2 topics</div>`, // both fixture topics are new; plural
+		`class="st st-new"`,
+		`class="spark-svg"`,
+		`class="topic-stats"`,
+		` — 2 new`,
 	}
 
 	for _, snippet := range expectedSnippets {
 		if !strings.Contains(got, snippet) {
 			t.Errorf("topics.html missing expected snippet %q", snippet)
+		}
+	}
+
+	// Template syntax must never reach the page (a mangled edit once leaked
+	// `| printf "%.0f"}}` into every card while every snippet above still matched).
+	for _, leak := range []string{"{{", "}}", "printf"} {
+		if strings.Contains(got, leak) {
+			t.Errorf("topics.html contains raw template text %q", leak)
 		}
 	}
 }
@@ -685,6 +703,9 @@ func TestExecuteWorkflowFiltersTopicsPerFeedList(t *testing.T) {
 	if strings.Contains(got, "Topic 2 Feeds") {
 		t.Errorf("topics.html should NOT contain Topic 2 Feeds")
 	}
+	if !strings.Contains(got, " — 1 new") || strings.Contains(got, " — 2 new") {
+		t.Errorf("per-site tally should count only this site's surviving topic (1 new)")
+	}
 }
 
 func TestExecuteWorkflowRemovesStaleTopicsFile(t *testing.T) {
@@ -706,5 +727,53 @@ func TestExecuteWorkflowRemovesStaleTopicsFile(t *testing.T) {
 
 	if _, err := os.Stat(staleTopicsPath); !os.IsNotExist(err) {
 		t.Errorf("expected stale topics.html to be removed, but it still exists")
+	}
+}
+
+// A topic with no lineage row (ThreadID 0 on read) cannot have a thread
+// permalink; its card keeps the per-run topic anchor so the page still works.
+func TestTopicsPageThreadlessTopicKeepsTopicAnchor(t *testing.T) {
+	cfg, _ := newTestWorkflow(t, true)
+
+	db, err := database.New(cfg.Database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	itemsList, err := db.GetItemsForFeed(testFeedURL, 10, time.Time{}, time.Time{})
+	if err != nil || len(itemsList) < 1 {
+		t.Fatalf("failed to get items for testing: %v", err)
+	}
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	conn := db.GetConnection()
+	res, err := conn.Exec(`INSERT INTO topic_runs (created_at, window_start, window_end, embed_model_id, llm_model_id)
+		VALUES (?, ?, ?, ?, ?)`, now, now, now, testEmbedModelID, testLLMModelID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runID, _ := res.LastInsertId()
+	res, err = conn.Exec(`INSERT INTO topics (run_id, label, score) VALUES (?, 'Threadless', 1)`, runID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicID, _ := res.LastInsertId()
+	if _, err := conn.Exec(`INSERT INTO topic_items (topic_id, item_id) VALUES (?, ?)`, topicID, itemsList[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	if _, err := ExecuteWorkflow(cfg); err != nil {
+		t.Fatalf("ExecuteWorkflow() error = %v", err)
+	}
+	topicsHTML, err := os.ReadFile(filepath.Join(cfg.OutputDir, "topics.html"))
+	if err != nil {
+		t.Fatalf("failed to read topics.html: %v", err)
+	}
+	got := string(topicsHTML)
+	anchor := fmt.Sprintf(`id="topic-%d"`, topicID)
+	if !strings.Contains(got, anchor) {
+		t.Errorf("threadless topic should keep %s", anchor)
+	}
+	if !strings.Contains(got, fmt.Sprintf(`href="#topic-%d"`, topicID)) {
+		t.Errorf("threadless topic's pill should link to its topic anchor")
 	}
 }

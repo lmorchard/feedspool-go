@@ -629,7 +629,7 @@ func TestRenderAllGeneratesTopLevelTopicsAndPerSiteTopics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read top-level index.html: %v", err)
 	}
-	if !strings.Contains(string(topIndexHTML), `<a href="topics.html" class="nav-link">Trending Topics</a>`) {
+	if !strings.Contains(string(topIndexHTML), `<a href="topics.html" class="nav-link">Trending</a>`) {
 		t.Errorf("top-level index.html missing Trending Topics header link")
 	}
 
@@ -661,5 +661,11 @@ func TestRenderAllGeneratesTopLevelTopicsAndPerSiteTopics(t *testing.T) {
 	site2Got := string(site2TopicsHTML)
 	if !strings.Contains(site2Got, "Topic 2 Feeds") || strings.Contains(site2Got, "Topic 1 Feeds") {
 		t.Errorf("site2/topics.html expected Topic 2 Feeds and no Topic 1 Feeds; got:\n%s", site2Got)
+	}
+
+	for name, page := range map[string]string{"top-level": topGot, "site1": site1Got, "site2": site2Got} {
+		if !strings.Contains(page, `id="thread-`) {
+			t.Errorf("%s topics.html has no thread permalink anchors", name)
+		}
 	}
 }

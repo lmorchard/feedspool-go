@@ -539,6 +539,7 @@ included.
 | `--format` | `text` | Subscription file format when `--feeds` is set |
 | `--clean` | false | Wipe output directory before render |
 | `--feeds-dir` | (config: `feedlist.dir`) | Directory mode; see [Multi-Site Directory Mode](#multi-site-directory-mode) |
+| `--topic-growth-margin` | (config: `topics.growth_margin`, `2`) | Items a topic must gain or lose in 24h to show as growing or fading on the topics page |
 
 `--max-age` and `--start`/`--end` are mutually exclusive. Custom template
 and asset directories must already exist; the parent of `--output` must
@@ -547,6 +548,18 @@ exist. `--feeds-dir` cannot be combined with `--feeds`.
 **Side effects:** Writes HTML, copies assets. Read-only on the database. In
 directory mode, also writes the prune manifest (see
 [Multi-Site Directory Mode](#multi-site-directory-mode)).
+
+**Topics page.** When a topic run exists, `render` also writes `topics.html`
+from the most recent run. Topics are grouped by trend status — new, growing,
+fading, steady, then quiet — using the definitions under
+[`topics latest`](#topics-latest), and sorted within each group by items in
+the last 24 hours. Each topic shows its status, the number of feeds carrying
+it, items today and the change against the previous day, items added since the
+last run, and a sparkline of items per day. On per-site pages in directory
+mode, every number counts only that site's feeds. Topics are anchored as
+`topics.html#thread-N`, which stays valid across rebuilds for as long as the
+topic's thread survives. A custom `--templates` directory keeps its older
+`topics.html` until re-extracted; it still renders, without the trend markup.
 
 ### build
 
@@ -894,6 +907,7 @@ topics:
   lineage_lookback: 6      # previous runs searched for the same topic
   lineage_threshold: 0.5   # Jaccard at/above which a cluster joins an existing thread
   inherit_threshold: 0.9   # Jaccard at/above which it keeps the thread's label
+  growth_margin: 2         # items gained/lost in 24h to show as growing/fading
 ```
 
 **Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
@@ -902,7 +916,11 @@ topics:
 
 Show the most recent topic run with trend signals for each topic.
 
-**Usage:** `feedspool topics latest [--json]`
+**Usage:** `feedspool topics latest [--growth-margin N] [--json]`
+
+- `--growth-margin <int>`: items a topic must gain or lose in the last 24h,
+  against the 24h before, to show as growing or fading. Defaults to
+  `topics.growth_margin` (2). Handy for trying values before changing config.
 
 Read-only: no clustering, no LLM calls, no new topic run. Trends are computed
 from the stored run, its threads (see `topic_threads` under Data Model), and
@@ -912,7 +930,7 @@ item dates.
 STATUS   ITEMS  FEEDS  24H  PREV24H  +NEW  -GONE  DAILY    LABEL
 new      16     7      16   0        2     0      ▁▁▁▁▁▁█  Xbox layoffs, studio consolidation
 fading   40     5      4    11       0     0      ▁▁▁█▁▄▂  Trump bans media from White House
-growing  11     9      1    0        0     0      ▁▁▁█▁▁▁  Gemini AI Hacked Companies
+growing  7      5      2    0        0     0      ▁▁▁█▂▁▄  Human Brain Two Organs
 ```
 
 Every signal is anchored on the run's window end, not on the current time,
@@ -931,9 +949,13 @@ so an old run always reports the same thing:
   had it — however long ago, regardless of `lineage_lookback`. A new thread
   reports all its items as new.
 - **STATUS** (`status`), first match wins: `new` if the thread was first seen
-  within 24h of the window end; `growing` if 24H > PREV24H; `fading` if
-  24H < PREV24H; `quiet` if both are 0 (nothing in two days); otherwise
-  `steady`. With a window of 24h or less PREV24H is
+  within 24h of the window end; `growing` if 24H exceeds PREV24H by at least
+  the growth margin (`topics.growth_margin`, default 2); `fading` if it falls
+  short by at least that margin; `quiet` if both are 0 (nothing
+  in two days); otherwise `steady`. The margin keeps a topic from flipping
+  between growing and fading as single items age across the 24h boundary on
+  each hourly run. The change arrow on the rendered page is coloured by the
+  status, so it never disagrees with the badge. With a window of 24h or less PREV24H is
   always 0.
 - `thread_first_seen`: when the topic's thread first appeared (JSON only).
 

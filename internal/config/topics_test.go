@@ -18,6 +18,9 @@ func TestGetDefaultTopicsLineage(t *testing.T) {
 	if cfg.Topics.InheritThreshold != 0.9 {
 		t.Errorf("InheritThreshold = %v, want 0.9", cfg.Topics.InheritThreshold)
 	}
+	if cfg.Topics.GrowthMargin != 2 {
+		t.Errorf("GrowthMargin = %d, want 2", cfg.Topics.GrowthMargin)
+	}
 }
 
 func TestLoadConfigReadsTopicsLineage(t *testing.T) {
@@ -27,6 +30,7 @@ func TestLoadConfigReadsTopicsLineage(t *testing.T) {
 	viper.Set("topics.lineage_lookback", 3)
 	viper.Set("topics.lineage_threshold", 0.6)
 	viper.Set("topics.inherit_threshold", 0.95)
+	viper.Set("topics.growth_margin", 3)
 
 	cfg := LoadConfig()
 
@@ -38,6 +42,9 @@ func TestLoadConfigReadsTopicsLineage(t *testing.T) {
 	}
 	if cfg.Topics.InheritThreshold != 0.95 {
 		t.Errorf("InheritThreshold = %v, want 0.95", cfg.Topics.InheritThreshold)
+	}
+	if cfg.Topics.GrowthMargin != 3 {
+		t.Errorf("GrowthMargin = %d, want 3", cfg.Topics.GrowthMargin)
 	}
 }
 
@@ -56,5 +63,8 @@ func TestLoadConfigDefaultsTopicsLineageWhenUnset(t *testing.T) {
 	}
 	if cfg.Topics.InheritThreshold != DefaultTopicsInheritThreshold {
 		t.Errorf("InheritThreshold = %v, want %v", cfg.Topics.InheritThreshold, DefaultTopicsInheritThreshold)
+	}
+	if cfg.Topics.GrowthMargin != DefaultTopicsGrowthMargin {
+		t.Errorf("GrowthMargin = %d, want %d", cfg.Topics.GrowthMargin, DefaultTopicsGrowthMargin)
 	}
 }

@@ -15,6 +15,8 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/trends"
 )
 
+var topicsLatestGrowthMargin int
+
 var topicsLatestCmd = &cobra.Command{
 	Use:   "latest",
 	Short: "Show the most recent topic run with trend signals (no generation)",
@@ -82,7 +84,11 @@ func runTopicsLatest(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load topic items: %w", err)
 	}
-	topicTrends, err := topics.LoadTrends(ctx, db, run, topicList, items)
+	margin := cfg.Topics.GrowthMargin
+	if topicsLatestGrowthMargin > 0 {
+		margin = topicsLatestGrowthMargin
+	}
+	topicTrends, err := topics.LoadTrends(ctx, db, run, topicList, items, topics.TrendOptions{GrowthMargin: margin})
 	if err != nil {
 		return fmt.Errorf("failed to compute trends: %w", err)
 	}
@@ -140,4 +146,6 @@ func printLatestTable(
 
 func init() {
 	topicsCmd.AddCommand(topicsLatestCmd)
+	topicsLatestCmd.Flags().IntVar(&topicsLatestGrowthMargin, "growth-margin", 0,
+		"Items a topic must gain or lose in 24h to show as growing or fading (0 = topics.growth_margin)")
 }

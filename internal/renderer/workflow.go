@@ -15,6 +15,7 @@ import (
 	"github.com/lmorchard/feedspool-go/internal/database"
 	"github.com/lmorchard/feedspool-go/internal/feedlist"
 	"github.com/lmorchard/feedspool-go/internal/ids"
+	"github.com/lmorchard/feedspool-go/internal/topics"
 )
 
 // WorkflowConfig holds all configuration for rendering operations.
@@ -27,6 +28,7 @@ type WorkflowConfig struct {
 	FeedsPerPage           int     // Feeds per page for pagination (0 = no pagination)
 	TopicMaxFeedRatio      float32 // Maximum ratio of items allowed from a single feed before rejecting the topic
 	TopicMinDiversityCount int     // Min items before applying diversity ratio limit
+	TopicGrowthMargin      int     // Items a topic must gain or lose in 24h to show as growing or fading (<= 0: default)
 	OutputDir              string
 	TemplatesDir           string
 	AssetsDir              string
@@ -452,12 +454,45 @@ func BuildTopicsContext(
 		return nil, nil
 	}
 
-	return &TopicsTemplateContext{
+	ctx = &TopicsTemplateContext{
 		SiteChrome: chrome,
 		Run:        run,
 		Topics:     cleanTopicList,
 		GroupsMap:  make(map[int64][]TopicFeedGroup),
-	}, topicItemSlices
+	}
+	addTopicTrends(db, run, ctx, topicItemSlices, trendOptions(config, allowedSet))
+	return ctx, topicItemSlices
+}
+
+// trendOptions carries the site's feed set (nil for the global page) and the
+// configured growth margin into topics.LoadTrends.
+func trendOptions(config *WorkflowConfig, allowedSet map[string]bool) topics.TrendOptions {
+	return topics.TrendOptions{AllowedFeeds: allowedSet, GrowthMargin: config.TopicGrowthMargin}
+}
+
+// addTopicTrends fills the context's trend fields. Trends are computed over
+// the site's own items (allowedSet; nil for the global page) so they agree
+// with the item counts the page shows. A failure degrades to one ungrouped
+// list rather than dropping the page.
+func addTopicTrends(
+	db *database.DB, run *database.TopicRun, ctx *TopicsTemplateContext,
+	topicItemSlices map[int64][]*database.Item, opts topics.TrendOptions,
+) {
+	itemIDs := make(map[int64][]int64, len(topicItemSlices))
+	for topicID, slice := range topicItemSlices {
+		for _, item := range slice {
+			itemIDs[topicID] = append(itemIDs[topicID], item.ID)
+		}
+	}
+	topicTrends, err := topics.LoadTrends(context.Background(), db, run, ctx.Topics, itemIDs, opts)
+	if err != nil {
+		logrus.WithError(err).Warn("Could not compute topic trends; rendering topics without them")
+		ctx.StatusGroups = []TopicStatusGroup{{Topics: ctx.Topics}}
+		return
+	}
+	ctx.Trends = topicTrends
+	ctx.StatusGroups = groupTopicsByStatus(ctx.Topics, topicTrends)
+	ctx.StatusTally = statusTally(ctx.StatusGroups)
 }
 
 func filterSingleTopicItems(

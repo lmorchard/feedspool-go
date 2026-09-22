@@ -30,6 +30,7 @@ var (
 	renderFeedsPerPage           int
 	renderTopicMaxFeedRatio      float32
 	renderTopicMinDiversityCount int
+	renderTopicGrowthMargin      int
 	renderFeedsDir               string
 )
 
@@ -80,6 +81,8 @@ func init() {
 		"Max ratio of items from one feed before topic is rejected (-1 = use config default)")
 	renderCmd.Flags().IntVar(&renderTopicMinDiversityCount, "topic-min-diversity-count", -1,
 		"Min items in a topic before applying diversity limits (-1 = use config default)")
+	renderCmd.Flags().IntVar(&renderTopicGrowthMargin, "topic-growth-margin", 0,
+		"Items a topic must gain or lose in 24h to show as growing or fading (0 = topics.growth_margin)")
 	renderCmd.Flags().StringVar(&renderOutput, "output", defaultOutputDir, "Output directory")
 	renderCmd.Flags().StringVar(&renderTemplates, "templates", "", "Custom templates directory")
 	renderCmd.Flags().StringVar(&renderAssets, "assets", "", "Custom assets directory")
@@ -194,6 +197,20 @@ func pluralize(n int, singular, plural string) string {
 	return plural
 }
 
+// applyTopicRenderFlags overrides the topics-page settings given on the
+// command line; unset flags keep the config values.
+func applyTopicRenderFlags(renderConfig *renderer.WorkflowConfig) {
+	if renderTopicMaxFeedRatio >= 0 {
+		renderConfig.TopicMaxFeedRatio = renderTopicMaxFeedRatio
+	}
+	if renderTopicMinDiversityCount >= 0 {
+		renderConfig.TopicMinDiversityCount = renderTopicMinDiversityCount
+	}
+	if renderTopicGrowthMargin > 0 {
+		renderConfig.TopicGrowthMargin = renderTopicGrowthMargin
+	}
+}
+
 func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.WorkflowConfig {
 	// Start with config file values
 	renderConfig := &renderer.WorkflowConfig{
@@ -205,6 +222,7 @@ func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.Workflo
 		FeedsPerPage:           cfg.Render.FeedsPerPage,
 		TopicMaxFeedRatio:      cfg.Render.TopicMaxFeedRatio,
 		TopicMinDiversityCount: cfg.Render.TopicMinDiversityCount,
+		TopicGrowthMargin:      cfg.Topics.GrowthMargin,
 		OutputDir:              cfg.Render.OutputDir,
 		TemplatesDir:           cfg.Render.TemplatesDir,
 		AssetsDir:              cfg.Render.AssetsDir,
@@ -235,12 +253,7 @@ func buildRenderConfig(cmd *cobra.Command, cfg *config.Config) *renderer.Workflo
 	if renderFeedsPerPage >= 0 {
 		renderConfig.FeedsPerPage = renderFeedsPerPage
 	}
-	if renderTopicMaxFeedRatio >= 0 {
-		renderConfig.TopicMaxFeedRatio = renderTopicMaxFeedRatio
-	}
-	if renderTopicMinDiversityCount >= 0 {
-		renderConfig.TopicMinDiversityCount = renderTopicMinDiversityCount
-	}
+	applyTopicRenderFlags(renderConfig)
 	if cmd.Flags().Changed("output") {
 		renderConfig.OutputDir = renderOutput
 	}

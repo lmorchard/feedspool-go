@@ -2,7 +2,12 @@
  * Topic Navigator Component
  * Automatically expands topic <details> elements when navigated to via pills or hash anchors,
  * and collapses them when the "↑ Top" link is clicked.
+ *
+ * Topics are anchored as #thread-N (stable across runs); a topic without a
+ * thread falls back to #topic-N.
  */
+
+const isTopicAnchor = (hash) => hash.startsWith('#thread-') || hash.startsWith('#topic-');
 
 class TopicNavigator extends HTMLElement {
     connectedCallback() {
@@ -34,7 +39,7 @@ class TopicNavigator extends HTMLElement {
             }
 
             // Handle topic pill link click: expand target topic
-            const link = e.target.closest('a[href^="#topic-"]');
+            const link = e.target.closest('a[href^="#thread-"], a[href^="#topic-"]');
             if (link) {
                 const targetId = link.getAttribute('href').slice(1);
                 const targetDetails = document.getElementById(targetId);
@@ -51,7 +56,7 @@ class TopicNavigator extends HTMLElement {
 
     handleHashChange() {
         const hash = window.location.hash;
-        if (!hash || !hash.startsWith('#topic-')) return;
+        if (!hash || !isTopicAnchor(hash)) return;
 
         const targetId = hash.slice(1);
         const targetDetails = document.getElementById(targetId);
