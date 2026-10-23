@@ -340,6 +340,65 @@ func TestEmbedSkipsAndCountsItemsWithoutText(t *testing.T) {
 	}
 }
 
+// An item whose derived text is entirely empty would reach the provider as an
+// empty string, which Vertex rejects with a 400 -- and behind LiteLLM, enough
+// of those cool the deployment down and fail every other item too. Such items
+// must be neither sent nor left counted as outstanding forever.
+func TestEmbedSkipsItemsWithEmptyText(t *testing.T) {
+	db := setupTestDB(t)
+	withText := seedItem(t, db, "has-text", time.Now().UTC())
+	empty := seedItem(t, db, "empty-text", time.Now().UTC())
+
+	if _, err := db.conn.Exec(
+		`UPDATE item_text SET title = '', summary = '', body = '' WHERE item_id = ?`, empty,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	since, until := embedWindow()
+	outstanding, err := db.CountItemsToEmbed(testModelNomic, since, until, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outstanding != 1 {
+		t.Errorf("CountItemsToEmbed = %d, want 1 -- an empty item can never be embedded", outstanding)
+	}
+
+	provider := newFakeProvider(testModelNomic, 768)
+	if err := db.EmbedItems(context.Background(), provider, since, until, false, 8, nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range provider.texts {
+		if text == "" {
+			t.Error("provider was sent an empty string")
+		}
+	}
+	if _, err := db.GetItemEmbedding(withText, testModelNomic); err != nil {
+		t.Errorf("the item with text was not embedded: %v", err)
+	}
+	if got := countEmbeddingRows(t, db, testModelNomic); got != 1 {
+		t.Errorf("embedded %d items, want 1", got)
+	}
+
+	// Force widens to the whole window, but still not to items with no text.
+	forced := newFakeProvider(testModelNomic, 768)
+	if err := db.EmbedItems(context.Background(), forced, since, until, true, 8, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(forced.texts) != 1 {
+		t.Errorf("forced run sent %d texts, want 1", len(forced.texts))
+	}
+
+	// Empty text is not missing text: reindex would not change it.
+	missing, err := db.CountItemsMissingText(since, until)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if missing != 0 {
+		t.Errorf("CountItemsMissingText = %d, want 0", missing)
+	}
+}
+
 // The embed input is assembled from item_text, not re-derived from items. This
 // checks the provider actually received the derived text.
 func TestEmbedSendsDerivedText(t *testing.T) {

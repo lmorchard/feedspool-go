@@ -18,12 +18,22 @@ import (
 // text rather than embedding empty strings; CountItemsMissingText reports how
 // many that excluded, so the command can point at `feedspool reindex`.
 //
+// The JOIN also skips items whose derived text is entirely empty -- an
+// image-only post strips to nothing. embed.ItemInput would turn those into an
+// empty string, which providers reject (Vertex: 400 "The text content is
+// empty"), and a proxy like LiteLLM counts each rejection toward cooling the
+// whole deployment down, failing the good items alongside it. itemtext
+// collapses whitespace, so an empty-string comparison agrees with ItemInput's
+// TrimSpace. Reindexing cannot help these, so CountItemsMissingText does not
+// count them.
+//
 // The model_id comparison sits in the LEFT JOIN rather than the WHERE clause on
 // purpose: in the WHERE it would discard items that have no row for this model
 // at all, which are exactly the ones needing work.
 const itemEmbeddingFrom = `
 	FROM items i
 	JOIN item_text t            ON t.item_id = i.id
+	                           AND (t.title <> '' OR t.summary <> '' OR t.body <> '')
 	LEFT JOIN item_embeddings e ON e.item_id = i.id AND e.model_id = ?`
 
 // itemEmbeddingWindow bounds the work by effective date, inclusive at both
