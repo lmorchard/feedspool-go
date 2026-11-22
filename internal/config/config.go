@@ -59,11 +59,13 @@ const (
 
 	// DefaultTopicsConcurrency restricts how many concurrent requests are sent
 	// to the LLM when labeling clusters.
-	DefaultTopicsConcurrency = 5
-	DefaultTopicsMinItems    = 7
-	DefaultTopicsMaxItems    = 100
-	DefaultTopicsThreshold   = 0.70
-	DefaultTopicsLast        = "1d"
+	DefaultTopicsConcurrency  = 5
+	DefaultTopicsMinItems     = 7
+	DefaultTopicsSampleItems  = 5
+	DefaultTopicsGenericLabel = "Software Development"
+	DefaultTopicsMaxItems     = 100
+	DefaultTopicsThreshold    = 0.70
+	DefaultTopicsLast         = "1d"
 
 	// Topic lineage: how a run finds the same topic in earlier runs and when it
 	// keeps the earlier label. The numbers live in internal/lineage so the
@@ -195,6 +197,19 @@ type TopicsConfig struct {
 	LineageThreshold  float64 `mapstructure:"lineage_threshold"`
 	InheritThreshold  float64 `mapstructure:"inherit_threshold"`
 	GrowthMargin      int     `mapstructure:"growth_margin"`
+	// PromptFile is an optional markdown/text prompt template. Empty uses the
+	// embedded default; the file is read at topic-run time.
+	PromptFile string `mapstructure:"prompt_file"`
+	// PromptTemplate is loaded by the command from PromptFile and passed to the
+	// labeler; it is not read directly from YAML.
+	PromptTemplate string `mapstructure:"-"`
+	// SampleItems is how many cluster items (title + 500-char snippet) the
+	// labeler sees. The default is 5; raise it for mixed clusters.
+	SampleItems int `mapstructure:"sample_items"`
+	// LabelGuard generalizes a language-specific label when the sampled items
+	// do not all mention that language.
+	LabelGuard   bool   `mapstructure:"label_guard"`
+	GenericLabel string `mapstructure:"generic_label"`
 }
 
 func LoadConfig() *Config {
@@ -279,6 +294,10 @@ func LoadConfig() *Config {
 			LineageThreshold:  getFloat64WithDefault("topics.lineage_threshold", DefaultTopicsLineageThreshold),
 			InheritThreshold:  getFloat64WithDefault("topics.inherit_threshold", DefaultTopicsInheritThreshold),
 			GrowthMargin:      getIntWithDefault("topics.growth_margin", DefaultTopicsGrowthMargin),
+			PromptFile:        viper.GetString("topics.prompt_file"),
+			SampleItems:       getIntWithDefault("topics.sample_items", DefaultTopicsSampleItems),
+			LabelGuard:        viper.GetBool("topics.label_guard"),
+			GenericLabel:      getStringWithDefault("topics.generic_label", DefaultTopicsGenericLabel),
 		},
 		Build: BuildConfig{
 			SkipEmbed:  viper.GetBool("build.skip_embed"),
@@ -351,6 +370,8 @@ func GetDefault() *Config {
 			LineageThreshold:  DefaultTopicsLineageThreshold,
 			InheritThreshold:  DefaultTopicsInheritThreshold,
 			GrowthMargin:      DefaultTopicsGrowthMargin,
+			SampleItems:       DefaultTopicsSampleItems,
+			GenericLabel:      DefaultTopicsGenericLabel,
 		},
 	}
 }

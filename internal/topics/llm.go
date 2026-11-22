@@ -41,14 +41,20 @@ type OllamaLabeler struct {
 	baseURL string
 	model   string
 	apiKey  string
+	prompt  string
 }
 
 func NewOllamaLabeler(cfg *config.TopicsConfig, client *httpclient.Client) *OllamaLabeler {
+	prompt := cfg.PromptTemplate
+	if strings.TrimSpace(prompt) == "" {
+		prompt = DefaultPromptTemplate
+	}
 	return &OllamaLabeler{
 		client:  client,
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
 		model:   cfg.Model,
 		apiKey:  cfg.APIKey,
+		prompt:  prompt,
 	}
 }
 
@@ -61,11 +67,7 @@ func (l *OllamaLabeler) LabelCluster(ctx context.Context, titles []string) (stri
 		return emptyTopicLabel, nil
 	}
 
-	prompt := "Here are snippets from a single news topic today. Provide a concise 3-5 word label " +
-		"for this topic. Output ONLY the label.\n\n"
-	for i, t := range titles {
-		prompt += fmt.Sprintf("Item %d:\n%s\n\n", i+1, t)
-	}
+	prompt := RenderPrompt(l.prompt, titles)
 
 	body, err := json.Marshal(generateRequest{
 		Model:  l.model,

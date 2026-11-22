@@ -25,6 +25,14 @@ type Pipeline struct {
 	// NewPipeline sets the measured defaults; cmd/topics overrides from config.
 	Lineage  lineage.Options
 	Lookback int
+
+	// SampleItems is how many cluster items are sent to the labeler. The
+	// default is 5. Raise it for large mixed clusters.
+	SampleItems int
+	// LabelGuard generalizes a language-specific label when the sampled items
+	// do not all mention that language.
+	LabelGuard   bool
+	GenericLabel string
 }
 
 func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
@@ -36,7 +44,9 @@ func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
 			InheritThreshold: lineage.DefaultInheritThreshold,
 			Inherit:          true,
 		},
-		Lookback: lineage.DefaultLookback,
+		Lookback:     lineage.DefaultLookback,
+		SampleItems:  5,
+		GenericLabel: "Software Development",
 	}
 }
 
@@ -206,8 +216,12 @@ func (p *Pipeline) getLabelForCluster(
 ) (string, error) {
 	var titles []string
 	var rawTitles []string
+	sampleItems := p.SampleItems
+	if sampleItems <= 0 {
+		sampleItems = 5
+	}
 	for i, itemID := range cluster {
-		if i >= 5 { //nolint:mnd // only use top 5 titles for LLM labeling to save context
+		if i >= sampleItems {
 			break
 		}
 		item, ok := itemsMap[itemID]
@@ -233,6 +247,9 @@ func (p *Pipeline) getLabelForCluster(
 	label, err := p.labeler.LabelCluster(ctx, titles)
 	if err != nil {
 		return "", fmt.Errorf("failed to label cluster: %w", err)
+	}
+	if p.LabelGuard {
+		label, _ = GuardLabel(label, titles, p.GenericLabel)
 	}
 	return label, nil
 }

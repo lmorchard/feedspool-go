@@ -908,7 +908,18 @@ topics:
   lineage_threshold: 0.5   # Jaccard at/above which a cluster joins an existing thread
   inherit_threshold: 0.9   # Jaccard at/above which it keeps the thread's label
   growth_margin: 2         # items gained/lost in 24h to show as growing/fading
+  prompt_file: ""          # optional host-side template; {{items}} is replaced
+  sample_items: 5          # titles/snippets sent to the labeler
+  label_guard: false       # generalize a language-specific label when items disagree
+  generic_label: "Software Development"
 ```
+
+The default prompt is the Go-embedded `internal/topics/prompt.md`; `prompt_file` lets an operator
+edit the template on the host without rebuilding. The labeler sees `sample_items` items, each as
+`Title: ...` plus the first 500 characters of the item body. With `label_guard: true`, a label that
+names a programming language is replaced by `generic_label` when the sampled items do not all
+mention that language. After changing the prompt, sample size, or guard, run `topics --no-inherit`
+once: inherited labels are kept by design and are not relabeled.
 
 **Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
 
