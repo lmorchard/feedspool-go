@@ -1,0 +1,26 @@
+package topics
+
+const (
+	testRustLabel          = "Rust Programming"
+	testRustMacros         = "Rust macros"
+	testRustDeclarative    = "Rust declarative macros"
+	testRustDatetime       = "Rust datetime library"
+	testLearningRust       = "Learning Rust"
+	testRustCrate          = "A Rust crate"
+	testGoService          = "A Go service"
+	testGoLabel            = "Go service"
+	testGoProgrammingLabel = "Go Programming"
+	testGoOne              = "Go one"
+	testGoTwo              = "Go two"
+	testGeneralSoftware    = "How to make almost anything"
+	testModernSoftware     = "Modern Software Development"
+	testGenericLabel       = "Software Development"
+	testRust               = "Rust"
+	testPython             = "Python"
+	testProgramming        = "Programming"
+	testSoftware           = "Software"
+	testAI                 = "AI Industry"
+	testRuleLanguage       = "programming-language"
+	testTermRust           = "rust"
+	testPolicyFile         = "policy.yaml"
+)

@@ -47,6 +47,15 @@ func runTopics(cmd *cobra.Command, _ []string) error {
 
 	topicsCfg := cfg.Topics
 	topicsCfg.Model = params.llmModel
+	prompt, err := topics.LoadPrompt(topicsCfg.PromptFile)
+	if err != nil {
+		return fmt.Errorf("load topics prompt: %w", err)
+	}
+	topicsCfg.PromptTemplate = prompt
+	labelPolicy, err := topics.LoadLabelPolicy(topicsCfg.LabelPolicyFile)
+	if err != nil {
+		return fmt.Errorf("load label policy: %w", err)
+	}
 
 	client := httpclient.NewClient(&httpclient.Config{
 		UserAgent: "feedspool-topics",
@@ -70,6 +79,10 @@ func runTopics(cmd *cobra.Command, _ []string) error {
 
 	pipeline := topics.NewPipeline(db, labeler)
 	pipeline.Lookback = cfg.Topics.LineageLookback
+	pipeline.SampleItems = cfg.Topics.SampleItems
+	pipeline.LabelGuard = cfg.Topics.LabelGuard
+	pipeline.GenericLabel = cfg.Topics.GenericLabel
+	pipeline.LabelPolicy = labelPolicy
 	pipeline.Lineage = lineage.Options{
 		AttachThreshold:  cfg.Topics.LineageThreshold,
 		InheritThreshold: cfg.Topics.InheritThreshold,

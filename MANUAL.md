@@ -908,7 +908,119 @@ topics:
   lineage_threshold: 0.5   # Jaccard at/above which a cluster joins an existing thread
   inherit_threshold: 0.9   # Jaccard at/above which it keeps the thread's label
   growth_margin: 2         # items gained/lost in 24h to show as growing/fading
+  prompt_file: ""          # optional host-side template; {{items}} is replaced
+  sample_items: 5          # titles/snippets sent to the labeler
+  label_policy_file: ""    # optional YAML policy; empty uses the embedded default
+  label_guard: false       # apply the policy after generation
+  generic_label: "Software Development"
 ```
+
+The default prompt is the Go-embedded `internal/topics/prompt.md`; `prompt_file` lets an operator
+edit the template on the host without rebuilding. The labeler sees `sample_items` items, each as
+`Title: ...` plus the first 500 characters of the item body.
+
+#### Labeling and the label policy
+
+A topic label comes from the model. The prompt and the sample decide what the model sees; the label
+policy is a deterministic safety net for known, repeatable over-specific labels. It runs only when
+`label_guard: true`, and only for a freshly generated label. Labels inherited from an earlier thread
+skip the labeler and the policy; singleton clusters use the item title and skip both. Run
+`topics --no-inherit` when a prompt, sample, or policy change must affect existing threads.
+
+The controls, in order:
+
+1. **Prompt** (`prompt_file` or the embedded `internal/topics/prompt.md`): instructs the model.
+2. **Sample** (`sample_items`, default 5): the first items in the cluster, each as `Title: ...`
+   plus up to 500 characters of body. It is not a random sample of the whole cluster.
+3. **Policy** (`label_policy_file` or embedded `internal/topics/label_policy.yaml`): after the
+   model answers, it checks the label for a known term and counts that term in the sampled text.
+4. **Inheritance**: a cluster whose item set matches an existing thread at or above
+   `inherit_threshold` reuses the thread label; the policy is not consulted.
+
+The policy is a list of rules. The default policy has one language rule:
+
+```yaml
+rules:
+  - name: programming-language
+    terms: [rust, golang, go, python]
+    match: word        # word (default) or substring
+    require: all       # all (default) or majority
+    action: generalize # the only action today
+    replacement: Software Development
+```
+
+Add categories as data, not code:
+
+```yaml
+rules:
+  - name: vendor
+    terms: [Anthropic, OpenAI]
+    match: word
+    require: all
+    action: generalize
+    replacement: AI Industry
+```
+
+Evaluation semantics:
+
+- The label is searched for each term, case-insensitively. `word` splits on non-alphanumerics
+  except `+` and `#`; use `substring` for multi-word or hyphenated terms.
+- The first matching rule and term wins. Rule order is priority; put specific rules before broad
+  ones.
+- Support is the number of sampled snippets containing the term; `Total` is the number of sampled
+  snippets. The snippets include bodies, not just titles. `all` requires every snippet; `majority`
+  requires `floor(n/2)+1`. An empty sample is unsupported.
+- Supported: keep the label. Unsupported: use the rule's `replacement`; if empty, `generic_label`;
+  if that is empty, `Software Development`.
+- Only `generalize` is implemented. Unknown `match`, `require`, or `action` values make the
+  `topics` run fail before it opens the database.
+- The default policy is embedded. Set `label_policy_file` to an absolute path to override it; the
+  file is read on every `topics` run. A malformed override fails the run even when
+  `label_guard: false`; remove the path or fix it.
+
+When a rule fires, the topics log includes the rule, term, support, and replacement:
+
+```
+level=info msg="Label policy rule \"programming-language\" matched term \"rust\" (support 2/5): \"Rust Programming\" -> \"Software Development\""
+```
+
+A matched rule that keeps the label logs at debug level, so at the default info level a kept match is
+silent. No info-level hit means no rule generalized the label; it does not mean the policy is
+disabled.
+
+**Choosing the lever:**
+
+| Symptom | First lever |
+| --- | --- |
+| A label names a minority term | Add a policy rule |
+| Many labels are consistently too specific | Prompt or sample size |
+| The label flips between runs | Prompt/model; not policy |
+| A stale thread label | `topics --no-inherit` |
+| Non-English label | Prompt/model/provider |
+| Case, punctuation, or length | Prompt or code |
+
+Add a rule only after the same category is wrong more than once. Prefer `require: all` for
+language labels; use `majority` only when partial support is acceptable. `go`, `swift`, `rust`, and
+`java` are ordinary words, and support counts bodies, so a lowercase “go” can support “Go
+Programming”; the policy cannot fix an unrepresentative sample.
+
+**Operating the policy:**
+
+1. Inspect the topic run and the sample before changing anything. `topics --json` shows labels,
+   provenance, and counts; the `topic_runs`, `topics`, and `topic_items` tables retain the run.
+2. Fix the prompt or sample first when the problem is broad or random.
+3. For a repeatable category, add a rule to the host policy file, set `label_guard: true`, and keep
+   the file path absolute.
+4. Validate the policy and tests with `go test ./internal/topics` (or `make check`). A malformed
+   policy fails the `topics` run.
+5. Trial the change on a database copy. `topics --no-inherit` relabels every cluster and writes a
+   new run; it is the only way to apply a new policy to existing thread labels.
+6. Record the policy change and the relabel run in the operational notes.
+
+**Limits:** the policy sees only the sample, cannot judge the full cluster, and only checks terms
+present in the label. It does not call the model again, and it does not repair non-English output,
+structural formatting, or a biased sample. Keep the engine generic; add vocabularies and
+replacements as data.
 
 **Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
 
