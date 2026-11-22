@@ -910,16 +910,33 @@ topics:
   growth_margin: 2         # items gained/lost in 24h to show as growing/fading
   prompt_file: ""          # optional host-side template; {{items}} is replaced
   sample_items: 5          # titles/snippets sent to the labeler
-  label_guard: false       # generalize a language-specific label when items disagree
+  label_policy_file: ""    # optional YAML policy; empty uses the embedded default
+  label_guard: false       # apply the policy after generation
   generic_label: "Software Development"
 ```
 
 The default prompt is the Go-embedded `internal/topics/prompt.md`; `prompt_file` lets an operator
 edit the template on the host without rebuilding. The labeler sees `sample_items` items, each as
-`Title: ...` plus the first 500 characters of the item body. With `label_guard: true`, a label that
-names a programming language is replaced by `generic_label` when the sampled items do not all
-mention that language. After changing the prompt, sample size, or guard, run `topics --no-inherit`
-once: inherited labels are kept by design and are not relabeled.
+`Title: ...` plus the first 500 characters of the item body.
+
+The label policy is an optional YAML file (`label_policy_file`) or the embedded
+`internal/topics/label_policy.yaml`. It is a list of rules:
+
+```yaml
+rules:
+  - name: programming-language
+    terms: [rust, go, python]
+    match: word        # word or substring
+    require: all       # all or majority
+    action: generalize
+    replacement: Software Development
+```
+
+With `label_guard: true`, a label containing a rule term is replaced by the rule's
+`replacement` (or `generic_label`) when the sampled items do not meet the rule's support
+requirement. Add new categories, vocabularies, and replacements to the policy file; the engine
+does not need new branches. Run `topics --no-inherit` once after changing the prompt, sample size,
+or policy: inherited labels are kept by design and are not relabeled.
 
 **Side effects:** Writes `topic_runs`, `topics`, `topic_items`, `topic_threads`, and `topic_lineage`; makes network requests to the `topics` LLM provider for clusters that do not inherit a label.
 

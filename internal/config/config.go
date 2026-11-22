@@ -200,6 +200,9 @@ type TopicsConfig struct {
 	// PromptFile is an optional markdown/text prompt template. Empty uses the
 	// embedded default; the file is read at topic-run time.
 	PromptFile string `mapstructure:"prompt_file"`
+	// LabelPolicyFile is an optional YAML policy. Empty uses the embedded
+	// default policy. The file is read at topic-run time.
+	LabelPolicyFile string `mapstructure:"label_policy_file"`
 	// PromptTemplate is loaded by the command from PromptFile and passed to the
 	// labeler; it is not read directly from YAML.
 	PromptTemplate string `mapstructure:"-"`
@@ -295,6 +298,7 @@ func LoadConfig() *Config {
 			InheritThreshold:  getFloat64WithDefault("topics.inherit_threshold", DefaultTopicsInheritThreshold),
 			GrowthMargin:      getIntWithDefault("topics.growth_margin", DefaultTopicsGrowthMargin),
 			PromptFile:        viper.GetString("topics.prompt_file"),
+			LabelPolicyFile:   viper.GetString("topics.label_policy_file"),
 			SampleItems:       getIntWithDefault("topics.sample_items", DefaultTopicsSampleItems),
 			LabelGuard:        viper.GetBool("topics.label_guard"),
 			GenericLabel:      getStringWithDefault("topics.generic_label", DefaultTopicsGenericLabel),

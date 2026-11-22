@@ -1,0 +1,36 @@
+rules:
+  - name: programming-language
+    terms:
+      - rust
+      - golang
+      - go
+      - python
+      - javascript
+      - typescript
+      - java
+      - "c++"
+      - "c#"
+      - ruby
+      - php
+      - swift
+      - kotlin
+      - scala
+      - elixir
+      - erlang
+      - haskell
+      - ocaml
+      - clojure
+      - zig
+      - nim
+      - mojo
+      - lua
+      - perl
+      - julia
+      - dart
+      - sql
+      - bash
+      - shell
+    match: word
+    require: all
+    action: generalize
+    replacement: Software Development

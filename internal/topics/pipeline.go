@@ -33,6 +33,9 @@ type Pipeline struct {
 	// do not all mention that language.
 	LabelGuard   bool
 	GenericLabel string
+	// LabelPolicy is the data-driven policy applied when LabelGuard is set.
+	// Nil falls back to the embedded default policy.
+	LabelPolicy *LabelPolicy
 }
 
 func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
@@ -249,7 +252,11 @@ func (p *Pipeline) getLabelForCluster(
 		return "", fmt.Errorf("failed to label cluster: %w", err)
 	}
 	if p.LabelGuard {
-		label, _ = GuardLabel(label, titles, p.GenericLabel)
+		policy := p.LabelPolicy
+		if policy == nil {
+			policy = DefaultLabelPolicy()
+		}
+		label, _ = policy.Apply(label, titles, p.GenericLabel)
 	}
 	return label, nil
 }
