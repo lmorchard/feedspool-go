@@ -209,8 +209,7 @@ type TopicsConfig struct {
 	// SampleItems is how many cluster items (title + 500-char snippet) the
 	// labeler sees. The default is 5; raise it for mixed clusters.
 	SampleItems int `mapstructure:"sample_items"`
-	// LabelGuard generalizes a language-specific label when the sampled items
-	// do not all mention that language.
+	// LabelGuard applies the YAML label policy to freshly generated labels.
 	LabelGuard   bool   `mapstructure:"label_guard"`
 	GenericLabel string `mapstructure:"generic_label"`
 }

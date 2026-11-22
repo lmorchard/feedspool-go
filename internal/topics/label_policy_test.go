@@ -9,17 +9,17 @@ import (
 func TestDefaultLabelPolicyGeneralizesMixedLanguage(t *testing.T) {
 	policy := DefaultLabelPolicy()
 	got, changed := policy.Apply(
-		"Rust Programming",
-		[]string{"Rust declarative macros", "A Go service", "How to make almost anything"},
-		"Software Development",
+		testRustLabel,
+		[]string{testRustDeclarative, testGoService, testGeneralSoftware},
+		testGenericLabel,
 	)
-	if !changed || got != "Software Development" {
-		t.Fatalf("Apply() = %q, %v; want Software Development, true", got, changed)
+	if !changed || got != testGenericLabel {
+		t.Fatalf("Apply() = %q, %v; want %q, true", got, changed, testGenericLabel)
 	}
 }
 
 func TestLabelPolicyFileAddsCategory(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "policy.yaml")
+	path := filepath.Join(t.TempDir(), testPolicyFile)
 	data := []byte(`rules:
   - name: vendor
     terms: ["Anthropic", "OpenAI"]
@@ -36,8 +36,8 @@ func TestLabelPolicyFileAddsCategory(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, changed := policy.Apply("Anthropic IPO", []string{"Anthropic raises", "OpenAI ships"}, "")
-	if !changed || got != "AI Industry" {
-		t.Fatalf("Apply() = %q, %v; want AI Industry, true", got, changed)
+	if !changed || got != testAI {
+		t.Fatalf("Apply() = %q, %v; want %q, true", got, changed, testAI)
 	}
 }
 
@@ -52,16 +52,51 @@ func TestLabelPolicyMajoritySupport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, changed := policy.Apply("Go service", []string{"Go one", "Go two", "Rust"}, "Software"); changed || got != "Go service" {
+	if got, changed := policy.Apply(testGoLabel, []string{testGoOne, testGoTwo, testRust}, testSoftware); changed || got != testGoLabel {
 		t.Fatalf("supported majority Apply() = %q, %v; want unchanged", got, changed)
 	}
-	if got, changed := policy.Apply("Go service", []string{"Go one", "Rust", "Python"}, "Software"); !changed || got != "Programming" {
-		t.Fatalf("unsupported majority Apply() = %q, %v; want Programming, true", got, changed)
+	if got, changed := policy.Apply(testGoLabel, []string{testGoOne, testRust, testPython}, testSoftware); !changed || got != testProgramming {
+		t.Fatalf("unsupported majority Apply() = %q, %v; want %q, true", got, changed, testProgramming)
+	}
+}
+
+func TestLabelPolicyEvaluateReportsMatch(t *testing.T) {
+	match := DefaultLabelPolicy().Evaluate(
+		testRustLabel,
+		[]string{testRustDeclarative, testGoService, testGeneralSoftware},
+		testGenericLabel,
+	)
+	if !match.Changed || match.Rule != testRuleLanguage || match.Term != testTermRust ||
+		match.Support != 1 || match.Total != 3 || match.Label != testGenericLabel {
+		t.Fatalf("Evaluate() = %+v; want language/rust support 1/3 changed", match)
+	}
+}
+
+func TestLabelPolicyEvaluateKeepsSupportedLabel(t *testing.T) {
+	match := DefaultLabelPolicy().Evaluate(
+		testRustLabel,
+		[]string{testRustMacros, testRustDatetime, testLearningRust},
+		testGenericLabel,
+	)
+	if match.Changed || match.Rule != testRuleLanguage || match.Term != testTermRust ||
+		match.Support != 3 || match.Total != 3 || match.Label != testRustLabel {
+		t.Fatalf("Evaluate() = %+v; want supported language/rust 3/3 unchanged", match)
+	}
+}
+
+func TestLabelPolicyEvaluateNoMatch(t *testing.T) {
+	match := DefaultLabelPolicy().Evaluate(
+		testModernSoftware,
+		[]string{testRustMacros, testGoService},
+		testGenericLabel,
+	)
+	if match.Changed || match.Rule != "" || match.Support != 0 || match.Total != 2 {
+		t.Fatalf("Evaluate() = %+v; want no match", match)
 	}
 }
 
 func TestLabelPolicyRejectsUnknownAction(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "policy.yaml")
+	path := filepath.Join(t.TempDir(), testPolicyFile)
 	if err := os.WriteFile(path, []byte(`rules:
   - name: bad
     terms: [go]

@@ -29,12 +29,11 @@ type Pipeline struct {
 	// SampleItems is how many cluster items are sent to the labeler. The
 	// default is 5. Raise it for large mixed clusters.
 	SampleItems int
-	// LabelGuard generalizes a language-specific label when the sampled items
-	// do not all mention that language.
+	// LabelGuard applies the data-driven policy to freshly generated labels.
 	LabelGuard   bool
 	GenericLabel string
-	// LabelPolicy is the data-driven policy applied when LabelGuard is set.
-	// Nil falls back to the embedded default policy.
+	// LabelPolicy is the policy applied when LabelGuard is set. Nil falls
+	// back to the embedded default policy.
 	LabelPolicy *LabelPolicy
 }
 
@@ -48,8 +47,8 @@ func NewPipeline(db *database.DB, labeler Labeler) *Pipeline {
 			Inherit:          true,
 		},
 		Lookback:     lineage.DefaultLookback,
-		SampleItems:  5,
-		GenericLabel: "Software Development",
+		SampleItems:  DefaultSampleItems,
+		GenericLabel: DefaultGenericLabel,
 	}
 }
 
@@ -221,7 +220,7 @@ func (p *Pipeline) getLabelForCluster(
 	var rawTitles []string
 	sampleItems := p.SampleItems
 	if sampleItems <= 0 {
-		sampleItems = 5
+		sampleItems = DefaultSampleItems
 	}
 	for i, itemID := range cluster {
 		if i >= sampleItems {
@@ -256,7 +255,19 @@ func (p *Pipeline) getLabelForCluster(
 		if policy == nil {
 			policy = DefaultLabelPolicy()
 		}
-		label, _ = policy.Apply(label, titles, p.GenericLabel)
+		result := policy.Evaluate(label, titles, p.GenericLabel)
+		if result.Changed {
+			logrus.Infof(
+				"Label policy rule %q matched term %q (support %d/%d): %q -> %q",
+				result.Rule, result.Term, result.Support, result.Total, label, result.Label,
+			)
+		} else if result.Rule != "" {
+			logrus.Debugf(
+				"Label policy rule %q matched term %q (support %d/%d): kept %q",
+				result.Rule, result.Term, result.Support, result.Total, label,
+			)
+		}
+		label = result.Label
 	}
 	return label, nil
 }

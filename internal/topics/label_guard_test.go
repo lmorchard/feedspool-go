@@ -4,40 +4,40 @@ import "testing"
 
 func TestGuardLabelGeneralizesMixedLanguage(t *testing.T) {
 	got, changed := GuardLabel(
-		"Rust Programming",
-		[]string{"Rust declarative macros", "A Go service", "How to make almost anything"},
-		"Software Development",
+		testRustLabel,
+		[]string{testRustDeclarative, testGoService, testGeneralSoftware},
+		testGenericLabel,
 	)
-	if !changed || got != "Software Development" {
-		t.Fatalf("GuardLabel() = %q, %v; want Software Development, true", got, changed)
+	if !changed || got != testGenericLabel {
+		t.Fatalf("GuardLabel() = %q, %v; want %q, true", got, changed, testGenericLabel)
 	}
 }
 
 func TestGuardLabelKeepsUnanimousLanguage(t *testing.T) {
 	got, changed := GuardLabel(
-		"Rust Programming",
-		[]string{"Rust macros", "Rust datetime library", "Learning Rust"},
-		"Software Development",
+		testRustLabel,
+		[]string{testRustMacros, testRustDatetime, testLearningRust},
+		testGenericLabel,
 	)
-	if changed || got != "Rust Programming" {
+	if changed || got != testRustLabel {
 		t.Fatalf("GuardLabel() = %q, %v; want the original label", got, changed)
 	}
 }
 
 func TestGuardLabelKeepsGeneralLabel(t *testing.T) {
 	got, changed := GuardLabel(
-		"Modern Software Development",
-		[]string{"Rust macros", "A Go service"},
-		"Software Development",
+		testModernSoftware,
+		[]string{testRustMacros, testGoService},
+		testGenericLabel,
 	)
-	if changed || got != "Modern Software Development" {
+	if changed || got != testModernSoftware {
 		t.Fatalf("GuardLabel() = %q, %v; want the original label", got, changed)
 	}
 }
 
 func TestGuardLabelUsesDefaultGeneric(t *testing.T) {
-	got, changed := GuardLabel("Go Programming", []string{"A Go service", "A Rust crate"}, "")
-	if !changed || got != "Software Development" {
+	got, changed := GuardLabel(testGoProgrammingLabel, []string{testGoService, testRustCrate}, "")
+	if !changed || got != testGenericLabel {
 		t.Fatalf("GuardLabel() = %q, %v; want the default generic", got, changed)
 	}
 }

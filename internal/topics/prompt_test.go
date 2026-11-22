@@ -8,8 +8,8 @@ import (
 )
 
 func TestRenderPromptReplacesItems(t *testing.T) {
-	got := RenderPrompt("Label the topic.\n\n{{items}}", []string{"Rust macros", "A Go service"})
-	want := "Label the topic.\n\nItem 1:\nRust macros\n\nItem 2:\nA Go service\n\n"
+	got := RenderPrompt("Label the topic.\n\n{{items}}", []string{testRustMacros, testGoService})
+	want := "Label the topic.\n\nItem 1:\n" + testRustMacros + "\n\nItem 2:\n" + testGoService + "\n\n"
 	if got != want {
 		t.Fatalf("RenderPrompt() = %q, want %q", got, want)
 	}

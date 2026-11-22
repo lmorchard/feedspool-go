@@ -10,6 +10,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// DefaultSampleItems is the default number of cluster items shown to the labeler.
+const DefaultSampleItems = 5
+
+// DefaultGenericLabel is the last-resort replacement when a policy rule cannot
+// supply one.
+const DefaultGenericLabel = "Software Development"
+
+const (
+	policyMatchWord        = "word"
+	policyMatchSubstring   = "substring"
+	policyRequireAll       = "all"
+	policyRequireMajority  = "majority"
+	policyActionGeneralize = "generalize"
+)
+
+// DefaultLabelPolicyYAML is the embedded default policy.
+//
 //go:embed label_policy.yaml
 var DefaultLabelPolicyYAML string
 
@@ -32,6 +49,16 @@ type LabelRule struct {
 	Replacement string   `yaml:"replacement"`
 }
 
+// PolicyMatch records what the policy found for one generated label.
+type PolicyMatch struct {
+	Label   string
+	Rule    string
+	Term    string
+	Support int
+	Total   int
+	Changed bool
+}
+
 var wordBoundary = regexp.MustCompile(`[^a-z0-9+#]+`)
 
 func containsWord(text, word string) bool {
@@ -44,7 +71,7 @@ func containsWord(text, word string) bool {
 }
 
 func containsTerm(text, term, match string) bool {
-	if match == "substring" {
+	if match == policyMatchSubstring {
 		return strings.Contains(strings.ToLower(text), strings.ToLower(term))
 	}
 	return containsWord(text, strings.ToLower(term))
@@ -83,21 +110,21 @@ func parseLabelPolicy(data []byte) (*LabelPolicy, error) {
 			}
 		}
 		if rule.Match == "" {
-			rule.Match = "word"
+			rule.Match = policyMatchWord
 		}
-		if rule.Match != "word" && rule.Match != "substring" {
+		if rule.Match != policyMatchWord && rule.Match != policyMatchSubstring {
 			return nil, fmt.Errorf("label policy rule %q has unknown match %q", rule.Name, rule.Match)
 		}
 		if rule.Require == "" {
-			rule.Require = "all"
+			rule.Require = policyRequireAll
 		}
-		if rule.Require != "all" && rule.Require != "majority" {
+		if rule.Require != policyRequireAll && rule.Require != policyRequireMajority {
 			return nil, fmt.Errorf("label policy rule %q has unknown require %q", rule.Name, rule.Require)
 		}
 		if rule.Action == "" {
-			rule.Action = "generalize"
+			rule.Action = policyActionGeneralize
 		}
-		if rule.Action != "generalize" {
+		if rule.Action != policyActionGeneralize {
 			return nil, fmt.Errorf("label policy rule %q has unknown action %q", rule.Name, rule.Action)
 		}
 	}
@@ -114,41 +141,52 @@ func DefaultLabelPolicy() *LabelPolicy {
 	return policy
 }
 
-// Apply returns the label, or the rule replacement when the label names a
-// rule term that the sampled items do not sufficiently support.
-func (p *LabelPolicy) Apply(label string, titles []string, generic string) (string, bool) {
+// Evaluate returns the policy result for a generated label. It reports the
+// first matching rule and term even when the label is supported, so callers
+// can log both hits and no-ops.
+func (p *LabelPolicy) Evaluate(label string, titles []string, generic string) PolicyMatch {
+	match := PolicyMatch{Label: label, Total: len(titles)}
 	if p == nil {
-		return label, false
+		return match
 	}
 	for _, rule := range p.Rules {
 		for _, term := range rule.Terms {
 			if !containsTerm(label, term, rule.Match) {
 				continue
 			}
-			support := 0
+			match.Rule = rule.Name
+			match.Term = term
 			for _, title := range titles {
 				if containsTerm(title, term, rule.Match) {
-					support++
+					match.Support++
 				}
 			}
-			required := len(titles)
-			if rule.Require == "majority" {
-				required = len(titles)/2 + 1
+			required := match.Total
+			if rule.Require == policyRequireMajority {
+				required = match.Total/2 + 1
 			}
-			if len(titles) > 0 && support >= required {
-				return label, false
+			if match.Total > 0 && match.Support >= required {
+				return match
 			}
-			replacement := rule.Replacement
-			if strings.TrimSpace(replacement) == "" {
-				replacement = generic
+			match.Label = rule.Replacement
+			if strings.TrimSpace(match.Label) == "" {
+				match.Label = generic
 			}
-			if strings.TrimSpace(replacement) == "" {
-				replacement = "Software Development"
+			if strings.TrimSpace(match.Label) == "" {
+				match.Label = DefaultGenericLabel
 			}
-			return replacement, true
+			match.Changed = true
+			return match
 		}
 	}
-	return label, false
+	return match
+}
+
+// Apply returns the label, or the rule replacement when the label names a
+// rule term that the sampled items do not sufficiently support.
+func (p *LabelPolicy) Apply(label string, titles []string, generic string) (string, bool) {
+	match := p.Evaluate(label, titles, generic)
+	return match.Label, match.Changed
 }
 
 // GuardLabel is the compatibility shortcut: apply the embedded policy.
